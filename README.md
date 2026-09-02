@@ -52,6 +52,7 @@ docker ps
 ```bash
 docker exec libreria-db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Libreria2026!" -C -i /scripts/schema.sql
 ```
+> Si no les crea las columnas intenten con comillas simples 'Libreria2026!' en esta parte
 
 > Si da error de que no existe `/opt/mssql-tools18`, corre
 > `docker exec libreria-db ls /opt` para ver el nombre exacto de la carpeta
@@ -74,6 +75,13 @@ Abre la URL que muestra la consola (algo como `https://localhost:5001` o
 Si todo salió bien, deberías ver el Home con el menú y, al entrar a
 **Categorías**, la lista con las 3 categorías semilla del script SQL — esa
 página ya está conectada de verdad a la base de datos vía ADO.NET.
+
+#### Para Ingresar al contenerdor de la DB
+
+```bash
+docker exec -it libreria-db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Libreria2026!' -C
+```
+Una vez dentro hagan las consultas que necesiten
 
 ## 6. Cómo trabajar en equipo sin bloquearse
 
