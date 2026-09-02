@@ -1,0 +1,37 @@
+@page
+@model Libreria.Web.Pages.Categorias.IndexModel
+@{
+    ViewData["Title"] = "Categorías";
+}
+
+<h1>Categorías</h1>
+
+@if (Model.Categorias.Count == 0)
+{
+    <p>No hay categorías registradas todavía.</p>
+}
+else
+{
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var categoria in Model.Categorias)
+            {
+                <tr>
+                    <td>@categoria.Nombre</td>
+                    <td>@categoria.Descripcion</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<p class="hint">
+    Este listado ya lee datos reales de la base de datos vía ADO.NET (US-02).
+    Falta agregar: Alta (US-01), Edición (US-03) y Baja (US-04).
+</p>

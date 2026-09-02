@@ -1,0 +1,29 @@
+@page
+@model Libreria.Web.Pages.IndexModel
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<section class="home-hero">
+    <h1>Sistema de inventario y ventas</h1>
+    <p>Gestión de categorías, marcas y productos de la librería.</p>
+</section>
+
+<div class="home-grid">
+    <a class="home-card" asp-page="/Categorias/Index">
+        <h2>Categorías</h2>
+        <p>Clasificación de productos.</p>
+    </a>
+    <a class="home-card" asp-page="/Marcas/Index">
+        <h2>Marcas</h2>
+        <p>Marcas registradas de productos.</p>
+    </a>
+    <a class="home-card" asp-page="/Productos/Index">
+        <h2>Productos</h2>
+        <p>Inventario y stock disponible.</p>
+    </a>
+    <a class="home-card" asp-page="/Historico/Index">
+        <h2>Histórico de costos</h2>
+        <p>Variación del costo de adquisición.</p>
+    </a>
+</div>

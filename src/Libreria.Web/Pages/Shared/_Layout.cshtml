@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Librería</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <header class="app-header">
+        <div class="app-header__brand">
+            <!-- TODO: reemplazar por el logo real del equipo (requisito de la rúbrica) -->
+            <span class="app-header__name">LIBRERÍA</span>
+        </div>
+        <nav class="app-nav">
+            <a asp-page="/Index">Inicio</a>
+            <a asp-page="/Categorias/Index">Categorías</a>
+            <a asp-page="/Marcas/Index">Marcas</a>
+            <a asp-page="/Productos/Index">Productos</a>
+            <a asp-page="/Historico/Index">Histórico de costos</a>
+        </nav>
+    </header>
+
+    <main class="app-main">
+        @RenderBody()
+    </main>
+
+    <footer class="app-footer">
+        <p>Proyecto académico — Clean Code &amp; SOLID</p>
+    </footer>
+</body>
+</html>
