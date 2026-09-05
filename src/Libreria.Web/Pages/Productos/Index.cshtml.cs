@@ -107,6 +107,7 @@ public class IndexModel : PageModel
         command.CommandText = @"
         SELECT CategoriaId, Nombre
         FROM Categoria
+        WHERE Estado = 1
         ORDER BY Nombre";
 
         using var reader = command.ExecuteReader();
@@ -128,6 +129,7 @@ public class IndexModel : PageModel
         command.CommandText = @"
         SELECT MarcaId, Nombre
         FROM Marca
+        WHERE Estado = 1
         ORDER BY Nombre";
 
         using var reader = command.ExecuteReader();
