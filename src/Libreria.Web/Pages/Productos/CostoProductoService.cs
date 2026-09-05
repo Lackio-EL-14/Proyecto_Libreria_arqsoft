@@ -1,6 +1,5 @@
 ﻿using Libreria.Web.Data;
 using System.Data;
-using Libreria.Web.Data;
 
 namespace Libreria.Web.Pages.Productos;
 
