@@ -1,12 +1,12 @@
 using Libreria.Web.Data;
+using Libreria.Web.Pages.Categorias.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages();
 
-// Registramos la fábrica de conexiones ADO.NET como Singleton.
-// Cualquier PageModel puede pedirla por inyección de dependencias
-// en vez de crear un SqlConnection directamente (Inversión de Dependencias - SOLID).
+builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+
 builder.Services.AddSingleton<IDbConnectionFactory>(sp =>
 {
     var connectionString = builder.Configuration.GetConnectionString("LibreriaDb")

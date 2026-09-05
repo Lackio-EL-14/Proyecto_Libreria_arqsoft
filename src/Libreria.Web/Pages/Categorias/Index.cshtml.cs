@@ -1,45 +1,29 @@
-using Libreria.Web.Data;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Libreria.Web.Pages.Categorias.Models;
+using Libreria.Web.Pages.Categorias.Repositories;
 
-namespace Libreria.Web.Pages.Categorias;
-
-public class IndexModel : PageModel
+namespace Libreria.Web.Pages.Categorias
 {
-    private readonly IDbConnectionFactory _connectionFactory;
-
-    public IndexModel(IDbConnectionFactory connectionFactory)
+    public class IndexModel : PageModel
     {
-        _connectionFactory = connectionFactory;
-    }
+        private readonly ICategoriaRepository _repository;
 
-    public List<CategoriaListItem> Categorias { get; private set; } = new();
-
-    public void OnGet()
-    {
-        // EJEMPLO DE REFERENCIA para todo el equipo: así se hace una
-        // consulta con ADO.NET puro (sin Entity Framework). El resto del
-        // CRUD (Insert/Update/Delete) de cualquier tabla sigue el mismo
-        // patrón: pedir la conexión a la fábrica, crear un SqlCommand,
-        // PARAMETRIZAR siempre (nunca concatenar strings, por SQL Injection)
-        // y ejecutar.
-        using var connection = _connectionFactory.CreateConnection();
-        using var command = connection.CreateCommand();
-        command.CommandText = @"
-            SELECT CategoriaId, Nombre, Descripcion, Estado
-            FROM Categoria
-            WHERE Estado = 1
-            ORDER BY Nombre";
-
-        using var reader = command.ExecuteReader();
-        while (reader.Read())
+        public IndexModel(ICategoriaRepository repository)
         {
-            Categorias.Add(new CategoriaListItem(
-                reader.GetInt32(0),
-                reader.GetString(1),
-                reader.IsDBNull(2) ? null : reader.GetString(2),
-                reader.GetBoolean(3)));
+            _repository = repository;
+        }
+
+        public IEnumerable<Categoria> Categorias { get; private set; } = new List<Categoria>();
+
+        [BindProperty(SupportsGet = true)]
+        public string? Busqueda { get; set; }
+
+        public async Task OnGetAsync()
+        {
+            Categorias = await _repository.ObtenerTodasAsync(Busqueda);
         }
     }
 }
-
-public record CategoriaListItem(int CategoriaId, string Nombre, string? Descripcion, bool Estado);
