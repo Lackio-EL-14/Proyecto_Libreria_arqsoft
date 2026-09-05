@@ -6,8 +6,12 @@ namespace Libreria.Web.Pages.Categorias.Repositories
 {
     public interface ICategoriaRepository
     {
-        Task<bool> ExisteNombreAsync(string nombre);
+        Task<bool> ExisteNombreAsync(string nombre, int? excluirId = null);
+        
         Task CrearAsync(Categoria categoria);
-        Task<IEnumerable<Categoria>> ObtenerTodasAsync(string? busqueda = null);  
+        Task<IEnumerable<Categoria>> ObtenerTodasAsync(string? busqueda = null);
+        
+        Task<Categoria?> ObtenerPorIdAsync(int id);
+        Task ActualizarAsync(Categoria categoria);
     }
 }

@@ -17,23 +17,28 @@ namespace Libreria.Web.Pages.Categorias.Repositories
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<bool> ExisteNombreAsync(string nombre)
+        public async Task<bool> ExisteNombreAsync(string nombre, int? excluirId = null)
         {
             using var dbConnection = _connectionFactory.CreateConnection();
-            
-            if (dbConnection is not SqlConnection connection)
-            {
-                throw new InvalidOperationException("La conexión provista no es SqlConnection.");
-            }
+            if (dbConnection is not SqlConnection connection) throw new InvalidOperationException("La conexión provista no es SqlConnection.");
 
             using var command = connection.CreateCommand();
-            command.CommandText = "SELECT COUNT(1) FROM Categoria WHERE Nombre = @Nombre";
-            command.Parameters.AddWithValue("@Nombre", nombre);
-
-            if (connection.State != ConnectionState.Open)
+            
+            var query = "SELECT COUNT(1) FROM Categoria WHERE Nombre = @Nombre";
+            if (excluirId.HasValue)
             {
-                await connection.OpenAsync();
+                query += " AND CategoriaId <> @ExcluirId";
             }
+
+            command.CommandText = query;
+            command.Parameters.AddWithValue("@Nombre", nombre);
+            
+            if (excluirId.HasValue)
+            {
+                command.Parameters.AddWithValue("@ExcluirId", excluirId.Value);
+            }
+
+            if (connection.State != ConnectionState.Open) await connection.OpenAsync();
             
             var count = (int)await command.ExecuteScalarAsync();
             return count > 0;
@@ -105,7 +110,6 @@ namespace Libreria.Web.Pages.Categorias.Repositories
                     Descripcion = reader.IsDBNull(reader.GetOrdinal("Descripcion")) ? null : reader.GetString(reader.GetOrdinal("Descripcion")),
                     Orden = reader.GetInt32(reader.GetOrdinal("Orden")),
                     Estado = reader.GetBoolean(reader.GetOrdinal("Estado")),
-                    // Validación de nulos para las fechas
                     FechaCreacion = reader.IsDBNull(reader.GetOrdinal("FechaCreacion")) 
                         ? DateTime.MinValue 
                         : reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
@@ -118,5 +122,57 @@ namespace Libreria.Web.Pages.Categorias.Repositories
             return categorias;
         }
 
+        public async Task<Categoria?> ObtenerPorIdAsync(int id)
+        {
+            using var dbConnection = _connectionFactory.CreateConnection();
+            if (dbConnection is not SqlConnection connection) throw new InvalidOperationException("La conexión provista no es SqlConnection.");
+
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT CategoriaId, Nombre, Descripcion, Orden, Estado FROM Categoria WHERE CategoriaId = @Id";
+            command.Parameters.AddWithValue("@Id", id);
+
+            if (connection.State != ConnectionState.Open) await connection.OpenAsync();
+            
+            using var reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                return new Categoria
+                {
+                    CategoriaId = reader.GetInt32(reader.GetOrdinal("CategoriaId")),
+                    Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
+                    Descripcion = reader.IsDBNull(reader.GetOrdinal("Descripcion")) ? null : reader.GetString(reader.GetOrdinal("Descripcion")),
+                    Orden = reader.GetInt32(reader.GetOrdinal("Orden")),
+                    Estado = reader.GetBoolean(reader.GetOrdinal("Estado"))
+                };
+            }
+            return null;
+        }
+
+        public async Task ActualizarAsync(Categoria categoria)
+        {
+            using var dbConnection = _connectionFactory.CreateConnection();
+            if (dbConnection is not SqlConnection connection) throw new InvalidOperationException("La conexión provista no es SqlConnection.");
+
+            using var command = connection.CreateCommand();
+            
+            command.CommandText = @"
+                UPDATE Categoria 
+                SET Nombre = @Nombre, 
+                    Descripcion = @Descripcion, 
+                    Orden = @Orden, 
+                    FechaModificacion = GETDATE()
+                WHERE CategoriaId = @Id";
+
+            command.Parameters.AddWithValue("@Id", categoria.CategoriaId);
+            command.Parameters.AddWithValue("@Nombre", categoria.Nombre);
+            command.Parameters.AddWithValue("@Descripcion", string.IsNullOrEmpty(categoria.Descripcion) ? DBNull.Value : categoria.Descripcion);
+            command.Parameters.AddWithValue("@Orden", categoria.Orden);
+
+            if (connection.State != ConnectionState.Open) await connection.OpenAsync();
+            
+            await command.ExecuteNonQueryAsync();
+        }
+        
     }
 }
