@@ -1,12 +1,41 @@
 @page
 @model Libreria.Web.Pages.Productos.IndexModel
+
 @{
     ViewData["Title"] = "Productos";
 }
 
 <h1>Productos</h1>
-<p>
-    Módulo en construcción — aquí va el CRUD completo de productos
-    (US-09 a US-12), incluyendo el disparo del histórico de costo de
-    adquisición (US-13).
-</p>
+
+@if (Model.Productos.Count == 0)
+{
+    <p>No hay productos registrados todavía.</p>
+}
+else
+{
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Marca</th>
+                <th>Stock</th>
+                <th>Precio venta</th>
+                <th>Costo adquisición</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var producto in Model.Productos)
+            {
+                <tr>
+                    <td>@producto.Nombre</td>
+                    <td>@producto.Categoria</td>
+                    <td>@producto.Marca</td>
+                    <td>@producto.Stock</td>
+                    <td>@producto.PrecioVenta.ToString("0.00")</td>
+                    <td>@producto.CostoAdquisicionActual.ToString("0.00")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
