@@ -6,11 +6,11 @@ using Libreria.Web.Pages.Categorias.Repositories;
 
 namespace Libreria.Web.Pages.Categorias
 {
-    public class DeleteModel : PageModel
+    public class ReactivarModel : PageModel
     {
         private readonly ICategoriaRepository _repository;
 
-        public DeleteModel(ICategoriaRepository repository)
+        public ReactivarModel(ICategoriaRepository repository)
         {
             _repository = repository;
         }
@@ -19,7 +19,6 @@ namespace Libreria.Web.Pages.Categorias
         public int CategoriaId { get; set; }
 
         public Categoria? Categoria { get; set; }
-        public bool TieneProductos { get; set; }
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
@@ -30,17 +29,14 @@ namespace Libreria.Web.Pages.Categorias
             }
 
             CategoriaId = Categoria.CategoriaId;
-            
-            TieneProductos = await _repository.TieneProductosActivosAsync(id);
-
             return Page();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
-            await _repository.DarDeBajaAsync(CategoriaId);
+            await _repository.ReactivarAsync(CategoriaId);
             
-            TempData["MensajeExito"] = "Categoría dada de baja correctamente.";
+            TempData["MensajeExito"] = "Categoría reactivada correctamente.";
             return RedirectToPage("./Index");
         }
     }

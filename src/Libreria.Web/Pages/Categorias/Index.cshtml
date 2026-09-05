@@ -50,15 +50,21 @@ else
                     <td>@(string.IsNullOrEmpty(categoria.Descripcion) ? "N/A" : categoria.Descripcion)</td>
                     <td>@categoria.Orden</td>
                     <td>
-                        <!-- Indicador de estado claro (US-02) -->
+                        <!-- Indicador de estado claro -->
                         <span style="color: @(categoria.Estado ? "green" : "gray"); font-weight: bold;">
                             @(categoria.Estado ? "Activo" : "Inactivo")
                         </span>
                     </td>
                     <td>
-                        <!-- Enlaces preparados para US-03 y US-04 -->
-                        <a asp-page="./Edit" asp-route-id="@categoria.CategoriaId">Editar</a> |
-                        <a asp-page="./Delete" asp-route-id="@categoria.CategoriaId" style="color: red;">Baja</a>
+                        @if (categoria.Estado)
+                        {
+                            <a asp-page="./Edit" asp-route-id="@categoria.CategoriaId">Editar</a> @:|
+                            <a asp-page="./Delete" asp-route-id="@categoria.CategoriaId" style="color: red;">Baja</a>
+                        }
+                        else
+                        {
+                            <a asp-page="./Reactivar" asp-route-id="@categoria.CategoriaId" style="color: green; font-weight: bold;">Reactivar</a>
+                        }
                     </td>
                 </tr>
             }

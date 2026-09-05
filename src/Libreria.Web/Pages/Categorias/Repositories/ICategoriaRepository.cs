@@ -13,5 +13,9 @@ namespace Libreria.Web.Pages.Categorias.Repositories
         
         Task<Categoria?> ObtenerPorIdAsync(int id);
         Task ActualizarAsync(Categoria categoria);
+
+        Task<bool> TieneProductosActivosAsync(int categoriaId);
+        Task DarDeBajaAsync(int id);
+        Task ReactivarAsync(int id);
     }
 }

@@ -173,6 +173,52 @@ namespace Libreria.Web.Pages.Categorias.Repositories
             
             await command.ExecuteNonQueryAsync();
         }
+
+        public async Task<bool> TieneProductosActivosAsync(int categoriaId)
+        {
+            using var dbConnection = _connectionFactory.CreateConnection();
+            if (dbConnection is not SqlConnection connection) throw new InvalidOperationException("La conexión provista no es SqlConnection.");
+
+            using var command = connection.CreateCommand();
+            
+            command.CommandText = "SELECT COUNT(1) FROM Producto WHERE CategoriaId = @CategoriaId AND Estado = 1";
+            command.Parameters.AddWithValue("@CategoriaId", categoriaId);
+
+            if (connection.State != ConnectionState.Open) await connection.OpenAsync();
+            
+            var result = await command.ExecuteScalarAsync();
+            return result != DBNull.Value && Convert.ToInt32(result) > 0;
+        }
+
+        public async Task DarDeBajaAsync(int id)
+        {
+            using var dbConnection = _connectionFactory.CreateConnection();
+            if (dbConnection is not SqlConnection connection) throw new InvalidOperationException("La conexión provista no es SqlConnection.");
+
+            using var command = connection.CreateCommand();
+            
+            command.CommandText = "UPDATE Categoria SET Estado = -1, FechaModificacion = GETDATE() WHERE CategoriaId = @Id";
+            command.Parameters.AddWithValue("@Id", id);
+
+            if (connection.State != ConnectionState.Open) await connection.OpenAsync();
+            
+            await command.ExecuteNonQueryAsync();
+        }
+
+        public async Task ReactivarAsync(int id)
+        {
+            using var dbConnection = _connectionFactory.CreateConnection();
+            if (dbConnection is not SqlConnection connection) throw new InvalidOperationException("La conexión provista no es SqlConnection.");
+
+            using var command = connection.CreateCommand();
+            
+            command.CommandText = "UPDATE Categoria SET Estado = 1, FechaModificacion = GETDATE() WHERE CategoriaId = @Id";
+            command.Parameters.AddWithValue("@Id", id);
+
+            if (connection.State != ConnectionState.Open) await connection.OpenAsync();
+            
+            await command.ExecuteNonQueryAsync();
+        }
         
     }
 }
