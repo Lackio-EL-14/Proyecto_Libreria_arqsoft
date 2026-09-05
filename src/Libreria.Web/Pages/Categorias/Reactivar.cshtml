@@ -1,0 +1,31 @@
+@page "{id:int}"
+@model Libreria.Web.Pages.Categorias.ReactivarModel
+@{
+    ViewData["Title"] = "Reactivar Categoría";
+}
+
+<div style="margin-top: 20px; max-width: 600px;">
+    <h2 style="color: green;">Confirmar Reactivación</h2>
+    <hr />
+
+    <div style="background-color: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+        <strong>¿Estás seguro de que deseas reactivar esta categoría?</strong><br />
+        Esta acción hará que la categoría vuelva a estar disponible en todos los formularios de registro de productos (Estado = Activo).
+    </div>
+
+    <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px;">
+        <p><strong>Nombre:</strong> @Model.Categoria?.Nombre</p>
+        <p><strong>Descripción:</strong> @(string.IsNullOrEmpty(Model.Categoria?.Descripcion) ? "N/A" : Model.Categoria?.Descripcion)</p>
+    </div>
+
+    <form method="post">
+        <input type="hidden" asp-for="CategoriaId" />
+        
+        <button type="submit" style="padding: 10px 15px; background-color: #28a745; color: white; border: none; cursor: pointer; font-weight: bold;">
+            Confirmar Reactivación
+        </button>
+        <a asp-page="./Index" style="margin-left: 10px; text-decoration: none; padding: 10px 15px; background-color: #6c757d; color: white;">
+            Cancelar
+        </a>
+    </form>
+</div>

@@ -6,9 +6,29 @@
 
 <h1>Categorías</h1>
 
-@if (Model.Categorias.Count == 0)
+@if (TempData["MensajeExito"] != null)
 {
-    <p>No hay categorías registradas todavía.</p>
+    <div style="color: green; border: 1px solid green; padding: 10px; margin-bottom: 15px; border-radius: 5px;">
+        @TempData["MensajeExito"]
+    </div>
+}
+
+<div style="margin-bottom: 20px;">
+    <a asp-page="./Create" style="margin-right: 20px; font-weight: bold; text-decoration: none;">+ Registrar Nueva Categoría</a>
+    
+    <form method="get" style="display: inline-block;">
+        <input type="text" name="Busqueda" asp-for="Busqueda" placeholder="Buscar por nombre..." style="padding: 5px; width: 200px;" />
+        <button type="submit" style="padding: 5px 10px;">Buscar</button>
+        @if (!string.IsNullOrEmpty(Model.Busqueda))
+        {
+            <a asp-page="./Index" style="margin-left: 10px; color: red; text-decoration: none;">Limpiar filtro</a>
+        }
+    </form>
+</div>
+
+@if (!Model.Categorias.Any())
+{
+    <p>No hay categorías registradas todavía o ninguna coincide con la búsqueda.</p>
 }
 else
 {
@@ -17,6 +37,9 @@ else
             <tr>
                 <th>Nombre</th>
                 <th>Descripción</th>
+                <th>Orden</th>
+                <th>Estado</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -24,14 +47,27 @@ else
             {
                 <tr>
                     <td>@categoria.Nombre</td>
-                    <td>@categoria.Descripcion</td>
+                    <td>@(string.IsNullOrEmpty(categoria.Descripcion) ? "N/A" : categoria.Descripcion)</td>
+                    <td>@categoria.Orden</td>
+                    <td>
+                        <!-- Indicador de estado claro -->
+                        <span style="color: @(categoria.Estado ? "green" : "gray"); font-weight: bold;">
+                            @(categoria.Estado ? "Activo" : "Inactivo")
+                        </span>
+                    </td>
+                    <td>
+                        @if (categoria.Estado)
+                        {
+                            <a asp-page="./Edit" asp-route-id="@categoria.CategoriaId">Editar</a> @:|
+                            <a asp-page="./Delete" asp-route-id="@categoria.CategoriaId" style="color: red;">Baja</a>
+                        }
+                        else
+                        {
+                            <a asp-page="./Reactivar" asp-route-id="@categoria.CategoriaId" style="color: green; font-weight: bold;">Reactivar</a>
+                        }
+                    </td>
                 </tr>
             }
         </tbody>
     </table>
 }
-
-<p class="hint">
-    Este listado ya lee datos reales de la base de datos vía ADO.NET (US-02).
-    Falta agregar: Alta (US-01), Edición (US-03) y Baja (US-04).
-</p>
