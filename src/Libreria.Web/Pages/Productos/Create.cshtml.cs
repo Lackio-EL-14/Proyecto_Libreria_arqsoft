@@ -9,10 +9,12 @@ namespace Libreria.Web.Pages.Productos;
 public class CreateModel : PageModel
 {
     private readonly IDbConnectionFactory _connectionFactory;
+    private readonly CostoProductoService _costoProductoService;
 
     public CreateModel(IDbConnectionFactory connectionFactory)
     {
         _connectionFactory = connectionFactory;
+        _costoProductoService = new CostoProductoService(connectionFactory);
     }
 
     [BindProperty]
@@ -216,34 +218,7 @@ public class CreateModel : PageModel
         command.Parameters.Add(parametro);
     }
 
-    private void RegistrarHistoricoInicial(
-        int productoId,
-        IDbConnection connection,
-        IDbTransaction transaction)
-    {
-        using var command = connection.CreateCommand();
-        command.Transaction = transaction;
-
-        command.CommandText = @"
-        INSERT INTO HistoricoCostoProducto
-        (
-            ProductoId,
-            CostoAdquisicion,
-            Motivo
-        )
-        VALUES
-        (
-            @ProductoId,
-            @CostoAdquisicion,
-            @Motivo
-        )";
-
-        AgregarParametro(command, "@ProductoId", productoId);
-        AgregarParametro(command, "@CostoAdquisicion", Input.CostoAdquisicion);
-        AgregarParametro(command, "@Motivo", "Registro inicial");
-
-        command.ExecuteNonQuery();
-    }
+    
 
     private void RegistrarProductoConHistorico()
     {
@@ -254,8 +229,9 @@ public class CreateModel : PageModel
         {
             int productoId = RegistrarProducto(connection, transaction);
 
-            RegistrarHistoricoInicial(
+            _costoProductoService.RegistrarCostoInicial(
                 productoId,
+                Input.CostoAdquisicion,
                 connection,
                 transaction
             );
