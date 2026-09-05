@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
 
 namespace Libreria.Web.Pages.Productos;
 
@@ -60,7 +61,11 @@ public class CreateModel : PageModel
             return Page();
         }
 
-        return Page();
+        RegistrarProductoConHistorico();
+
+        TempData["MensajeExito"] = "Producto registrado correctamente.";
+
+        return RedirectToPage("Index");
     }
 
     private void CargarCategorias()
@@ -143,6 +148,125 @@ public class CreateModel : PageModel
         command.Parameters.Add(parametro);
 
         return Convert.ToInt32(command.ExecuteScalar()) > 0;
+    }
+
+    private int RegistrarProducto(
+        IDbConnection connection,
+        IDbTransaction transaction)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+
+        command.CommandText = @"
+        INSERT INTO Producto
+        (
+            Nombre,
+            DescripcionEspecifica,
+            FechaVencimiento,
+            Stock,
+            PrecioVenta,
+            CostoAdquisicionActual,
+            CategoriaId,
+            MarcaId,
+            Estado
+        )
+        VALUES
+        (
+            @Nombre,
+            @DescripcionEspecifica,
+            @FechaVencimiento,
+            @Stock,
+            @PrecioVenta,
+            @CostoAdquisicionActual,
+            @CategoriaId,
+            @MarcaId,
+            1
+        );
+
+        SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+        AgregarParametro(command, "@Nombre", Input.Nombre.Trim());
+        AgregarParametro(command, "@DescripcionEspecifica",
+            string.IsNullOrWhiteSpace(Input.DescripcionEspecifica)
+                ? DBNull.Value
+                : Input.DescripcionEspecifica.Trim());
+
+        AgregarParametro(command, "@FechaVencimiento",
+            Input.FechaVencimiento.HasValue
+                ? Input.FechaVencimiento.Value.Date
+                : DBNull.Value);
+
+        AgregarParametro(command, "@Stock", Input.Stock);
+        AgregarParametro(command, "@PrecioVenta", Input.PrecioVenta);
+        AgregarParametro(command, "@CostoAdquisicionActual", Input.CostoAdquisicion);
+        AgregarParametro(command, "@CategoriaId", Input.CategoriaId);
+        AgregarParametro(command, "@MarcaId", Input.MarcaId);
+
+        return Convert.ToInt32(command.ExecuteScalar());
+    }
+
+    private static void AgregarParametro(
+    System.Data.IDbCommand command,
+    string nombre,
+    object valor)
+    {
+        var parametro = command.CreateParameter();
+        parametro.ParameterName = nombre;
+        parametro.Value = valor;
+        command.Parameters.Add(parametro);
+    }
+
+    private void RegistrarHistoricoInicial(
+        int productoId,
+        IDbConnection connection,
+        IDbTransaction transaction)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+
+        command.CommandText = @"
+        INSERT INTO HistoricoCostoProducto
+        (
+            ProductoId,
+            CostoAdquisicion,
+            Motivo
+        )
+        VALUES
+        (
+            @ProductoId,
+            @CostoAdquisicion,
+            @Motivo
+        )";
+
+        AgregarParametro(command, "@ProductoId", productoId);
+        AgregarParametro(command, "@CostoAdquisicion", Input.CostoAdquisicion);
+        AgregarParametro(command, "@Motivo", "Registro inicial");
+
+        command.ExecuteNonQuery();
+    }
+
+    private void RegistrarProductoConHistorico()
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        using var transaction = connection.BeginTransaction();
+
+        try
+        {
+            int productoId = RegistrarProducto(connection, transaction);
+
+            RegistrarHistoricoInicial(
+                productoId,
+                connection,
+                transaction
+            );
+
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 
 }

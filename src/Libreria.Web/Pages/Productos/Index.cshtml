@@ -7,6 +7,11 @@
 
 <h1>Productos</h1>
 
+@if (TempData["MensajeExito"] is string mensaje)
+{
+    <p>@mensaje</p>
+}
+
 <form method="get">
     <label for="Busqueda">Buscar producto</label>
 
