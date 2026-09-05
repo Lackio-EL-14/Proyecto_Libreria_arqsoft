@@ -24,7 +24,7 @@
         <label asp-for="Input.CategoriaId">Categoría</label>
 
         <select asp-for="Input.CategoriaId">
-            <option value="">Seleccione una categoría</option>
+            <option value="0">Seleccione una categoría</option>
 
             @foreach (var categoria in Model.Categorias)
             {
@@ -41,7 +41,7 @@
         <label asp-for="Input.MarcaId">Marca</label>
 
         <select asp-for="Input.MarcaId">
-            <option value="">Seleccione una marca</option>
+            <option value="0">Seleccione una marca</option>
 
             @foreach (var marca in Model.Marcas)
             {
