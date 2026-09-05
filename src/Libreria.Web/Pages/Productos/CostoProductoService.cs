@@ -13,39 +13,26 @@ public class CostoProductoService
         _connectionFactory = connectionFactory;
     }
 
-    public bool CostoCambio(int productoId, decimal nuevoCosto)
-    {
-        using var connection = _connectionFactory.CreateConnection();
-        using var command = connection.CreateCommand();
-
-        command.CommandText = @"
-        SELECT CostoAdquisicionActual
-        FROM Producto
-        WHERE ProductoId = @ProductoId";
-
-        var parametro = command.CreateParameter();
-        parametro.ParameterName = "@ProductoId";
-        parametro.Value = productoId;
-        command.Parameters.Add(parametro);
-
-        var resultado = command.ExecuteScalar();
-
-        if (resultado is null || resultado == DBNull.Value)
-        {
-            throw new InvalidOperationException(
-                "No se encontró el producto solicitado.");
-        }
-
-        decimal costoVigente = Convert.ToDecimal(resultado);
-
-        return costoVigente != nuevoCosto;
-    }
 
     public bool ActualizarCostoSiCambio(
     int productoId,
     decimal nuevoCosto,
     string motivo)
     {
+        if (nuevoCosto < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(nuevoCosto),
+                "El costo de adquisición no puede ser negativo.");
+        }
+
+        if (string.IsNullOrWhiteSpace(motivo))
+        {
+            throw new ArgumentException(
+                "El motivo del cambio de costo es obligatorio.",
+                nameof(motivo));
+        }
+
         using var connection = _connectionFactory.CreateConnection();
         using var transaction = connection.BeginTransaction();
 
