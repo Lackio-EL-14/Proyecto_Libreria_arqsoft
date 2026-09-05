@@ -7,9 +7,60 @@
 
 <h1>Productos</h1>
 
+<form method="get">
+    <label for="Busqueda">Buscar producto</label>
+
+    <input type="text"
+           id="Busqueda"
+           name="Busqueda"
+           value="@Model.Busqueda"
+           placeholder="Nombre o descripción" />
+
+    <label for="CategoriaId">Categoría</label>
+
+    <select id="CategoriaId" name="CategoriaId">
+        <option value="">Todas</option>
+
+        @foreach (var categoria in Model.Categorias)
+        {
+            <option value="@categoria.CategoriaId"
+                    selected="@(Model.CategoriaId == categoria.CategoriaId)">
+                @categoria.Nombre
+            </option>
+        }
+    </select>
+
+    <label for="MarcaId">Marca</label>
+
+    <select id="MarcaId" name="MarcaId">
+        <option value="">Todas</option>
+
+        @foreach (var marca in Model.Marcas)
+        {
+            <option value="@marca.MarcaId"
+                    selected="@(Model.MarcaId == marca.MarcaId)">
+                @marca.Nombre
+            </option>
+        }
+    </select>
+
+    <button type="submit">Buscar</button>
+</form>
+
+
+
 @if (Model.Productos.Count == 0)
 {
-    <p>No hay productos registrados todavía.</p>
+    @if (!string.IsNullOrWhiteSpace(Model.Busqueda)
+        || Model.CategoriaId.HasValue
+        || Model.MarcaId.HasValue)
+    {
+        <p>No se encontraron productos que coincidan con los filtros seleccionados.</p>
+    }
+    else
+    {
+        <p>No hay productos registrados todavía.</p>
+    }
 }
 else
 {
