@@ -1,0 +1,48 @@
+@page "{id:int}"
+@model Libreria.Web.Pages.Productos.DetailsModel
+
+@{
+    ViewData["Title"] = "Detalle del producto";
+}
+
+<h1>Detalle del producto</h1>
+
+@if (TempData["MensajeExito"] is string mensaje)
+{
+    <p>@mensaje</p>
+}
+
+<dl>
+    <dt>Nombre</dt>
+    <dd>@Model.Producto.Nombre</dd>
+
+    <dt>Descripción</dt>
+    <dd>@(Model.Producto.DescripcionEspecifica ?? "Sin descripción")</dd>
+
+    <dt>Categoría</dt>
+    <dd>@Model.Producto.Categoria</dd>
+
+    <dt>Marca</dt>
+    <dd>@Model.Producto.Marca</dd>
+
+    <dt>Stock</dt>
+    <dd>@Model.Producto.Stock</dd>
+
+    <dt>Precio de venta</dt>
+    <dd>@Model.Producto.PrecioVenta.ToString("0.00")</dd>
+
+    <dt>Costo de adquisición</dt>
+    <dd>@Model.Producto.CostoAdquisicionActual.ToString("0.00")</dd>
+
+    <dt>Fecha de vencimiento</dt>
+    <dd>
+        @(Model.Producto.FechaVencimiento.HasValue
+            ? Model.Producto.FechaVencimiento.Value.ToString("dd/MM/yyyy")
+            : "Sin fecha de vencimiento")
+    </dd>
+</dl>
+
+<p>
+    <a asp-page="Edit" asp-route-id="@Model.Producto.ProductoId">Editar producto</a>
+    <a asp-page="Index">Volver al listado</a>
+</p>
