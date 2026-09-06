@@ -1,0 +1,70 @@
+@page
+@model Libreria.Web.Pages.Marcas.DeactivateModel
+
+@{
+    ViewData["Title"] = "Dar de baja marca";
+}
+
+<h1>Dar de baja marca</h1>
+
+<p>
+    Está a punto de dar de baja la siguiente marca:
+</p>
+
+<dl>
+    <dt>Nombre</dt>
+    <dd>@Model.Marca.Nombre</dd>
+
+    <dt>Descripción</dt>
+    <dd>@(Model.Marca.Descripcion ?? "—")</dd>
+
+    <dt>País de origen</dt>
+    <dd>@(Model.Marca.PaisOrigen ?? "—")</dd>
+</dl>
+
+@if (!Model.Marca.Estado)
+{
+    <p>
+        Esta marca ya se encuentra inactiva.
+    </p>
+
+    <a asp-page="./Index">
+        Volver al listado
+    </a>
+}
+else
+{
+    @if (Model.Marca.ProductosActivos > 0)
+    {
+        <p>
+            <strong>Advertencia:</strong>
+            esta marca tiene
+            @Model.Marca.ProductosActivos
+            producto(s) activo(s) asociado(s).
+        </p>
+
+        <p>
+            Los productos existentes no serán eliminados ni modificados.
+        </p>
+    }
+
+    <p>
+        ¿Está seguro de que desea dar de baja esta marca?
+    </p>
+
+    <form method="post">
+
+        <input
+            type="hidden"
+            asp-for="MarcaId" />
+
+        <button type="submit">
+            Confirmar baja
+        </button>
+
+        <a asp-page="./Index">
+            Cancelar
+        </a>
+
+    </form>
+}

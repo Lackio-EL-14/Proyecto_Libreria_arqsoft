@@ -1,12 +1,110 @@
 @page
 @model Libreria.Web.Pages.Marcas.IndexModel
+
 @{
     ViewData["Title"] = "Marcas";
 }
 
 <h1>Marcas</h1>
+
+<p>Consulta de marcas registradas en el sistema.</p>
 <p>
-    Módulo en construcción — aquí va el CRUD completo de marcas
-    (US-05 a US-08). Ver Pages/Categorias/Index.cshtml.cs como referencia
-    de cómo consultar con ADO.NET.
+    <a asp-page="./Create">
+        Registrar nueva marca
+    </a>
 </p>
+<form method="get">
+    <label for="nombre">Buscar por nombre:</label>
+
+    <input
+        type="text"
+        id="nombre"
+        name="nombre"
+        value="@Model.NombreBusqueda"
+        maxlength="100"
+        placeholder="Ej. Norma" />
+
+    <button type="submit">
+        Buscar
+    </button>
+
+    @if (!string.IsNullOrWhiteSpace(Model.NombreBusqueda))
+    {
+        <a asp-page="./Index">
+            Limpiar
+        </a>
+    }
+</form>
+
+@if (Model.Marcas.Count == 0)
+{
+    @if (string.IsNullOrWhiteSpace(Model.NombreBusqueda))
+    {
+        <p>No hay marcas registradas todavía.</p>
+    }
+    else
+    {
+        <p>
+            No se encontraron marcas que coincidan con
+            "<strong>@Model.NombreBusqueda</strong>".
+        </p>
+    }
+}
+else
+{
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>País de origen</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var marca in Model.Marcas)
+            {
+                <tr>
+                    <td>@marca.Nombre</td>
+
+                    <td>
+                        @(marca.Descripcion ?? "—")
+                    </td>
+
+                    <td>
+                        @(marca.PaisOrigen ?? "—")
+                    </td>
+
+                    <td>
+                        @if (marca.Estado)
+                        {
+                            <strong>Activo</strong>
+                        }
+                        else
+                        {
+                            <span>Inactivo</span>
+                        }
+                    </td>
+                    <td>
+                        <a asp-page="./Edit"
+                        asp-route-id="@marca.MarcaId">
+                            Editar
+                        </a>
+
+                        @if (marca.Estado)
+                        {
+                            <span> | </span>
+
+                            <a asp-page="./Deactivate"
+                            asp-route-id="@marca.MarcaId">
+                                Dar de baja
+                            </a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
