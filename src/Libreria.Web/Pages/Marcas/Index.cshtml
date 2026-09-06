@@ -59,6 +59,7 @@ else
                 <th>Descripción</th>
                 <th>País de origen</th>
                 <th>Estado</th>
+                <th>Acciones</th>
             </tr>
         </thead>
 
@@ -85,6 +86,12 @@ else
                         {
                             <span>Inactivo</span>
                         }
+                    </td>
+                    <td>
+                        <a asp-page="./Edit"
+                        asp-route-id="@marca.MarcaId">
+                            Editar
+                        </a>
                     </td>
                 </tr>
             }
