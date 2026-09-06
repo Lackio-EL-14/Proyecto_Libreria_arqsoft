@@ -9,6 +9,12 @@
 
 <p>Consulta de marcas registradas en el sistema.</p>
 
+<p>
+    <a asp-page="./Create">
+        Registrar nueva marca
+    </a>
+</p>
+
 <form method="get">
     <label for="nombre">Buscar por nombre:</label>
 
@@ -55,6 +61,7 @@ else
                 <th>Descripción</th>
                 <th>País de origen</th>
                 <th>Estado</th>
+                <th>Acciones</th>
             </tr>
         </thead>
 
@@ -80,6 +87,22 @@ else
                         else
                         {
                             <span>Inactivo</span>
+                        }
+                    </td>
+                    <td>
+                        <a asp-page="./Edit"
+                        asp-route-id="@marca.MarcaId">
+                            Editar
+                        </a>
+
+                        @if (marca.Estado)
+                        {
+                            <span> | </span>
+
+                            <a asp-page="./Deactivate"
+                            asp-route-id="@marca.MarcaId">
+                                Dar de baja
+                            </a>
                         }
                     </td>
                 </tr>
