@@ -89,6 +89,64 @@ public class ProductoRepository : IProductoRepository
         return productos;
     }
 
+    public ProductoDetalle? ObtenerProductoPorId(int productoId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        using var command = connection.CreateCommand();
+
+        command.CommandText = @"
+            SELECT
+                p.ProductoId,
+                p.Nombre,
+                p.DescripcionEspecifica,
+                p.FechaVencimiento,
+                p.Stock,
+                p.PrecioVenta,
+                p.CostoAdquisicionActual,
+                p.CategoriaId,
+                c.Nombre AS Categoria,
+                p.MarcaId,
+                m.Nombre AS Marca
+            FROM Producto p
+            INNER JOIN Categoria c
+                ON p.CategoriaId = c.CategoriaId
+            INNER JOIN Marca m
+                ON p.MarcaId = m.MarcaId
+            WHERE p.ProductoId = @ProductoId
+              AND p.Estado = 1";
+
+        AgregarParametro(command, "@ProductoId", productoId);
+
+        if (connection.State != ConnectionState.Open)
+        {
+            connection.Open();
+        }
+
+        using var reader = command.ExecuteReader();
+
+        if (!reader.Read())
+        {
+            return null;
+        }
+
+        return new ProductoDetalle(
+            Convert.ToInt32(reader["ProductoId"]),
+            Convert.ToString(reader["Nombre"]) ?? string.Empty,
+            reader["DescripcionEspecifica"] == DBNull.Value
+                ? null
+                : Convert.ToString(reader["DescripcionEspecifica"]),
+            reader["FechaVencimiento"] == DBNull.Value
+                ? null
+                : Convert.ToDateTime(reader["FechaVencimiento"]),
+            Convert.ToInt32(reader["Stock"]),
+            Convert.ToDecimal(reader["PrecioVenta"]),
+            Convert.ToDecimal(reader["CostoAdquisicionActual"]),
+            Convert.ToInt32(reader["CategoriaId"]),
+            Convert.ToString(reader["Categoria"]) ?? string.Empty,
+            Convert.ToInt32(reader["MarcaId"]),
+            Convert.ToString(reader["Marca"]) ?? string.Empty);
+    }
+
     public List<CategoriaFiltroItem> ObtenerCategoriasActivas()
     {
         var categorias = new List<CategoriaFiltroItem>();
@@ -262,6 +320,52 @@ public class ProductoRepository : IProductoRepository
         return resultado != null
             && resultado != DBNull.Value
             && Convert.ToInt32(resultado) > 0;
+    }
+
+
+    public bool ActualizarProducto(int productoId, ProductoInput input)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        using var command = connection.CreateCommand();
+
+        command.CommandText = @"
+        UPDATE Producto
+        SET Nombre = @Nombre,
+            DescripcionEspecifica = @DescripcionEspecifica,
+            FechaVencimiento = @FechaVencimiento,
+            Stock = @Stock,
+            PrecioVenta = @PrecioVenta,
+            CategoriaId = @CategoriaId,
+            MarcaId = @MarcaId,
+            FechaModificacion = SYSDATETIME()
+        WHERE ProductoId = @ProductoId
+          AND Estado = 1";
+
+        AgregarParametro(command, "@ProductoId", productoId);
+        AgregarParametro(command, "@Nombre", input.Nombre);
+        AgregarParametro(
+            command,
+            "@DescripcionEspecifica",
+            string.IsNullOrWhiteSpace(input.DescripcionEspecifica)
+                ? DBNull.Value
+                : input.DescripcionEspecifica);
+        AgregarParametro(
+            command,
+            "@FechaVencimiento",
+            input.FechaVencimiento.HasValue
+                ? input.FechaVencimiento.Value
+                : DBNull.Value);
+        AgregarParametro(command, "@Stock", input.Stock);
+        AgregarParametro(command, "@PrecioVenta", input.PrecioVenta);
+        AgregarParametro(command, "@CategoriaId", input.CategoriaId);
+        AgregarParametro(command, "@MarcaId", input.MarcaId);
+
+        if (connection.State != ConnectionState.Open)
+        {
+            connection.Open();
+        }
+
+        return command.ExecuteNonQuery() == 1;
     }
 
 

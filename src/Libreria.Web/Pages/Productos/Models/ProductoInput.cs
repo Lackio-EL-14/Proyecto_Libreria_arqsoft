@@ -1,12 +1,15 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Libreria.Web.Pages.Productos.Models;
 
 public class ProductoInput
 {
     [Required(ErrorMessage = "El nombre del producto es obligatorio.")]
+    [MaxLength(150, ErrorMessage = "El nombre no puede exceder los 150 caracteres.")]
     public string Nombre { get; set; } = string.Empty;
 
+    [MaxLength(500, ErrorMessage = "La descripción no puede exceder los 500 caracteres.")]
     public string? DescripcionEspecifica { get; set; }
 
     public DateTime? FechaVencimiento { get; set; }
@@ -15,17 +18,17 @@ public class ProductoInput
     public int Stock { get; set; }
 
     [Range(
-        typeof(decimal),
-        "0",
-        "99999999.99",
+        0,
+        99999999.99,
         ErrorMessage = "El precio de venta no puede ser negativo.")]
+    [ModelBinder(BinderType = typeof(DecimalInvariantModelBinder))]
     public decimal PrecioVenta { get; set; }
 
     [Range(
-        typeof(decimal),
-        "0",
-        "99999999.99",
+        0,
+        99999999.99,
         ErrorMessage = "El costo de adquisición no puede ser negativo.")]
+    [ModelBinder(BinderType = typeof(DecimalInvariantModelBinder))]
     public decimal CostoAdquisicion { get; set; }
 
     [Range(
