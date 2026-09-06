@@ -1,11 +1,16 @@
 using Libreria.Web.Data;
 using Libreria.Web.Pages.Categorias.Repositories;
+using Libreria.Web.Pages.Productos.Services;
+using Libreria.Web.Pages.Productos.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages();
 
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<CostoProductoService>();
+builder.Services.AddScoped<ProductoService>();
 
 builder.Services.AddSingleton<IDbConnectionFactory>(sp =>
 {

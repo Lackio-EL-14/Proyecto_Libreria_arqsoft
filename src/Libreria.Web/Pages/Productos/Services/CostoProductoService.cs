@@ -1,7 +1,7 @@
 ﻿using Libreria.Web.Data;
 using System.Data;
 
-namespace Libreria.Web.Pages.Productos;
+namespace Libreria.Web.Pages.Productos.Services;
 
 public class CostoProductoService
 {
