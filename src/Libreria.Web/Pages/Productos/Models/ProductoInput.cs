@@ -5,8 +5,10 @@ namespace Libreria.Web.Pages.Productos.Models;
 public class ProductoInput
 {
     [Required(ErrorMessage = "El nombre del producto es obligatorio.")]
+    [MaxLength(150, ErrorMessage = "El nombre no puede exceder los 150 caracteres.")]
     public string Nombre { get; set; } = string.Empty;
 
+    [MaxLength(500, ErrorMessage = "La descripción no puede exceder los 500 caracteres.")]
     public string? DescripcionEspecifica { get; set; }
 
     public DateTime? FechaVencimiento { get; set; }

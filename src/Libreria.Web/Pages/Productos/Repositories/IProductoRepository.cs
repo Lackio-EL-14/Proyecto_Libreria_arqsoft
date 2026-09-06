@@ -10,6 +10,8 @@ public interface IProductoRepository
         int? categoriaId,
         int? marcaId);
 
+    ProductoDetalle? ObtenerProductoPorId(int productoId);
+
     List<CategoriaFiltroItem> ObtenerCategoriasActivas();
 
     List<MarcaFiltroItem> ObtenerMarcasActivas();
@@ -21,6 +23,8 @@ public interface IProductoRepository
     bool ExisteCategoriaActiva(int categoriaId);
 
     bool ExisteMarcaActiva(int marcaId);
+
+    bool ActualizarProducto(int productoId, ProductoInput input);
 
     int CrearProducto(
     ProductoInput input,
