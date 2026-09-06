@@ -1,0 +1,73 @@
+@page
+@model Libreria.Web.Pages.Marcas.CreateModel
+
+@{
+    ViewData["Title"] = "Registrar marca";
+}
+
+<h1>Registrar marca</h1>
+
+<p>Ingrese los datos de la nueva marca.</p>
+
+<form method="post">
+
+    <div asp-validation-summary="ModelOnly"></div>
+
+    <div>
+        <label asp-for="Input.Nombre">Nombre:</label>
+        <br />
+
+        <input
+            asp-for="Input.Nombre"
+            maxlength="100"
+            placeholder="Ej. Faber-Castell" />
+
+        <br />
+
+        <span asp-validation-for="Input.Nombre"></span>
+    </div>
+
+    <br />
+
+    <div>
+        <label asp-for="Input.Descripcion">Descripción:</label>
+        <br />
+
+        <textarea
+            asp-for="Input.Descripcion"
+            maxlength="255"
+            rows="4"
+            placeholder="Descripción de la marca"></textarea>
+
+        <br />
+
+        <span asp-validation-for="Input.Descripcion"></span>
+    </div>
+
+    <br />
+
+    <div>
+        <label asp-for="Input.PaisOrigen">País de origen:</label>
+        <br />
+
+        <input
+            asp-for="Input.PaisOrigen"
+            maxlength="100"
+            placeholder="Ej. Alemania" />
+
+        <br />
+
+        <span asp-validation-for="Input.PaisOrigen"></span>
+    </div>
+
+    <br />
+
+    <button type="submit">
+        Guardar
+    </button>
+
+    <a asp-page="./Index">
+        Cancelar
+    </a>
+
+</form>
