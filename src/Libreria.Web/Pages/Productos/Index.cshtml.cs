@@ -1,17 +1,41 @@
+using Libreria.Web.Pages.Productos.Models;
+using Libreria.Web.Pages.Productos.Repositories;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Libreria.Web.Pages.Productos;
 
 public class IndexModel : PageModel
 {
+    private readonly IProductoRepository _repository;
+
+    public IndexModel(IProductoRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public List<ProductoListItem> Productos { get; private set; } = new();
+    public List<CategoriaFiltroItem> Categorias { get; private set; } = new();
+    public List<MarcaFiltroItem> Marcas { get; private set; } = new();
+
+    [BindProperty(SupportsGet = true)]
+    public string? Busqueda { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public int? CategoriaId { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public int? MarcaId { get; set; }
+
     public void OnGet()
     {
-        // TODO (US-09 a US-12): seguir el patrón de
-        // Pages/Categorias/Index.cshtml.cs.
-        // IMPORTANTE: el Alta (US-09) y la Edición (US-11) de Producto
-        // deben invocar el registro de histórico de costo cuando cambie
-        // el costo de adquisición. Ver db/schema.sql, tabla
-        // HistoricoCostoProducto, y coordinar la función/servicio con
-        // el resto del equipo ANTES de programar (evita bloqueos).
+        Categorias = _repository.ObtenerCategoriasActivas();
+        Marcas = _repository.ObtenerMarcasActivas();
+
+        Productos = _repository.ObtenerProductos(
+            Busqueda,
+            CategoriaId,
+            MarcaId
+        );
     }
 }
