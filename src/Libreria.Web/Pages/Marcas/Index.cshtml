@@ -92,6 +92,16 @@ else
                         asp-route-id="@marca.MarcaId">
                             Editar
                         </a>
+
+                        @if (marca.Estado)
+                        {
+                            <span> | </span>
+
+                            <a asp-page="./Deactivate"
+                            asp-route-id="@marca.MarcaId">
+                                Dar de baja
+                            </a>
+                        }
                     </td>
                 </tr>
             }
