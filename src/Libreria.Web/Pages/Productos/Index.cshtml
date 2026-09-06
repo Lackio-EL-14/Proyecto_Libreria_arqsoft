@@ -82,6 +82,7 @@ else
                 <th>Stock</th>
                 <th>Precio venta</th>
                 <th>Costo adquisición</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -94,6 +95,10 @@ else
                     <td>@producto.Stock</td>
                     <td>@producto.PrecioVenta.ToString("0.00")</td>
                     <td>@producto.CostoAdquisicionActual.ToString("0.00")</td>
+                    <td>
+                        <a asp-page="Details" asp-route-id="@producto.ProductoId">Ver</a>
+                        <a asp-page="Edit" asp-route-id="@producto.ProductoId">Editar</a>
+                    </td>
                 </tr>
             }
         </tbody>
