@@ -4,8 +4,103 @@
     ViewData["Title"] = "Histórico de costos";
 }
 
-<h1>Histórico de costos de adquisición</h1>
-<p>
-    Módulo en construcción — vista de solo lectura de la variación del
-    costo de adquisición por producto (US-14).
-</p>
+<h1>Histórico de costos</h1>
+
+@if (!string.IsNullOrWhiteSpace(Model.MensajeError))
+{
+    <div class="alert alert-danger" role="alert">
+        @Model.MensajeError
+    </div>
+}
+else
+{
+    <div class="mb-3">
+        <h4>@Model.NombreProducto</h4>
+    </div>
+
+    @if (Model.Historial.Count == 0)
+    {
+        <div class="alert alert-info" role="alert">
+            Este producto no tiene registros históricos de costo.
+        </div>
+    }
+    else
+    {
+        <div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Costo anterior</th>
+                        <th>Costo nuevo</th>
+                        <th>Variación</th>
+                        <th>Motivo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Historial)
+                    {
+                        <tr>
+                            <td>
+                                @item.FechaVigencia.ToString("dd/MM/yyyy HH:mm")
+                            </td>
+
+                            <td>
+                                @if (item.CostoAnterior.HasValue)
+                                {
+                                    @item.CostoAnterior.Value.ToString("0.00")
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+
+                            <td>
+                                @item.CostoNuevo.ToString("0.00")
+                            </td>
+
+                            <td>
+                                @if (item.VariacionAbsoluta.HasValue)
+                                {
+                                    var variacion = item.VariacionAbsoluta.Value;
+
+                                    if (variacion > 0)
+                                    {
+                                        <span>+@variacion.ToString("0.00")</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@variacion.ToString("0.00")</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(item.Motivo))
+                                {
+                                    <span>—</span>
+                                }
+                                else
+                                {
+                                    @item.Motivo
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <p>
+            <a asp-page="/Productos/Details"
+                asp-route-id="@Model.ProductoId">
+                Volver al producto
+            </a>
+        </p>
+
+    }
+}
