@@ -18,9 +18,9 @@ public class ProductoInput
     public int Stock { get; set; }
 
     [Range(
-        0,
-        99999999.99,
-        ErrorMessage = "El precio de venta no puede ser negativo.")]
+      0.01,
+      99999999.99,
+      ErrorMessage = "El precio de venta debe ser mayor a 0.")]
     [ModelBinder(BinderType = typeof(DecimalInvariantModelBinder))]
     public decimal PrecioVenta { get; set; }
 

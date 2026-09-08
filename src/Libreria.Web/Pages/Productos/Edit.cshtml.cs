@@ -10,13 +10,16 @@ public class EditModel : PageModel
 {
     private readonly IProductoRepository _repository;
     private readonly CostoProductoService _costoProductoService;
+    private readonly ProductoValidator _validator;
 
     public EditModel(
-        IProductoRepository repository,
-        CostoProductoService costoProductoService)
+     IProductoRepository repository,
+     CostoProductoService costoProductoService,
+     ProductoValidator validator)
     {
         _repository = repository;
         _costoProductoService = costoProductoService;
+        _validator = validator;
     }
 
     [BindProperty]
@@ -77,8 +80,7 @@ public class EditModel : PageModel
 
     private void ValidarInput()
     {
-        if (Input.FechaVencimiento.HasValue &&
-            Input.FechaVencimiento.Value.Date < DateTime.Today)
+        if (!_validator.EsFechaVencimientoValida(Input.FechaVencimiento))
         {
             ModelState.AddModelError(
                 "Input.FechaVencimiento",
@@ -110,9 +112,8 @@ public class EditModel : PageModel
 
     private void NormalizarInput()
     {
-        Input.Nombre = Input.Nombre?.Trim() ?? string.Empty;
-        Input.DescripcionEspecifica = string.IsNullOrWhiteSpace(Input.DescripcionEspecifica)
-            ? null
-            : Input.DescripcionEspecifica.Trim();
+        Input.Nombre = _validator.NormalizarTexto(Input.Nombre ?? string.Empty);
+        Input.DescripcionEspecifica =
+            _validator.NormalizarTextoOpcional(Input.DescripcionEspecifica);
     }
 }
