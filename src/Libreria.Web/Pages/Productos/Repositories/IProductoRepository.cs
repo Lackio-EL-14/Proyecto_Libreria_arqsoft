@@ -26,6 +26,8 @@ public interface IProductoRepository
 
     bool ActualizarProducto(int productoId, ProductoInput input);
 
+    bool DarDeBaja(int productoId);
+
     int CrearProducto(
     ProductoInput input,
     IDbConnection connection,

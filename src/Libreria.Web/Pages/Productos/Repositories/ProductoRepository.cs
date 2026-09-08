@@ -368,6 +368,28 @@ public class ProductoRepository : IProductoRepository
         return command.ExecuteNonQuery() == 1;
     }
 
+    public bool DarDeBaja(int productoId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        using var command = connection.CreateCommand();
+
+        command.CommandText = @"
+        UPDATE Producto
+        SET Estado = 0,
+            FechaModificacion = SYSDATETIME()
+        WHERE ProductoId = @ProductoId
+          AND Estado = 1";
+
+        AgregarParametro(command, "@ProductoId", productoId);
+
+        if (connection.State != ConnectionState.Open)
+        {
+            connection.Open();
+        }
+
+        return command.ExecuteNonQuery() == 1;
+    }
+
 
     public int CrearProducto(
     ProductoInput input,
