@@ -11,6 +11,8 @@ builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<CostoProductoService>();
 builder.Services.AddScoped<ProductoService>();
+builder.Services.AddScoped<ProductoValidator>();
+
 
 builder.Services.AddSingleton<IDbConnectionFactory>(sp =>
 {

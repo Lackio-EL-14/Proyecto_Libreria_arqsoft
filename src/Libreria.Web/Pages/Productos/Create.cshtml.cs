@@ -10,13 +10,16 @@ public class CreateModel : PageModel
 {
     private readonly IProductoRepository _repository;
     private readonly ProductoService _productoService;
+    private readonly ProductoValidator _validator;
 
     public CreateModel(
     IProductoRepository repository,
-    ProductoService productoService)
+    ProductoService productoService,
+    ProductoValidator validator)
     {
         _repository = repository;
         _productoService = productoService;
+        _validator = validator;
     }
 
     [BindProperty]
@@ -33,8 +36,11 @@ public class CreateModel : PageModel
 
     public IActionResult OnPost()
     {
-        if (Input.FechaVencimiento.HasValue &&
-            Input.FechaVencimiento.Value.Date < DateTime.Today)
+        Input.Nombre = _validator.NormalizarTexto(Input.Nombre ?? string.Empty);
+        Input.DescripcionEspecifica =
+            _validator.NormalizarTextoOpcional(Input.DescripcionEspecifica);
+
+        if (!_validator.EsFechaVencimientoValida(Input.FechaVencimiento))
         {
             ModelState.AddModelError(
                 "Input.FechaVencimiento",
