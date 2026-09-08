@@ -1,0 +1,50 @@
+@page "{id:int}"
+@model Libreria.Web.Pages.Productos.DeactivateModel
+
+@{
+    ViewData["Title"] = "Dar de baja producto";
+}
+
+<h1>Dar de baja producto</h1>
+
+<p>Está a punto de dar de baja el siguiente producto:</p>
+
+<dl>
+    <dt>Nombre</dt>
+    <dd>@Model.Producto.Nombre</dd>
+
+    <dt>Categoría</dt>
+    <dd>@Model.Producto.Categoria</dd>
+
+    <dt>Marca</dt>
+    <dd>@Model.Producto.Marca</dd>
+
+    <dt>Stock disponible</dt>
+    <dd>@Model.Producto.Stock</dd>
+
+    <dt>Precio de venta</dt>
+    <dd>@Model.Producto.PrecioVenta.ToString("0.00")</dd>
+</dl>
+
+@if (Model.Producto.Stock > 0)
+{
+    <p>
+        <strong>Advertencia:</strong>
+        este producto todavía tiene @Model.Producto.Stock unidad(es) disponibles.
+    </p>
+}
+
+<p>
+    El producto dejará de estar disponible, pero se conservarán sus datos
+    y su historial de costos.
+</p>
+
+<p>¿Está seguro de que desea dar de baja este producto?</p>
+
+<form method="post">
+    <input type="hidden" asp-for="ProductoId" />
+
+    <button type="submit">Confirmar baja</button>
+
+    <a asp-page="Details" asp-route-id="@Model.ProductoId">Cancelar</a>
+</form>
