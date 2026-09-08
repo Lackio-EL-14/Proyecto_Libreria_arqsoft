@@ -1,224 +1,222 @@
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Threading.Tasks;
-using Microsoft.Data.SqlClient;
+using System.Data.Common;
 using Libreria.Web.Data;
 using Libreria.Web.Pages.Categorias.Models;
 
-namespace Libreria.Web.Pages.Categorias.Repositories
+namespace Libreria.Web.Pages.Categorias.Repositories;
+
+public class CategoriaRepository :
+    IListadoCategoriasRepository,
+    IRegistroCategoriaRepository,
+    IEdicionCategoriaRepository,
+    IBajaCategoriaRepository,
+    IReactivacionCategoriaRepository,
+    IValidadorCategoriaRepository
 {
-    public class CategoriaRepository : ICategoriaRepository
+    private readonly IDbConnectionFactory _connectionFactory;
+
+    public CategoriaRepository(IDbConnectionFactory connectionFactory)
     {
-        private readonly IDbConnectionFactory _connectionFactory;
+        _connectionFactory = connectionFactory;
+    }
 
-        public CategoriaRepository(IDbConnectionFactory connectionFactory)
+    public async Task<IReadOnlyList<Categoria>> ObtenerActivasAsync(string? busqueda)
+    {
+        var categorias = new List<Categoria>();
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT CategoriaId, Codigo, Nombre, Descripcion, Ubicacion,
+                   Estado, FechaCreacion, FechaModificacion
+            FROM Categoria
+            WHERE Estado = 1
+              AND (@Busqueda IS NULL
+                   OR Codigo LIKE '%' + @Busqueda + '%'
+                   OR Nombre LIKE '%' + @Busqueda + '%'
+                   OR Ubicacion LIKE '%' + @Busqueda + '%')
+            ORDER BY Nombre";
+        AgregarParametro(command, "@Busqueda",
+            string.IsNullOrWhiteSpace(busqueda) ? DBNull.Value : busqueda.Trim());
+
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
         {
-            _connectionFactory = connectionFactory;
+            categorias.Add(MapearCategoria(reader));
         }
 
-        public async Task<bool> ExisteNombreAsync(string nombre, int? excluirId = null)
+        return categorias;
+    }
+
+    public async Task CrearAsync(Categoria categoria)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+            INSERT INTO Categoria
+                (Codigo, Nombre, Descripcion, Ubicacion, Estado,
+                 FechaCreacion, FechaModificacion)
+            VALUES
+                (@Codigo, @Nombre, @Descripcion, @Ubicacion, 1,
+                 SYSDATETIME(), SYSDATETIME())";
+        AgregarDatosCategoria(command, categoria);
+        await command.ExecuteNonQueryAsync();
+    }
+
+    public Task<Categoria?> ObtenerActivaPorIdAsync(int categoriaId)
+    {
+        return ObtenerPorEstadoAsync(categoriaId, true);
+    }
+
+    public Task<Categoria?> ObtenerInactivaPorIdAsync(int categoriaId)
+    {
+        return ObtenerPorEstadoAsync(categoriaId, false);
+    }
+
+    public async Task<bool> ActualizarAsync(Categoria categoria)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+            UPDATE Categoria
+            SET Codigo = @Codigo,
+                Nombre = @Nombre,
+                Descripcion = @Descripcion,
+                Ubicacion = @Ubicacion,
+                FechaModificacion = SYSDATETIME()
+            WHERE CategoriaId = @CategoriaId
+              AND Estado = 1";
+        AgregarDatosCategoria(command, categoria);
+        AgregarParametro(command, "@CategoriaId", categoria.CategoriaId);
+        return await command.ExecuteNonQueryAsync() == 1;
+    }
+
+    public async Task<bool> TieneProductosActivosAsync(int categoriaId)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT COUNT(1)
+            FROM Producto
+            WHERE CategoriaId = @CategoriaId
+              AND Estado = 1";
+        AgregarParametro(command, "@CategoriaId", categoriaId);
+        return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
+    }
+
+    public Task<bool> DarDeBajaAsync(int categoriaId)
+    {
+        return CambiarEstadoAsync(categoriaId, false, true);
+    }
+
+    public Task<bool> ReactivarAsync(int categoriaId)
+    {
+        return CambiarEstadoAsync(categoriaId, true, false);
+    }
+
+    public Task<bool> ExisteCodigoAsync(string codigo, int? excluirId)
+    {
+        return ExisteValorAsync("Codigo", codigo, excluirId);
+    }
+
+    public Task<bool> ExisteNombreAsync(string nombre, int? excluirId)
+    {
+        return ExisteValorAsync("Nombre", nombre, excluirId);
+    }
+
+    private async Task<Categoria?> ObtenerPorEstadoAsync(int categoriaId, bool estado)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT CategoriaId, Codigo, Nombre, Descripcion, Ubicacion,
+                   Estado, FechaCreacion, FechaModificacion
+            FROM Categoria
+            WHERE CategoriaId = @CategoriaId
+              AND Estado = @Estado";
+        AgregarParametro(command, "@CategoriaId", categoriaId);
+        AgregarParametro(command, "@Estado", estado);
+        await using var reader = await command.ExecuteReaderAsync();
+        return await reader.ReadAsync() ? MapearCategoria(reader) : null;
+    }
+
+    private async Task<bool> CambiarEstadoAsync(
+        int categoriaId,
+        bool nuevoEstado,
+        bool estadoEsperado)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+            UPDATE Categoria
+            SET Estado = @NuevoEstado,
+                FechaModificacion = SYSDATETIME()
+            WHERE CategoriaId = @CategoriaId
+              AND Estado = @EstadoEsperado";
+        AgregarParametro(command, "@CategoriaId", categoriaId);
+        AgregarParametro(command, "@NuevoEstado", nuevoEstado);
+        AgregarParametro(command, "@EstadoEsperado", estadoEsperado);
+        return await command.ExecuteNonQueryAsync() == 1;
+    }
+
+    private async Task<bool> ExisteValorAsync(
+        string columna,
+        string valor,
+        int? excluirId)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = $@"
+            SELECT COUNT(1)
+            FROM Categoria
+            WHERE {columna} = @Valor
+              AND (@ExcluirId IS NULL OR CategoriaId <> @ExcluirId)";
+        AgregarParametro(command, "@Valor", valor);
+        AgregarParametro(command, "@ExcluirId", excluirId ?? (object)DBNull.Value);
+        return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
+    }
+
+    private async Task<DbConnection> CrearConexionAbiertaAsync()
+    {
+        var connection = _connectionFactory.CreateConnection();
+        if (connection.State != ConnectionState.Open)
         {
-            using var dbConnection = _connectionFactory.CreateConnection();
-            if (dbConnection is not SqlConnection connection) throw new InvalidOperationException("La conexión provista no es SqlConnection.");
-
-            using var command = connection.CreateCommand();
-            
-            var query = "SELECT COUNT(1) FROM Categoria WHERE Nombre = @Nombre";
-            if (excluirId.HasValue)
-            {
-                query += " AND CategoriaId <> @ExcluirId";
-            }
-
-            command.CommandText = query;
-            command.Parameters.AddWithValue("@Nombre", nombre);
-            
-            if (excluirId.HasValue)
-            {
-                command.Parameters.AddWithValue("@ExcluirId", excluirId.Value);
-            }
-
-            if (connection.State != ConnectionState.Open) await connection.OpenAsync();
-            
-            var count = (int)await command.ExecuteScalarAsync();
-            return count > 0;
+            await connection.OpenAsync();
         }
+        return connection;
+    }
 
-        public async Task CrearAsync(Categoria categoria)
+    private static Categoria MapearCategoria(DbDataReader reader)
+    {
+        return new Categoria
         {
-            using var dbConnection = _connectionFactory.CreateConnection();
-            
-            if (dbConnection is not SqlConnection connection)
-            {
-                throw new InvalidOperationException("La conexión provista no es SqlConnection.");
-            }
+            CategoriaId = reader.GetInt32(reader.GetOrdinal("CategoriaId")),
+            Codigo = reader.GetString(reader.GetOrdinal("Codigo")),
+            Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
+            Descripcion = reader.IsDBNull(reader.GetOrdinal("Descripcion"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("Descripcion")),
+            Ubicacion = reader.GetString(reader.GetOrdinal("Ubicacion")),
+            Estado = reader.GetBoolean(reader.GetOrdinal("Estado")),
+            FechaCreacion = reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
+            FechaModificacion = reader.IsDBNull(reader.GetOrdinal("FechaModificacion"))
+                ? null
+                : reader.GetDateTime(reader.GetOrdinal("FechaModificacion"))
+        };
+    }
 
-            using var command = connection.CreateCommand();
-            
-            command.CommandText = @"
-                INSERT INTO Categoria (Nombre, Descripcion, Orden, Estado, FechaCreacion, FechaModificacion) 
-                VALUES (@Nombre, @Descripcion, @Orden, 1, GETDATE(), GETDATE())";
+    private static void AgregarDatosCategoria(DbCommand command, Categoria categoria)
+    {
+        AgregarParametro(command, "@Codigo", categoria.Codigo);
+        AgregarParametro(command, "@Nombre", categoria.Nombre);
+        AgregarParametro(command, "@Descripcion", categoria.Descripcion ?? (object)DBNull.Value);
+        AgregarParametro(command, "@Ubicacion", categoria.Ubicacion);
+    }
 
-            command.Parameters.AddWithValue("@Nombre", categoria.Nombre);
-            command.Parameters.AddWithValue("@Descripcion", string.IsNullOrEmpty(categoria.Descripcion) ? DBNull.Value : categoria.Descripcion);
-            command.Parameters.AddWithValue("@Orden", categoria.Orden);
-
-            if (connection.State != ConnectionState.Open)
-            {
-                await connection.OpenAsync();
-            }
-            
-            await command.ExecuteNonQueryAsync();
-        }
-        
-        public async Task<IEnumerable<Categoria>> ObtenerTodasAsync(string? busqueda = null)
-        {
-            var categorias = new List<Categoria>();
-            using var dbConnection = _connectionFactory.CreateConnection();
-            
-            if (dbConnection is not SqlConnection connection)
-            {
-                throw new InvalidOperationException("La conexión provista no es SqlConnection.");
-            }
-
-            using var command = connection.CreateCommand();
-            
-            var query = "SELECT CategoriaId, Nombre, Descripcion, Orden, Estado, FechaCreacion, FechaModificacion FROM Categoria";
-            
-            if (!string.IsNullOrWhiteSpace(busqueda))
-            {
-                query += " WHERE Nombre LIKE @Busqueda";
-                command.Parameters.AddWithValue("@Busqueda", $"%{busqueda}%");
-            }
-
-            query += " ORDER BY Nombre ASC";
-            command.CommandText = query;
-
-            if (connection.State != ConnectionState.Open)
-            {
-                await connection.OpenAsync();
-            }
-            
-            using var reader = await command.ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                categorias.Add(new Categoria
-                {
-                    CategoriaId = reader.GetInt32(reader.GetOrdinal("CategoriaId")),
-                    Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
-                    Descripcion = reader.IsDBNull(reader.GetOrdinal("Descripcion")) ? null : reader.GetString(reader.GetOrdinal("Descripcion")),
-                    Orden = reader.GetInt32(reader.GetOrdinal("Orden")),
-                    Estado = reader.GetBoolean(reader.GetOrdinal("Estado")),
-                    FechaCreacion = reader.IsDBNull(reader.GetOrdinal("FechaCreacion")) 
-                        ? DateTime.MinValue 
-                        : reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
-                    FechaModificacion = reader.IsDBNull(reader.GetOrdinal("FechaModificacion")) 
-                        ? DateTime.MinValue 
-                        : reader.GetDateTime(reader.GetOrdinal("FechaModificacion"))
-                });
-            }
-
-            return categorias;
-        }
-
-        public async Task<Categoria?> ObtenerPorIdAsync(int id)
-        {
-            using var dbConnection = _connectionFactory.CreateConnection();
-            if (dbConnection is not SqlConnection connection) throw new InvalidOperationException("La conexión provista no es SqlConnection.");
-
-            using var command = connection.CreateCommand();
-            command.CommandText = "SELECT CategoriaId, Nombre, Descripcion, Orden, Estado FROM Categoria WHERE CategoriaId = @Id";
-            command.Parameters.AddWithValue("@Id", id);
-
-            if (connection.State != ConnectionState.Open) await connection.OpenAsync();
-            
-            using var reader = await command.ExecuteReaderAsync();
-
-            if (await reader.ReadAsync())
-            {
-                return new Categoria
-                {
-                    CategoriaId = reader.GetInt32(reader.GetOrdinal("CategoriaId")),
-                    Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
-                    Descripcion = reader.IsDBNull(reader.GetOrdinal("Descripcion")) ? null : reader.GetString(reader.GetOrdinal("Descripcion")),
-                    Orden = reader.GetInt32(reader.GetOrdinal("Orden")),
-                    Estado = reader.GetBoolean(reader.GetOrdinal("Estado"))
-                };
-            }
-            return null;
-        }
-
-        public async Task ActualizarAsync(Categoria categoria)
-        {
-            using var dbConnection = _connectionFactory.CreateConnection();
-            if (dbConnection is not SqlConnection connection) throw new InvalidOperationException("La conexión provista no es SqlConnection.");
-
-            using var command = connection.CreateCommand();
-            
-            command.CommandText = @"
-                UPDATE Categoria 
-                SET Nombre = @Nombre, 
-                    Descripcion = @Descripcion, 
-                    Orden = @Orden, 
-                    FechaModificacion = GETDATE()
-                WHERE CategoriaId = @Id";
-
-            command.Parameters.AddWithValue("@Id", categoria.CategoriaId);
-            command.Parameters.AddWithValue("@Nombre", categoria.Nombre);
-            command.Parameters.AddWithValue("@Descripcion", string.IsNullOrEmpty(categoria.Descripcion) ? DBNull.Value : categoria.Descripcion);
-            command.Parameters.AddWithValue("@Orden", categoria.Orden);
-
-            if (connection.State != ConnectionState.Open) await connection.OpenAsync();
-            
-            await command.ExecuteNonQueryAsync();
-        }
-
-        public async Task<bool> TieneProductosActivosAsync(int categoriaId)
-        {
-            using var dbConnection = _connectionFactory.CreateConnection();
-            if (dbConnection is not SqlConnection connection) throw new InvalidOperationException("La conexión provista no es SqlConnection.");
-
-            using var command = connection.CreateCommand();
-            
-            command.CommandText = "SELECT COUNT(1) FROM Producto WHERE CategoriaId = @CategoriaId AND Estado = 1";
-            command.Parameters.AddWithValue("@CategoriaId", categoriaId);
-
-            if (connection.State != ConnectionState.Open) await connection.OpenAsync();
-            
-            var result = await command.ExecuteScalarAsync();
-            return result != DBNull.Value && Convert.ToInt32(result) > 0;
-        }
-
-        public async Task DarDeBajaAsync(int id)
-        {
-            using var dbConnection = _connectionFactory.CreateConnection();
-            if (dbConnection is not SqlConnection connection) throw new InvalidOperationException("La conexión provista no es SqlConnection.");
-
-            using var command = connection.CreateCommand();
-            
-            command.CommandText = "UPDATE Categoria SET Estado = -1, FechaModificacion = GETDATE() WHERE CategoriaId = @Id";
-            command.Parameters.AddWithValue("@Id", id);
-
-            if (connection.State != ConnectionState.Open) await connection.OpenAsync();
-            
-            await command.ExecuteNonQueryAsync();
-        }
-
-        public async Task ReactivarAsync(int id)
-        {
-            using var dbConnection = _connectionFactory.CreateConnection();
-            if (dbConnection is not SqlConnection connection) throw new InvalidOperationException("La conexión provista no es SqlConnection.");
-
-            using var command = connection.CreateCommand();
-            
-            command.CommandText = "UPDATE Categoria SET Estado = 1, FechaModificacion = GETDATE() WHERE CategoriaId = @Id";
-            command.Parameters.AddWithValue("@Id", id);
-
-            if (connection.State != ConnectionState.Open) await connection.OpenAsync();
-            
-            await command.ExecuteNonQueryAsync();
-        }
-        
+    private static void AgregarParametro(DbCommand command, string nombre, object valor)
+    {
+        var parametro = command.CreateParameter();
+        parametro.ParameterName = nombre;
+        parametro.Value = valor;
+        command.Parameters.Add(parametro);
     }
 }

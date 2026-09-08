@@ -7,7 +7,20 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages();
 
-builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+builder.Services.AddScoped<CategoriaRepository>();
+builder.Services.AddScoped<IListadoCategoriasRepository>(
+    provider => provider.GetRequiredService<CategoriaRepository>());
+builder.Services.AddScoped<IRegistroCategoriaRepository>(
+    provider => provider.GetRequiredService<CategoriaRepository>());
+builder.Services.AddScoped<IEdicionCategoriaRepository>(
+    provider => provider.GetRequiredService<CategoriaRepository>());
+builder.Services.AddScoped<IBajaCategoriaRepository>(
+    provider => provider.GetRequiredService<CategoriaRepository>());
+builder.Services.AddScoped<IReactivacionCategoriaRepository>(
+    provider => provider.GetRequiredService<CategoriaRepository>());
+builder.Services.AddScoped<IValidadorCategoriaRepository>(
+    provider => provider.GetRequiredService<CategoriaRepository>());
+builder.Services.AddScoped<Libreria.Web.Pages.Categorias.Services.CategoriaValidator>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<CostoProductoService>();
 builder.Services.AddScoped<ProductoService>();

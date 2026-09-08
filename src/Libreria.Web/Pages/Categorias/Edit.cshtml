@@ -10,6 +10,13 @@
 
     <form method="post" style="max-width: 500px;">
         <input type="hidden" asp-for="CategoriaId" />
+        <div asp-validation-summary="ModelOnly" style="color: red;"></div>
+
+        <div style="margin-bottom: 15px;">
+            <label asp-for="Input.Codigo" style="font-weight: bold; display: block; margin-bottom: 5px;">Código *</label>
+            <input asp-for="Input.Codigo" maxlength="20" style="width: 100%; padding: 8px;" />
+            <span asp-validation-for="Input.Codigo" style="color: red; font-size: 14px;"></span>
+        </div>
 
         <div style="margin-bottom: 15px;">
             <label asp-for="Input.Nombre" style="font-weight: bold; display: block; margin-bottom: 5px;">Nombre de la Categoría *</label>
@@ -24,9 +31,9 @@
         </div>
 
         <div style="margin-bottom: 15px;">
-            <label asp-for="Input.Orden" style="font-weight: bold; display: block; margin-bottom: 5px;">Orden de visualización *</label>
-            <input asp-for="Input.Orden" type="number" style="width: 100%; padding: 8px;" />
-            <span asp-validation-for="Input.Orden" style="color: red; font-size: 14px;"></span>
+            <label asp-for="Input.Ubicacion" style="font-weight: bold; display: block; margin-bottom: 5px;">Ubicación *</label>
+            <input asp-for="Input.Ubicacion" maxlength="100" style="width: 100%; padding: 8px;" />
+            <span asp-validation-for="Input.Ubicacion" style="color: red; font-size: 14px;"></span>
         </div>
 
         <div style="margin-top: 20px;">

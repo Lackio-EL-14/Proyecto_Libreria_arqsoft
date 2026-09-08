@@ -22,9 +22,10 @@
     }
 
     <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px;">
+        <p><strong>Código:</strong> @Model.Categoria?.Codigo</p>
         <p><strong>Nombre:</strong> @Model.Categoria?.Nombre</p>
         <p><strong>Descripción:</strong> @(string.IsNullOrEmpty(Model.Categoria?.Descripcion) ? "N/A" : Model.Categoria?.Descripcion)</p>
-        <p><strong>Estado Actual:</strong> @(Model.Categoria?.Estado == true ? "Activo" : "Inactivo")</p>
+        <p><strong>Ubicación:</strong> @Model.Categoria?.Ubicacion</p>
     </div>
 
     <form method="post">

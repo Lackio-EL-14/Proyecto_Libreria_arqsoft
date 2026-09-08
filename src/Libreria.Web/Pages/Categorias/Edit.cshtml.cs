@@ -1,81 +1,83 @@
-using System.ComponentModel.DataAnnotations;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Libreria.Web.Pages.Categorias.Models;
 using Libreria.Web.Pages.Categorias.Repositories;
+using Libreria.Web.Pages.Categorias.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace Libreria.Web.Pages.Categorias
+namespace Libreria.Web.Pages.Categorias;
+
+public class EditModel : PageModel
 {
-    public class EditModel : PageModel
+    private readonly IEdicionCategoriaRepository _repository;
+    private readonly CategoriaValidator _validator;
+
+    public EditModel(
+        IEdicionCategoriaRepository repository,
+        CategoriaValidator validator)
     {
-        private readonly ICategoriaRepository _repository;
+        _repository = repository;
+        _validator = validator;
+    }
 
-        public EditModel(ICategoriaRepository repository)
+    [BindProperty]
+    public int CategoriaId { get; set; }
+
+    [BindProperty]
+    public CategoriaInput Input { get; set; } = new();
+
+    public async Task<IActionResult> OnGetAsync(int id)
+    {
+        var categoria = await _repository.ObtenerActivaPorIdAsync(id);
+        if (categoria is null)
         {
-            _repository = repository;
+            return NotFound();
         }
 
-        [BindProperty]
-        public int CategoriaId { get; set; }
-
-        [BindProperty]
-        public CategoriaEditInputModel Input { get; set; } = new();
-
-        public class CategoriaEditInputModel
+        CategoriaId = categoria.CategoriaId;
+        Input = new CategoriaInput
         {
-            [Required(ErrorMessage = "El nombre de la categoría es obligatorio.")]
-            [MaxLength(100, ErrorMessage = "El nombre no puede exceder los 100 caracteres.")]
-            public string Nombre { get; set; } = string.Empty;
+            Codigo = categoria.Codigo,
+            Nombre = categoria.Nombre,
+            Descripcion = categoria.Descripcion,
+            Ubicacion = categoria.Ubicacion
+        };
+        return Page();
+    }
 
-            [MaxLength(255, ErrorMessage = "La descripción no puede exceder los 255 caracteres.")]
-            public string? Descripcion { get; set; }
+    public async Task<IActionResult> OnPostAsync()
+    {
+        _validator.Normalizar(Input);
+        var errores = await _validator.ValidarAsync(Input, CategoriaId);
+        AgregarErrores(errores);
 
-            [Required(ErrorMessage = "El orden es obligatorio.")]
-            public int Orden { get; set; }
-        }
-
-        public async Task<IActionResult> OnGetAsync(int id)
+        if (!ModelState.IsValid)
         {
-            var categoria = await _repository.ObtenerPorIdAsync(id);
-            if (categoria == null)
-            {
-                return NotFound();
-            }
-
-            CategoriaId = categoria.CategoriaId;
-            Input.Nombre = categoria.Nombre;
-            Input.Descripcion = categoria.Descripcion;
-            Input.Orden = categoria.Orden;
-
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAsync()
+        var actualizada = await _repository.ActualizarAsync(new Categoria
         {
-            if (!ModelState.IsValid)
-            {
-                return Page();
-            }
+            CategoriaId = CategoriaId,
+            Codigo = Input.Codigo,
+            Nombre = Input.Nombre,
+            Descripcion = Input.Descripcion,
+            Ubicacion = Input.Ubicacion
+        });
 
-            if (await _repository.ExisteNombreAsync(Input.Nombre, CategoriaId))
-            {
-                ModelState.AddModelError("Input.Nombre", "El nombre de la categoría ya está en uso por otra categoría.");
-                return Page();
-            }
+        if (!actualizada)
+        {
+            return NotFound();
+        }
 
-            var categoriaActualizada = new Categoria
-            {
-                CategoriaId = CategoriaId,
-                Nombre = Input.Nombre,
-                Descripcion = Input.Descripcion,
-                Orden = Input.Orden
-            };
+        TempData["MensajeExito"] = "Categoría actualizada correctamente.";
+        return RedirectToPage("./Index");
+    }
 
-            await _repository.ActualizarAsync(categoriaActualizada);
-            
-            TempData["MensajeExito"] = "Categoría actualizada correctamente.";
-            return RedirectToPage("./Index");
+    private void AgregarErrores(IReadOnlyDictionary<string, string> errores)
+    {
+        foreach (var error in errores)
+        {
+            ModelState.AddModelError(error.Key, error.Value);
         }
     }
 }

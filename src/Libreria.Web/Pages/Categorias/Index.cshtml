@@ -17,7 +17,7 @@
     <a asp-page="./Create" style="margin-right: 20px; font-weight: bold; text-decoration: none;">+ Registrar Nueva Categoría</a>
     
     <form method="get" style="display: inline-block;">
-        <input type="text" name="Busqueda" asp-for="Busqueda" placeholder="Buscar por nombre..." style="padding: 5px; width: 200px;" />
+        <input type="text" name="Busqueda" asp-for="Busqueda" placeholder="Código, nombre o ubicación" style="padding: 5px; width: 220px;" />
         <button type="submit" style="padding: 5px 10px;">Buscar</button>
         @if (!string.IsNullOrEmpty(Model.Busqueda))
         {
@@ -35,10 +35,10 @@ else
     <table class="data-table">
         <thead>
             <tr>
+                <th>Código</th>
                 <th>Nombre</th>
                 <th>Descripción</th>
-                <th>Orden</th>
-                <th>Estado</th>
+                <th>Ubicación</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -46,25 +46,14 @@ else
             @foreach (var categoria in Model.Categorias)
             {
                 <tr>
+                    <td>@categoria.Codigo</td>
                     <td>@categoria.Nombre</td>
                     <td>@(string.IsNullOrEmpty(categoria.Descripcion) ? "N/A" : categoria.Descripcion)</td>
-                    <td>@categoria.Orden</td>
+                    <td>@categoria.Ubicacion</td>
                     <td>
-                        <!-- Indicador de estado claro -->
-                        <span style="color: @(categoria.Estado ? "green" : "gray"); font-weight: bold;">
-                            @(categoria.Estado ? "Activo" : "Inactivo")
-                        </span>
-                    </td>
-                    <td>
-                        @if (categoria.Estado)
-                        {
-                            <a asp-page="./Edit" asp-route-id="@categoria.CategoriaId">Editar</a> @:|
-                            <a asp-page="./Delete" asp-route-id="@categoria.CategoriaId" style="color: red;">Baja</a>
-                        }
-                        else
-                        {
-                            <a asp-page="./Reactivar" asp-route-id="@categoria.CategoriaId" style="color: green; font-weight: bold;">Reactivar</a>
-                        }
+                        <a asp-page="./Edit" asp-route-id="@categoria.CategoriaId">Editar</a>
+                        <span>|</span>
+                        <a asp-page="./Delete" asp-route-id="@categoria.CategoriaId" style="color: red;">Baja</a>
                     </td>
                 </tr>
             }
