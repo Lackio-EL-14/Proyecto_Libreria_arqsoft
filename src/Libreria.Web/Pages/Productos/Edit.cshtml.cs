@@ -1,5 +1,4 @@
 using Libreria.Web.Pages.Productos.Models;
-using Libreria.Web.Pages.Productos.Repositories;
 using Libreria.Web.Pages.Productos.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -8,18 +7,11 @@ namespace Libreria.Web.Pages.Productos;
 
 public class EditModel : PageModel
 {
-    private readonly IProductoRepository _repository;
-    private readonly CostoProductoService _costoProductoService;
-    private readonly ProductoValidator _validator;
+    private readonly IEdicionProductoService _service;
 
-    public EditModel(
-     IProductoRepository repository,
-     CostoProductoService costoProductoService,
-     ProductoValidator validator)
+    public EditModel(IEdicionProductoService service)
     {
-        _repository = repository;
-        _costoProductoService = costoProductoService;
-        _validator = validator;
+        _service = service;
     }
 
     [BindProperty]
@@ -28,92 +20,59 @@ public class EditModel : PageModel
     [BindProperty]
     public ProductoInput Input { get; set; } = new();
 
-    public List<CategoriaOption> Categorias { get; private set; } = new();
-    public List<MarcaOption> Marcas { get; private set; } = new();
+    public IReadOnlyList<CategoriaOption> Categorias { get; private set; } = [];
+    public IReadOnlyList<MarcaOption> Marcas { get; private set; } = [];
 
     public IActionResult OnGet(int id)
     {
-        var producto = _repository.ObtenerProductoPorId(id);
-
-        if (producto is null)
+        var edicion = _service.ObtenerEdicion(id);
+        if (edicion is null)
         {
             return NotFound();
         }
 
-        ProductoId = producto.ProductoId;
-        Input = producto.CrearInputEdicion();
-        CargarOpciones();
-
+        ProductoId = edicion.ProductoId;
+        Input = edicion.Input;
+        Categorias = edicion.Categorias;
+        Marcas = edicion.Marcas;
         return Page();
     }
 
     public IActionResult OnPost()
     {
-        if (_repository.ObtenerProductoPorId(ProductoId) is null)
+        var resultado = _service.Actualizar(ProductoId, Input);
+        if (resultado.NoEncontrado)
         {
             return NotFound();
         }
 
-        NormalizarInput();
-        ValidarInput();
-        CargarOpciones();
-
-        if (!ModelState.IsValid)
+        if (!resultado.Exitoso)
         {
+            AgregarErrores(resultado.Errores);
+            CargarOpciones();
             return Page();
         }
 
-        if (!_repository.ActualizarProducto(ProductoId, Input))
-        {
-            return NotFound();
-        }
-
-        _costoProductoService.ActualizarCostoSiCambio(
-            ProductoId,
-            Input.CostoAdquisicion,
-            "Edición manual");
-
         TempData["MensajeExito"] = "Producto actualizado correctamente.";
-
         return RedirectToPage("Details", new { id = ProductoId });
-    }
-
-    private void ValidarInput()
-    {
-        if (!_validator.EsFechaVencimientoValida(Input.FechaVencimiento))
-        {
-            ModelState.AddModelError(
-                "Input.FechaVencimiento",
-                "La fecha de vencimiento no puede estar en el pasado.");
-        }
-
-        if (Input.CategoriaId > 0 &&
-            !_repository.ExisteCategoriaActiva(Input.CategoriaId))
-        {
-            ModelState.AddModelError(
-                "Input.CategoriaId",
-                "La categoría seleccionada no está disponible.");
-        }
-
-        if (Input.MarcaId > 0 &&
-            !_repository.ExisteMarcaActiva(Input.MarcaId))
-        {
-            ModelState.AddModelError(
-                "Input.MarcaId",
-                "La marca seleccionada no está disponible.");
-        }
     }
 
     private void CargarOpciones()
     {
-        Categorias = _repository.ObtenerCategoriasParaFormulario();
-        Marcas = _repository.ObtenerMarcasParaFormulario();
+        var edicion = _service.ObtenerEdicion(ProductoId);
+        if (edicion is null)
+        {
+            return;
+        }
+        Categorias = edicion.Categorias;
+        Marcas = edicion.Marcas;
     }
 
-    private void NormalizarInput()
+    private void AgregarErrores(IReadOnlyDictionary<string, string> errores)
     {
-        Input.Nombre = _validator.NormalizarTexto(Input.Nombre ?? string.Empty);
-        Input.DescripcionEspecifica =
-            _validator.NormalizarTextoOpcional(Input.DescripcionEspecifica);
+        foreach (var error in errores)
+        {
+            ModelState.AddModelError(error.Key, error.Value);
+        }
     }
 }

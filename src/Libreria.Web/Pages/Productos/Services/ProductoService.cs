@@ -1,49 +1,124 @@
-using Libreria.Web.Data;
 using Libreria.Web.Pages.Productos.Models;
 using Libreria.Web.Pages.Productos.Repositories;
 
 namespace Libreria.Web.Pages.Productos.Services;
 
-public class ProductoService
+public class ProductoService :
+    IConsultaProductosService,
+    IRegistroProductoService,
+    IEdicionProductoService,
+    IConsultaProductoDetalleService,
+    IBajaProductoService
 {
-    private readonly IDbConnectionFactory _connectionFactory;
-    private readonly IProductoRepository _repository;
-    private readonly CostoProductoService _costoProductoService;
+    private readonly IProductoRepository _productoRepository;
+    private readonly IConsultaCatalogoProductoRepository _catalogoRepository;
+    private readonly ProductoValidator _validator;
 
     public ProductoService(
-        IDbConnectionFactory connectionFactory,
-        IProductoRepository repository,
-        CostoProductoService costoProductoService)
+        IProductoRepository productoRepository,
+        IConsultaCatalogoProductoRepository catalogoRepository,
+        ProductoValidator validator)
     {
-        _connectionFactory = connectionFactory;
-        _repository = repository;
-        _costoProductoService = costoProductoService;
+        _productoRepository = productoRepository;
+        _catalogoRepository = catalogoRepository;
+        _validator = validator;
     }
 
-    public void RegistrarProductoConHistorico(ProductoInput input)
+    public ProductoListado ObtenerListado(
+        string? busqueda,
+        int? categoriaId,
+        int? marcaId)
     {
-        using var connection = _connectionFactory.CreateConnection();
-        using var transaction = connection.BeginTransaction();
+        return new ProductoListado(
+            _productoRepository.ObtenerProductos(busqueda, categoriaId, marcaId),
+            _catalogoRepository.ObtenerCategoriasActivas(),
+            _catalogoRepository.ObtenerMarcasActivas());
+    }
 
-        try
+    public ProductoFormulario ObtenerFormulario()
+    {
+        return new ProductoFormulario(
+            _catalogoRepository.ObtenerCategoriasActivas(),
+            _catalogoRepository.ObtenerMarcasActivas());
+    }
+
+    public ResultadoOperacion Registrar(ProductoInput input)
+    {
+        _validator.Normalizar(input);
+        var errores = _validator.Validar(input);
+        if (errores.Count > 0)
         {
-            int productoId = _repository.CrearProducto(
-                input,
-                connection,
-                transaction);
+            return ResultadoOperacion.Invalido(errores);
+        }
 
-            _costoProductoService.RegistrarCostoInicial(
+        _productoRepository.CrearConHistorico(input);
+        return ResultadoOperacion.Correcto();
+    }
+
+    public ProductoEdicion? ObtenerEdicion(int productoId)
+    {
+        var producto = _productoRepository.ObtenerActivoPorId(productoId);
+        if (producto is null)
+        {
+            return null;
+        }
+
+        return new ProductoEdicion(
+            producto.ProductoId,
+            CrearInputEdicion(producto),
+            _catalogoRepository.ObtenerCategoriasActivas(),
+            _catalogoRepository.ObtenerMarcasActivas());
+    }
+
+    public ResultadoOperacion Actualizar(int productoId, ProductoInput input)
+    {
+        if (_productoRepository.ObtenerActivoPorId(productoId) is null)
+        {
+            return ResultadoOperacion.NoExiste();
+        }
+
+        _validator.Normalizar(input);
+        var errores = _validator.Validar(input);
+        if (errores.Count > 0)
+        {
+            return ResultadoOperacion.Invalido(errores);
+        }
+
+        return _productoRepository.ActualizarConHistorico(
                 productoId,
-                input.CostoAdquisicion,
-                connection,
-                transaction);
+                input,
+                "Edición manual")
+            ? ResultadoOperacion.Correcto()
+            : ResultadoOperacion.NoExiste();
+    }
 
-            transaction.Commit();
-        }
-        catch
+    public ProductoDetalle? ObtenerDetalle(int productoId)
+    {
+        return _productoRepository.ObtenerActivoPorId(productoId);
+    }
+
+    public ProductoDetalle? ObtenerParaBaja(int productoId)
+    {
+        return _productoRepository.ObtenerActivoPorId(productoId);
+    }
+
+    public bool DarDeBaja(int productoId)
+    {
+        return _productoRepository.DarDeBaja(productoId);
+    }
+
+    private static ProductoInput CrearInputEdicion(ProductoDetalle producto)
+    {
+        return new ProductoInput
         {
-            transaction.Rollback();
-            throw;
-        }
+            Nombre = producto.Nombre,
+            DescripcionEspecifica = producto.DescripcionEspecifica,
+            FechaVencimiento = producto.FechaVencimiento,
+            Stock = producto.Stock,
+            PrecioVenta = producto.PrecioVenta,
+            CostoAdquisicion = producto.CostoAdquisicionActual,
+            CategoriaId = producto.CategoriaId,
+            MarcaId = producto.MarcaId
+        };
     }
 }

@@ -95,12 +95,16 @@ else
                 </tbody>
             </table>
         </div>
-        <p>
-            <a asp-page="/Productos/Details"
-                asp-route-id="@Model.ProductoId">
-                Volver al producto
-            </a>
-        </p>
-
     }
+
+    <p>
+        @if (Model.ProductoActivo)
+        {
+            <a asp-page="/Productos/Details" asp-route-id="@Model.ProductoId">Volver al producto</a>
+        }
+        else
+        {
+            <a asp-page="/Productos/Index">Volver a productos</a>
+        }
+    </p>
 }
