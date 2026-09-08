@@ -29,11 +29,15 @@ body {
     background: var(--color-primary-dark);
 }
 
-.app-header__name {
-    color: #f4f3f0;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    font-size: 1.1rem;
+.app-header__brand a {
+    display: flex;
+    align-items: center;
+}
+
+.app-header__brand img {
+    display: block;
+    width: 180px;
+    height: auto;
 }
 
 .app-nav {
