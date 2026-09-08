@@ -1,5 +1,8 @@
 using Libreria.Web.Data;
 using Libreria.Web.Pages.Categorias.Repositories;
+using Libreria.Web.Pages.Categorias.Services;
+using Libreria.Web.Pages.Marcas.Repositories;
+using Libreria.Web.Pages.Marcas.Services;
 using Libreria.Web.Pages.Productos.Services;
 using Libreria.Web.Pages.Productos.Repositories;
 
@@ -20,7 +23,19 @@ builder.Services.AddScoped<IReactivacionCategoriaRepository>(
     provider => provider.GetRequiredService<CategoriaRepository>());
 builder.Services.AddScoped<IValidadorCategoriaRepository>(
     provider => provider.GetRequiredService<CategoriaRepository>());
-builder.Services.AddScoped<Libreria.Web.Pages.Categorias.Services.CategoriaValidator>();
+builder.Services.AddScoped<CategoriaValidator>();
+builder.Services.AddScoped<MarcaRepository>();
+builder.Services.AddScoped<IListadoMarcasRepository>(
+    provider => provider.GetRequiredService<MarcaRepository>());
+builder.Services.AddScoped<IRegistroMarcaRepository>(
+    provider => provider.GetRequiredService<MarcaRepository>());
+builder.Services.AddScoped<IEdicionMarcaRepository>(
+    provider => provider.GetRequiredService<MarcaRepository>());
+builder.Services.AddScoped<IBajaMarcaRepository>(
+    provider => provider.GetRequiredService<MarcaRepository>());
+builder.Services.AddScoped<IValidadorMarcaRepository>(
+    provider => provider.GetRequiredService<MarcaRepository>());
+builder.Services.AddScoped<MarcaValidator>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<CostoProductoService>();
 builder.Services.AddScoped<ProductoService>();

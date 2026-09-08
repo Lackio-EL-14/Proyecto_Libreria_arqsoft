@@ -1,229 +1,81 @@
-using System.ComponentModel.DataAnnotations;
-using System.Data;
-using Libreria.Web.Data;
+using Libreria.Web.Pages.Marcas.Models;
+using Libreria.Web.Pages.Marcas.Repositories;
+using Libreria.Web.Pages.Marcas.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Data.SqlClient;
 
 namespace Libreria.Web.Pages.Marcas;
 
 public class EditModel : PageModel
 {
-    private readonly IDbConnectionFactory _connectionFactory;
+    private readonly IEdicionMarcaRepository _repository;
+    private readonly MarcaValidator _validator;
 
-    public EditModel(IDbConnectionFactory connectionFactory)
+    public EditModel(
+        IEdicionMarcaRepository repository,
+        MarcaValidator validator)
     {
-        _connectionFactory = connectionFactory;
+        _repository = repository;
+        _validator = validator;
     }
 
     [BindProperty]
-    public MarcaEditInput Input { get; set; } = new();
+    public int MarcaId { get; set; }
+
+    [BindProperty]
+    public MarcaInput Input { get; set; } = new();
 
     public IActionResult OnGet(int id)
     {
-        using var connection = _connectionFactory.CreateConnection();
-        using var command = connection.CreateCommand();
-
-        command.CommandText = @"
-            SELECT
-                MarcaId,
-                Nombre,
-                Descripcion,
-                PaisOrigen
-            FROM dbo.Marca
-            WHERE MarcaId = @MarcaId;";
-
-        AgregarParametroEntero(command, "@MarcaId", id);
-
-        using var reader = command.ExecuteReader();
-
-        if (!reader.Read())
+        var marca = _repository.ObtenerActivaPorId(id);
+        if (marca is null)
         {
             return NotFound();
         }
 
-        Input = new MarcaEditInput
+        MarcaId = marca.MarcaId;
+        Input = new MarcaInput
         {
-            MarcaId = reader.GetInt32(0),
-            Nombre = reader.GetString(1),
-            Descripcion = reader.IsDBNull(2)
-                ? null
-                : reader.GetString(2),
-            PaisOrigen = reader.IsDBNull(3)
-                ? null
-                : reader.GetString(3)
+            Nombre = marca.Nombre,
+            Descripcion = marca.Descripcion,
+            PaisOrigen = marca.PaisOrigen,
+            SitioWeb = marca.SitioWeb
         };
-
         return Page();
     }
 
     public IActionResult OnPost()
     {
+        _validator.Normalizar(Input);
+        AgregarErrores(_validator.Validar(Input, MarcaId));
         if (!ModelState.IsValid)
         {
             return Page();
         }
 
-        Input.Nombre = Input.Nombre.Trim();
-        Input.Descripcion = NormalizarCampoOpcional(Input.Descripcion);
-        Input.PaisOrigen = NormalizarCampoOpcional(Input.PaisOrigen);
-
-        using var connection = _connectionFactory.CreateConnection();
-
-        if (ExisteOtraMarcaConNombre(
-            connection,
-            Input.MarcaId,
-            Input.Nombre))
+        var actualizada = _repository.Actualizar(new Marca
         {
-            ModelState.AddModelError(
-                "Input.Nombre",
-                "Ya existe otra marca registrada con ese nombre.");
+            MarcaId = MarcaId,
+            Nombre = Input.Nombre,
+            Descripcion = Input.Descripcion,
+            PaisOrigen = Input.PaisOrigen,
+            SitioWeb = Input.SitioWeb
+        });
 
-            return Page();
+        if (!actualizada)
+        {
+            return NotFound();
         }
 
-        using var command = connection.CreateCommand();
-
-        command.CommandText = @"
-            UPDATE dbo.Marca
-            SET
-                Nombre = @Nombre,
-                Descripcion = @Descripcion,
-                PaisOrigen = @PaisOrigen,
-                FechaModificacion = SYSDATETIME()
-            WHERE MarcaId = @MarcaId;";
-
-        AgregarParametroTexto(
-            command,
-            "@Nombre",
-            Input.Nombre,
-            100);
-
-        AgregarParametroTexto(
-            command,
-            "@Descripcion",
-            Input.Descripcion,
-            255);
-
-        AgregarParametroTexto(
-            command,
-            "@PaisOrigen",
-            Input.PaisOrigen,
-            100);
-
-        AgregarParametroEntero(
-            command,
-            "@MarcaId",
-            Input.MarcaId);
-
-        try
-        {
-            var filasAfectadas = command.ExecuteNonQuery();
-
-            if (filasAfectadas == 0)
-            {
-                return NotFound();
-            }
-        }
-        catch (SqlException ex) when (ex.Number is 2601 or 2627)
-        {
-            ModelState.AddModelError(
-                "Input.Nombre",
-                "Ya existe otra marca registrada con ese nombre.");
-
-            return Page();
-        }
-
+        TempData["MensajeExito"] = "Marca actualizada correctamente.";
         return RedirectToPage("./Index");
     }
 
-    private static bool ExisteOtraMarcaConNombre(
-        IDbConnection connection,
-        int marcaId,
-        string nombre)
+    private void AgregarErrores(IReadOnlyDictionary<string, string> errores)
     {
-        using var command = connection.CreateCommand();
-
-        command.CommandText = @"
-            SELECT COUNT(1)
-            FROM dbo.Marca
-            WHERE Nombre = @Nombre
-              AND MarcaId <> @MarcaId;";
-
-        AgregarParametroTexto(
-            command,
-            "@Nombre",
-            nombre,
-            100);
-
-        AgregarParametroEntero(
-            command,
-            "@MarcaId",
-            marcaId);
-
-        var resultado = command.ExecuteScalar();
-
-        return Convert.ToInt32(resultado) > 0;
+        foreach (var error in errores)
+        {
+            ModelState.AddModelError(error.Key, error.Value);
+        }
     }
-
-    private static void AgregarParametroTexto(
-        IDbCommand command,
-        string nombre,
-        string? valor,
-        int tamanio)
-    {
-        var parameter = command.CreateParameter();
-
-        parameter.ParameterName = nombre;
-        parameter.DbType = DbType.String;
-        parameter.Size = tamanio;
-        parameter.Value = string.IsNullOrWhiteSpace(valor)
-            ? DBNull.Value
-            : valor;
-
-        command.Parameters.Add(parameter);
-    }
-
-    private static void AgregarParametroEntero(
-        IDbCommand command,
-        string nombre,
-        int valor)
-    {
-        var parameter = command.CreateParameter();
-
-        parameter.ParameterName = nombre;
-        parameter.DbType = DbType.Int32;
-        parameter.Value = valor;
-
-        command.Parameters.Add(parameter);
-    }
-
-    private static string? NormalizarCampoOpcional(string? valor)
-    {
-        return string.IsNullOrWhiteSpace(valor)
-            ? null
-            : valor.Trim();
-    }
-}
-
-public class MarcaEditInput
-{
-    public int MarcaId { get; set; }
-
-    [Required(ErrorMessage = "El nombre de la marca es obligatorio.")]
-    [StringLength(
-        100,
-        ErrorMessage = "El nombre no puede superar los 100 caracteres.")]
-    public string Nombre { get; set; } = string.Empty;
-
-    [StringLength(
-        255,
-        ErrorMessage = "La descripción no puede superar los 255 caracteres.")]
-    public string? Descripcion { get; set; }
-
-    [Display(Name = "País de origen")]
-    [StringLength(
-        100,
-        ErrorMessage = "El país de origen no puede superar los 100 caracteres.")]
-    public string? PaisOrigen { get; set; }
 }

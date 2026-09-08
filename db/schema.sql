@@ -73,13 +73,28 @@ BEGIN
         MarcaId           INT IDENTITY(1,1) PRIMARY KEY,
         Nombre            NVARCHAR(100) NOT NULL,
         Descripcion       NVARCHAR(255) NULL,
-        PaisOrigen        NVARCHAR(100) NULL,
+        PaisOrigen        NVARCHAR(100) NOT NULL,
+        SitioWeb          NVARCHAR(200) NULL,
         Estado            BIT NOT NULL DEFAULT (1),
         FechaCreacion     DATETIME2 NOT NULL DEFAULT (SYSDATETIME()),
         FechaModificacion DATETIME2 NULL,
         CONSTRAINT UQ_Marca_Nombre UNIQUE (Nombre)
     );
 END
+GO
+
+IF COL_LENGTH('dbo.Marca', 'SitioWeb') IS NULL
+BEGIN
+    ALTER TABLE dbo.Marca ADD SitioWeb NVARCHAR(200) NULL;
+END
+GO
+
+UPDATE dbo.Marca
+SET PaisOrigen = N'No especificado'
+WHERE PaisOrigen IS NULL OR LTRIM(RTRIM(PaisOrigen)) = N'';
+GO
+
+ALTER TABLE dbo.Marca ALTER COLUMN PaisOrigen NVARCHAR(100) NOT NULL;
 GO
 
 -- ---------------------------------------------------------
@@ -150,9 +165,9 @@ GO
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Marca)
 BEGIN
-    INSERT INTO dbo.Marca (Nombre, Descripcion, PaisOrigen) VALUES
-        (N'Acrilex', N'Pinturas y productos de arte', N'Brasil'),
-        (N'Norma', N'Cuadernos y útiles escolares', N'Colombia'),
-        (N'Genérico', N'Sin marca específica', NULL);
+    INSERT INTO dbo.Marca (Nombre, Descripcion, PaisOrigen, SitioWeb) VALUES
+        (N'Acrilex', N'Pinturas y productos de arte', N'Brasil', N'https://acrilex.com.br'),
+        (N'Norma', N'Cuadernos y útiles escolares', N'Colombia', N'https://www.norma.com'),
+        (N'Genérico', N'Sin marca específica', N'No especificado', NULL);
 END
 GO

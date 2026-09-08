@@ -11,7 +11,7 @@
 
 <form method="post">
 
-    <input type="hidden" asp-for="Input.MarcaId" />
+    <input type="hidden" asp-for="MarcaId" />
 
     <div asp-validation-summary="ModelOnly"></div>
 
@@ -57,6 +57,16 @@
         <br />
 
         <span asp-validation-for="Input.PaisOrigen"></span>
+    </div>
+
+    <br />
+
+    <div>
+        <label asp-for="Input.SitioWeb">Sitio web:</label>
+        <br />
+        <input asp-for="Input.SitioWeb" maxlength="200" placeholder="https://ejemplo.com" />
+        <br />
+        <span asp-validation-for="Input.SitioWeb"></span>
     </div>
 
     <br />

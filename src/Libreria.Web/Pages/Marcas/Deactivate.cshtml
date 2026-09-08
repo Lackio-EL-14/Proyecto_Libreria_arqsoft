@@ -7,9 +7,7 @@
 
 <h1>Dar de baja marca</h1>
 
-<p>
-    Está a punto de dar de baja la siguiente marca:
-</p>
+<p>Está a punto de dar de baja la siguiente marca:</p>
 
 <dl>
     <dt>Nombre</dt>
@@ -19,52 +17,25 @@
     <dd>@(Model.Marca.Descripcion ?? "—")</dd>
 
     <dt>País de origen</dt>
-    <dd>@(Model.Marca.PaisOrigen ?? "—")</dd>
+    <dd>@Model.Marca.PaisOrigen</dd>
+
+    <dt>Sitio web</dt>
+    <dd>@(Model.Marca.SitioWeb ?? "—")</dd>
 </dl>
 
-@if (!Model.Marca.Estado)
+@if (Model.Marca.ProductosActivos > 0)
 {
     <p>
-        Esta marca ya se encuentra inactiva.
+        <strong>Advertencia:</strong>
+        esta marca tiene @Model.Marca.ProductosActivos producto(s) activo(s) asociado(s).
     </p>
-
-    <a asp-page="./Index">
-        Volver al listado
-    </a>
+    <p>Los productos existentes no serán eliminados ni modificados.</p>
 }
-else
-{
-    @if (Model.Marca.ProductosActivos > 0)
-    {
-        <p>
-            <strong>Advertencia:</strong>
-            esta marca tiene
-            @Model.Marca.ProductosActivos
-            producto(s) activo(s) asociado(s).
-        </p>
 
-        <p>
-            Los productos existentes no serán eliminados ni modificados.
-        </p>
-    }
+<p>¿Está seguro de que desea dar de baja esta marca?</p>
 
-    <p>
-        ¿Está seguro de que desea dar de baja esta marca?
-    </p>
-
-    <form method="post">
-
-        <input
-            type="hidden"
-            asp-for="MarcaId" />
-
-        <button type="submit">
-            Confirmar baja
-        </button>
-
-        <a asp-page="./Index">
-            Cancelar
-        </a>
-
-    </form>
-}
+<form method="post">
+    <input type="hidden" asp-for="MarcaId" />
+    <button type="submit">Confirmar baja</button>
+    <a asp-page="./Index">Cancelar</a>
+</form>

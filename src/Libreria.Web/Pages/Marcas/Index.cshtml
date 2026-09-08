@@ -60,7 +60,7 @@ else
                 <th>Nombre</th>
                 <th>Descripción</th>
                 <th>País de origen</th>
-                <th>Estado</th>
+                <th>Sitio web</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -80,13 +80,13 @@ else
                     </td>
 
                     <td>
-                        @if (marca.Estado)
+                        @if (marca.SitioWeb is not null)
                         {
-                            <strong>Activo</strong>
+                            <a href="@marca.SitioWeb" target="_blank" rel="noopener noreferrer">Visitar</a>
                         }
                         else
                         {
-                            <span>Inactivo</span>
+                            <span>—</span>
                         }
                     </td>
                     <td>
@@ -95,15 +95,11 @@ else
                             Editar
                         </a>
 
-                        @if (marca.Estado)
-                        {
-                            <span> | </span>
-
-                            <a asp-page="./Deactivate"
-                            asp-route-id="@marca.MarcaId">
-                                Dar de baja
-                            </a>
-                        }
+                        <span> | </span>
+                        <a asp-page="./Deactivate"
+                           asp-route-id="@marca.MarcaId">
+                            Dar de baja
+                        </a>
                     </td>
                 </tr>
             }
