@@ -14,9 +14,9 @@ public class MarcaValidator
 
     public void Normalizar(MarcaInput input)
     {
-        input.Nombre = NormalizarTexto(input.Nombre);
+        input.Nombre = NormalizarTexto(input.Nombre ?? string.Empty);
         input.Descripcion = NormalizarTextoOpcional(input.Descripcion);
-        input.PaisOrigen = NormalizarTexto(input.PaisOrigen);
+        input.PaisOrigen = NormalizarTexto(input.PaisOrigen ?? string.Empty);
         input.SitioWeb = input.SitioWeb?.Trim();
         if (string.IsNullOrWhiteSpace(input.SitioWeb))
         {

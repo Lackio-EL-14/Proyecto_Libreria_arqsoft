@@ -14,7 +14,7 @@ public class ProductoValidator
 
     public void Normalizar(ProductoInput input)
     {
-        input.Nombre = NormalizarTexto(input.Nombre);
+        input.Nombre = NormalizarTexto(input.Nombre ?? string.Empty);
         input.DescripcionEspecifica = NormalizarTextoOpcional(input.DescripcionEspecifica);
     }
 

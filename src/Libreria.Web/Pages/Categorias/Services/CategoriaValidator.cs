@@ -15,10 +15,10 @@ public class CategoriaValidator
 
     public void Normalizar(CategoriaInput input)
     {
-        input.Codigo = input.Codigo.Trim().ToUpperInvariant();
-        input.Nombre = NormalizarTexto(input.Nombre);
+        input.Codigo = (input.Codigo ?? string.Empty).Trim().ToUpperInvariant();
+        input.Nombre = NormalizarTexto(input.Nombre ?? string.Empty);
         input.Descripcion = NormalizarTextoOpcional(input.Descripcion);
-        input.Ubicacion = NormalizarTexto(input.Ubicacion);
+        input.Ubicacion = NormalizarTexto(input.Ubicacion ?? string.Empty);
     }
 
     public async Task<IReadOnlyDictionary<string, string>> ValidarAsync(
