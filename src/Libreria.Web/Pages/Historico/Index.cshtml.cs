@@ -1,4 +1,3 @@
-using Libreria.Web.Data;
 using Libreria.Web.Pages.Historico.Models;
 using Libreria.Web.Pages.Historico.Repositories;
 using Microsoft.AspNetCore.Mvc;
@@ -8,19 +7,17 @@ namespace Libreria.Web.Pages.Historico;
 
 public class IndexModel : PageModel
 {
-    private readonly HistoricoCostoRepository _repository;
+    private readonly IHistoricoCostoRepository _repository;
 
-    public IndexModel(IDbConnectionFactory connectionFactory)
+    public IndexModel(IHistoricoCostoRepository repository)
     {
-        _repository = new HistoricoCostoRepository(connectionFactory);
+        _repository = repository;
     }
 
     public int ProductoId { get; private set; }
-
     public string? NombreProducto { get; private set; }
-
-    public List<HistoricoCostoItem> Historial { get; private set; } = new();
-
+    public bool ProductoActivo { get; private set; }
+    public IReadOnlyList<HistoricoCostoItem> Historial { get; private set; } = [];
     public string? MensajeError { get; private set; }
 
     public IActionResult OnGet(int productoId)
@@ -32,17 +29,16 @@ public class IndexModel : PageModel
         }
 
         ProductoId = productoId;
-
-        NombreProducto = _repository.ObtenerNombreProducto(productoId);
-
-        if (NombreProducto == null)
+        var producto = _repository.ObtenerProducto(productoId);
+        if (producto is null)
         {
             MensajeError = "El producto solicitado no existe.";
             return Page();
         }
 
+        NombreProducto = producto.Nombre;
+        ProductoActivo = producto.Estado;
         Historial = _repository.ObtenerHistorico(productoId);
-
         return Page();
     }
 }

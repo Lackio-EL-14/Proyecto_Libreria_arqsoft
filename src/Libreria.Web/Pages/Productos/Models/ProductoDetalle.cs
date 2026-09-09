@@ -11,20 +11,4 @@ public record ProductoDetalle(
     int CategoriaId,
     string Categoria,
     int MarcaId,
-    string Marca)
-{
-    public ProductoInput CrearInputEdicion()
-    {
-        return new ProductoInput
-        {
-            Nombre = Nombre,
-            DescripcionEspecifica = DescripcionEspecifica,
-            FechaVencimiento = FechaVencimiento,
-            Stock = Stock,
-            PrecioVenta = PrecioVenta,
-            CostoAdquisicion = CostoAdquisicionActual,
-            CategoriaId = CategoriaId,
-            MarcaId = MarcaId
-        };
-    }
-}
+    string Marca);

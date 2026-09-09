@@ -1,80 +1,56 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Libreria.Web.Pages.Productos.Services;
 using Libreria.Web.Pages.Productos.Models;
-using Libreria.Web.Pages.Productos.Repositories;
+using Libreria.Web.Pages.Productos.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Libreria.Web.Pages.Productos;
 
 public class CreateModel : PageModel
 {
-    private readonly IProductoRepository _repository;
-    private readonly ProductoService _productoService;
-    private readonly ProductoValidator _validator;
+    private readonly IRegistroProductoService _service;
 
-    public CreateModel(
-    IProductoRepository repository,
-    ProductoService productoService,
-    ProductoValidator validator)
+    public CreateModel(IRegistroProductoService service)
     {
-        _repository = repository;
-        _productoService = productoService;
-        _validator = validator;
+        _service = service;
     }
 
     [BindProperty]
     public ProductoInput Input { get; set; } = new();
 
-    public List<CategoriaOption> Categorias { get; private set; } = new();
-    public List<MarcaOption> Marcas { get; private set; } = new();
+    public IReadOnlyList<CategoriaOption> Categorias { get; private set; } = [];
+    public IReadOnlyList<MarcaOption> Marcas { get; private set; } = [];
 
     public void OnGet()
     {
-        Categorias = _repository.ObtenerCategoriasParaFormulario();
-        Marcas = _repository.ObtenerMarcasParaFormulario();
+        CargarFormulario();
     }
 
     public IActionResult OnPost()
     {
-        Input.Nombre = _validator.NormalizarTexto(Input.Nombre ?? string.Empty);
-        Input.DescripcionEspecifica =
-            _validator.NormalizarTextoOpcional(Input.DescripcionEspecifica);
-
-        if (!_validator.EsFechaVencimientoValida(Input.FechaVencimiento))
+        var resultado = _service.Registrar(Input);
+        if (!resultado.Exitoso)
         {
-            ModelState.AddModelError(
-                "Input.FechaVencimiento",
-                "La fecha de vencimiento no puede estar en el pasado.");
-        }
-
-        if (!_repository.ExisteCategoriaActiva(Input.CategoriaId))
-        {
-            ModelState.AddModelError(
-                "Input.CategoriaId",
-                "La categoría seleccionada no está disponible.");
-        }
-
-        if (!_repository.ExisteMarcaActiva(Input.MarcaId))
-        {
-            ModelState.AddModelError(
-                "Input.MarcaId",
-                "La marca seleccionada no está disponible.");
-        }
-
-        Categorias = _repository.ObtenerCategoriasParaFormulario();
-        Marcas = _repository.ObtenerMarcasParaFormulario();
-
-        if (!ModelState.IsValid)
-        {
+            AgregarErrores(resultado.Errores);
+            CargarFormulario();
             return Page();
         }
 
-        _productoService.RegistrarProductoConHistorico(Input);
-
         TempData["MensajeExito"] = "Producto registrado correctamente.";
-
         return RedirectToPage("Index");
     }
 
-}
+    private void CargarFormulario()
+    {
+        var formulario = _service.ObtenerFormulario();
+        Categorias = formulario.Categorias;
+        Marcas = formulario.Marcas;
+    }
 
+    private void AgregarErrores(IReadOnlyDictionary<string, string> errores)
+    {
+        foreach (var error in errores)
+        {
+            ModelState.AddModelError(error.Key, error.Value);
+        }
+    }
+}

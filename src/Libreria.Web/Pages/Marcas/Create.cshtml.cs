@@ -1,156 +1,53 @@
-using System.ComponentModel.DataAnnotations;
-using System.Data;
-using Libreria.Web.Data;
+using Libreria.Web.Pages.Marcas.Models;
+using Libreria.Web.Pages.Marcas.Repositories;
+using Libreria.Web.Pages.Marcas.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Data.SqlClient;
 
 namespace Libreria.Web.Pages.Marcas;
 
 public class CreateModel : PageModel
 {
-    private readonly IDbConnectionFactory _connectionFactory;
+    private readonly IRegistroMarcaRepository _repository;
+    private readonly MarcaValidator _validator;
 
-    public CreateModel(IDbConnectionFactory connectionFactory)
+    public CreateModel(
+        IRegistroMarcaRepository repository,
+        MarcaValidator validator)
     {
-        _connectionFactory = connectionFactory;
+        _repository = repository;
+        _validator = validator;
     }
 
     [BindProperty]
     public MarcaInput Input { get; set; } = new();
 
-    public void OnGet()
-    {
-    }
-
     public IActionResult OnPost()
     {
+        _validator.Normalizar(Input);
+        AgregarErrores(_validator.Validar(Input));
         if (!ModelState.IsValid)
         {
             return Page();
         }
 
-        Input.Nombre = Input.Nombre.Trim();
-        Input.Descripcion = NormalizarCampoOpcional(Input.Descripcion);
-        Input.PaisOrigen = NormalizarCampoOpcional(Input.PaisOrigen);
-
-        using var connection = _connectionFactory.CreateConnection();
-
-        if (ExisteMarcaConNombre(connection, Input.Nombre))
+        _repository.Crear(new Marca
         {
-            ModelState.AddModelError(
-                "Input.Nombre",
-                "Ya existe una marca registrada con ese nombre.");
+            Nombre = Input.Nombre,
+            Descripcion = Input.Descripcion,
+            PaisOrigen = Input.PaisOrigen,
+            SitioWeb = Input.SitioWeb
+        });
 
-            return Page();
-        }
-
-        using var command = connection.CreateCommand();
-
-        command.CommandText = @"
-            INSERT INTO dbo.Marca
-                (Nombre, Descripcion, PaisOrigen)
-            VALUES
-                (@Nombre, @Descripcion, @PaisOrigen);";
-
-        AgregarParametro(
-            command,
-            "@Nombre",
-            Input.Nombre,
-            100);
-
-        AgregarParametro(
-            command,
-            "@Descripcion",
-            Input.Descripcion,
-            255);
-
-        AgregarParametro(
-            command,
-            "@PaisOrigen",
-            Input.PaisOrigen,
-            100);
-
-        try
-        {
-            command.ExecuteNonQuery();
-        }
-        catch (SqlException ex) when (ex.Number is 2601 or 2627)
-        {
-            ModelState.AddModelError(
-                "Input.Nombre",
-                "Ya existe una marca registrada con ese nombre.");
-
-            return Page();
-        }
-
+        TempData["MensajeExito"] = "Marca registrada correctamente.";
         return RedirectToPage("./Index");
     }
 
-    private static bool ExisteMarcaConNombre(
-        IDbConnection connection,
-        string nombre)
+    private void AgregarErrores(IReadOnlyDictionary<string, string> errores)
     {
-        using var command = connection.CreateCommand();
-
-        command.CommandText = @"
-            SELECT COUNT(1)
-            FROM dbo.Marca
-            WHERE Nombre = @Nombre;";
-
-        AgregarParametro(
-            command,
-            "@Nombre",
-            nombre,
-            100);
-
-        var resultado = command.ExecuteScalar();
-
-        return Convert.ToInt32(resultado) > 0;
+        foreach (var error in errores)
+        {
+            ModelState.AddModelError(error.Key, error.Value);
+        }
     }
-
-    private static void AgregarParametro(
-        IDbCommand command,
-        string nombre,
-        string? valor,
-        int tamanio)
-    {
-        var parameter = command.CreateParameter();
-
-        parameter.ParameterName = nombre;
-        parameter.DbType = DbType.String;
-        parameter.Size = tamanio;
-        parameter.Value = string.IsNullOrWhiteSpace(valor)
-            ? DBNull.Value
-            : valor;
-
-        command.Parameters.Add(parameter);
-    }
-
-    private static string? NormalizarCampoOpcional(string? valor)
-    {
-        return string.IsNullOrWhiteSpace(valor)
-            ? null
-            : valor.Trim();
-    }
-}
-
-public class MarcaInput
-{
-    [Required(ErrorMessage = "El nombre de la marca es obligatorio.")]
-    [StringLength(
-        100,
-        ErrorMessage = "El nombre no puede superar los 100 caracteres.")]
-    public string Nombre { get; set; } = string.Empty;
-
-    [StringLength(
-        255,
-        ErrorMessage = "La descripción no puede superar los 255 caracteres.")]
-    public string? Descripcion { get; set; }
-
-    [Display(Name = "País de origen")]
-    [StringLength(
-        100,
-        ErrorMessage = "El país de origen no puede superar los 100 caracteres.")]
-    public string? PaisOrigen { get; set; }
 }

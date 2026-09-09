@@ -11,6 +11,13 @@
     <div class="row">
         <div class="col-md-6">
             <form method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="mb-3">
+                    <label asp-for="Input.Codigo" class="form-label">Código <span class="text-danger">*</span></label>
+                    <input asp-for="Input.Codigo" class="form-control" placeholder="Ej: LIBROS" maxlength="20" />
+                    <span asp-validation-for="Input.Codigo" class="text-danger"></span>
+                </div>
+
                 <div class="mb-3">
                     <label asp-for="Input.Nombre" class="form-label">Nombre de la Categoría <span class="text-danger">*</span></label>
                     <input asp-for="Input.Nombre" class="form-control" placeholder="Ej: Útiles Escolares" />
@@ -24,9 +31,9 @@
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="Input.Orden" class="form-label">Orden de visualización <span class="text-danger">*</span></label>
-                    <input asp-for="Input.Orden" class="form-control" type="number" value="1" />
-                    <span asp-validation-for="Input.Orden" class="text-danger"></span>
+                    <label asp-for="Input.Ubicacion" class="form-label">Ubicación <span class="text-danger">*</span></label>
+                    <input asp-for="Input.Ubicacion" class="form-control" placeholder="Ej: Pasillo A" maxlength="100" />
+                    <span asp-validation-for="Input.Ubicacion" class="text-danger"></span>
                 </div>
 
                 <div class="mt-4">

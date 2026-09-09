@@ -1,47 +1,46 @@
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Libreria.Web.Pages.Categorias.Models;
 using Libreria.Web.Pages.Categorias.Repositories;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace Libreria.Web.Pages.Categorias
+namespace Libreria.Web.Pages.Categorias;
+
+public class DeleteModel : PageModel
 {
-    public class DeleteModel : PageModel
+    private readonly IBajaCategoriaRepository _repository;
+
+    public DeleteModel(IBajaCategoriaRepository repository)
     {
-        private readonly ICategoriaRepository _repository;
+        _repository = repository;
+    }
 
-        public DeleteModel(ICategoriaRepository repository)
+    [BindProperty]
+    public int CategoriaId { get; set; }
+
+    public Categoria? Categoria { get; private set; }
+    public bool TieneProductos { get; private set; }
+
+    public async Task<IActionResult> OnGetAsync(int id)
+    {
+        Categoria = await _repository.ObtenerActivaPorIdAsync(id);
+        if (Categoria is null)
         {
-            _repository = repository;
+            return NotFound();
         }
 
-        [BindProperty]
-        public int CategoriaId { get; set; }
+        CategoriaId = Categoria.CategoriaId;
+        TieneProductos = await _repository.TieneProductosActivosAsync(id);
+        return Page();
+    }
 
-        public Categoria? Categoria { get; set; }
-        public bool TieneProductos { get; set; }
-
-        public async Task<IActionResult> OnGetAsync(int id)
+    public async Task<IActionResult> OnPostAsync()
+    {
+        if (!await _repository.DarDeBajaAsync(CategoriaId))
         {
-            Categoria = await _repository.ObtenerPorIdAsync(id);
-            if (Categoria == null)
-            {
-                return NotFound();
-            }
-
-            CategoriaId = Categoria.CategoriaId;
-            
-            TieneProductos = await _repository.TieneProductosActivosAsync(id);
-
-            return Page();
+            return NotFound();
         }
 
-        public async Task<IActionResult> OnPostAsync()
-        {
-            await _repository.DarDeBajaAsync(CategoriaId);
-            
-            TempData["MensajeExito"] = "Categoría dada de baja correctamente.";
-            return RedirectToPage("./Index");
-        }
+        TempData["MensajeExito"] = "Categoría dada de baja correctamente.";
+        return RedirectToPage("./Index");
     }
 }

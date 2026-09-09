@@ -1,5 +1,5 @@
 using Libreria.Web.Pages.Productos.Models;
-using Libreria.Web.Pages.Productos.Repositories;
+using Libreria.Web.Pages.Productos.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -7,11 +7,11 @@ namespace Libreria.Web.Pages.Productos;
 
 public class DeactivateModel : PageModel
 {
-    private readonly IProductoRepository _repository;
+    private readonly IBajaProductoService _service;
 
-    public DeactivateModel(IProductoRepository repository)
+    public DeactivateModel(IBajaProductoService service)
     {
-        _repository = repository;
+        _service = service;
     }
 
     public ProductoDetalle Producto { get; private set; } = null!;
@@ -21,8 +21,7 @@ public class DeactivateModel : PageModel
 
     public IActionResult OnGet(int id)
     {
-        var producto = _repository.ObtenerProductoPorId(id);
-
+        var producto = _service.ObtenerParaBaja(id);
         if (producto is null)
         {
             return NotFound();
@@ -30,19 +29,17 @@ public class DeactivateModel : PageModel
 
         Producto = producto;
         ProductoId = producto.ProductoId;
-
         return Page();
     }
 
     public IActionResult OnPost()
     {
-        if (!_repository.DarDeBaja(ProductoId))
+        if (!_service.DarDeBaja(ProductoId))
         {
             return NotFound();
         }
 
         TempData["MensajeExito"] = "Producto dado de baja correctamente.";
-
         return RedirectToPage("Index");
     }
 }

@@ -1,5 +1,5 @@
 using Libreria.Web.Pages.Productos.Models;
-using Libreria.Web.Pages.Productos.Repositories;
+using Libreria.Web.Pages.Productos.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -7,26 +7,24 @@ namespace Libreria.Web.Pages.Productos;
 
 public class DetailsModel : PageModel
 {
-    private readonly IProductoRepository _repository;
+    private readonly IConsultaProductoDetalleService _service;
 
-    public DetailsModel(IProductoRepository repository)
+    public DetailsModel(IConsultaProductoDetalleService service)
     {
-        _repository = repository;
+        _service = service;
     }
 
     public ProductoDetalle Producto { get; private set; } = null!;
 
     public IActionResult OnGet(int id)
     {
-        var producto = _repository.ObtenerProductoPorId(id);
-
+        var producto = _service.ObtenerDetalle(id);
         if (producto is null)
         {
             return NotFound();
         }
 
         Producto = producto;
-
         return Page();
     }
 }

@@ -1,29 +1,26 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Libreria.Web.Pages.Categorias.Models;
 using Libreria.Web.Pages.Categorias.Repositories;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace Libreria.Web.Pages.Categorias
+namespace Libreria.Web.Pages.Categorias;
+
+public class IndexModel : PageModel
 {
-    public class IndexModel : PageModel
+    private readonly IListadoCategoriasRepository _repository;
+
+    public IndexModel(IListadoCategoriasRepository repository)
     {
-        private readonly ICategoriaRepository _repository;
+        _repository = repository;
+    }
 
-        public IndexModel(ICategoriaRepository repository)
-        {
-            _repository = repository;
-        }
+    public IReadOnlyList<Categoria> Categorias { get; private set; } = [];
 
-        public IEnumerable<Categoria> Categorias { get; private set; } = new List<Categoria>();
+    [BindProperty(SupportsGet = true)]
+    public string? Busqueda { get; set; }
 
-        [BindProperty(SupportsGet = true)]
-        public string? Busqueda { get; set; }
-
-        public async Task OnGetAsync()
-        {
-            Categorias = await _repository.ObtenerTodasAsync(Busqueda);
-        }
+    public async Task OnGetAsync()
+    {
+        Categorias = await _repository.ObtenerActivasAsync(Busqueda);
     }
 }

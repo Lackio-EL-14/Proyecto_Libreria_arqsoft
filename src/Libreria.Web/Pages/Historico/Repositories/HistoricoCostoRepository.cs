@@ -4,7 +4,7 @@ using Libreria.Web.Pages.Historico.Models;
 
 namespace Libreria.Web.Pages.Historico.Repositories;
 
-public class HistoricoCostoRepository
+public class HistoricoCostoRepository : IHistoricoCostoRepository
 {
     private readonly IDbConnectionFactory _connectionFactory;
 
@@ -13,29 +13,28 @@ public class HistoricoCostoRepository
         _connectionFactory = connectionFactory;
     }
 
-    public string? ObtenerNombreProducto(int productoId)
+    public ProductoHistoricoResumen? ObtenerProducto(int productoId)
     {
         using var connection = _connectionFactory.CreateConnection();
         using var command = connection.CreateCommand();
 
         command.CommandText = @"
-            SELECT Nombre
+            SELECT Nombre, Estado
             FROM Producto
             WHERE ProductoId = @ProductoId";
 
         AgregarParametro(command, "@ProductoId", productoId);
 
-        var resultado = command.ExecuteScalar();
-
-        if (resultado == null || resultado == DBNull.Value)
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
         {
             return null;
         }
 
-        return Convert.ToString(resultado);
+        return new ProductoHistoricoResumen(reader.GetString(0), reader.GetBoolean(1));
     }
 
-    public List<HistoricoCostoItem> ObtenerHistorico(int productoId)
+    public IReadOnlyList<HistoricoCostoItem> ObtenerHistorico(int productoId)
     {
         var historial = new List<HistoricoCostoItem>();
 

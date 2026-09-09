@@ -1,66 +1,55 @@
-using System.ComponentModel.DataAnnotations;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Libreria.Web.Pages.Categorias.Models;
 using Libreria.Web.Pages.Categorias.Repositories;
+using Libreria.Web.Pages.Categorias.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace Libreria.Web.Pages.Categorias
+namespace Libreria.Web.Pages.Categorias;
+
+public class CreateModel : PageModel
 {
-    public class CreateModel : PageModel
+    private readonly IRegistroCategoriaRepository _repository;
+    private readonly CategoriaValidator _validator;
+
+    public CreateModel(
+        IRegistroCategoriaRepository repository,
+        CategoriaValidator validator)
     {
-        private readonly ICategoriaRepository _repository;
+        _repository = repository;
+        _validator = validator;
+    }
 
-        public CreateModel(ICategoriaRepository repository)
+    [BindProperty]
+    public CategoriaInput Input { get; set; } = new();
+
+    public async Task<IActionResult> OnPostAsync()
+    {
+        _validator.Normalizar(Input);
+        var errores = await _validator.ValidarAsync(Input);
+        AgregarErrores(errores);
+
+        if (!ModelState.IsValid)
         {
-            _repository = repository;
+            return Page();
         }
 
-        [BindProperty]
-        public CategoriaInputModel Input { get; set; } = new();
-
-        public class CategoriaInputModel
+        await _repository.CrearAsync(new Categoria
         {
-            [Required(ErrorMessage = "El nombre de la categoría es obligatorio.")]
-            [MaxLength(100, ErrorMessage = "El nombre no puede exceder los 100 caracteres.")]
-            public string Nombre { get; set; } = string.Empty;
+            Codigo = Input.Codigo,
+            Nombre = Input.Nombre,
+            Descripcion = Input.Descripcion,
+            Ubicacion = Input.Ubicacion
+        });
 
-            [MaxLength(255, ErrorMessage = "La descripción no puede exceder los 255 caracteres.")]
-            public string? Descripcion { get; set; }
+        TempData["MensajeExito"] = "Categoría registrada exitosamente.";
+        return RedirectToPage("./Index");
+    }
 
-            [Required(ErrorMessage = "El orden es obligatorio.")]
-            public int Orden { get; set; }
-        }
-
-        public void OnGet()
+    private void AgregarErrores(IReadOnlyDictionary<string, string> errores)
+    {
+        foreach (var error in errores)
         {
-        }
-
-        public async Task<IActionResult> OnPostAsync()
-        {
-            if (!ModelState.IsValid)
-            {
-                return Page();
-            }
-
-            if (await _repository.ExisteNombreAsync(Input.Nombre))
-            {
-                ModelState.AddModelError("Input.Nombre", "El nombre de la categoría ya existe. Ingresa uno diferente.");
-                return Page();
-            }
-
-            var nuevaCategoria = new Categoria
-            {
-                Nombre = Input.Nombre,
-                Descripcion = Input.Descripcion,
-                Orden = Input.Orden
-            };
-
-            await _repository.CrearAsync(nuevaCategoria);
-            
-            TempData["MensajeExito"] = "Categoría registrada exitosamente.";
-            
-            return RedirectToPage("./Index");
+            ModelState.AddModelError(error.Key, error.Value);
         }
     }
 }

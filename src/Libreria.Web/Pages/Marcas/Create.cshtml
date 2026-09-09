@@ -62,6 +62,16 @@
 
     <br />
 
+    <div>
+        <label asp-for="Input.SitioWeb">Sitio web:</label>
+        <br />
+        <input asp-for="Input.SitioWeb" maxlength="200" placeholder="https://ejemplo.com" />
+        <br />
+        <span asp-validation-for="Input.SitioWeb"></span>
+    </div>
+
+    <br />
+
     <button type="submit">
         Guardar
     </button>

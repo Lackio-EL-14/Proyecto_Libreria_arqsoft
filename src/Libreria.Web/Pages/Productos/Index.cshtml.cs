@@ -1,5 +1,5 @@
 using Libreria.Web.Pages.Productos.Models;
-using Libreria.Web.Pages.Productos.Repositories;
+using Libreria.Web.Pages.Productos.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -7,16 +7,16 @@ namespace Libreria.Web.Pages.Productos;
 
 public class IndexModel : PageModel
 {
-    private readonly IProductoRepository _repository;
+    private readonly IConsultaProductosService _service;
 
-    public IndexModel(IProductoRepository repository)
+    public IndexModel(IConsultaProductosService service)
     {
-        _repository = repository;
+        _service = service;
     }
 
-    public List<ProductoListItem> Productos { get; private set; } = new();
-    public List<CategoriaFiltroItem> Categorias { get; private set; } = new();
-    public List<MarcaFiltroItem> Marcas { get; private set; } = new();
+    public IReadOnlyList<ProductoListItem> Productos { get; private set; } = [];
+    public IReadOnlyList<CategoriaOption> Categorias { get; private set; } = [];
+    public IReadOnlyList<MarcaOption> Marcas { get; private set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public string? Busqueda { get; set; }
@@ -29,13 +29,9 @@ public class IndexModel : PageModel
 
     public void OnGet()
     {
-        Categorias = _repository.ObtenerCategoriasActivas();
-        Marcas = _repository.ObtenerMarcasActivas();
-
-        Productos = _repository.ObtenerProductos(
-            Busqueda,
-            CategoriaId,
-            MarcaId
-        );
+        var listado = _service.ObtenerListado(Busqueda, CategoriaId, MarcaId);
+        Productos = listado.Productos;
+        Categorias = listado.Categorias;
+        Marcas = listado.Marcas;
     }
 }
