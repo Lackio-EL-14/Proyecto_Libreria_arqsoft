@@ -6,28 +6,89 @@
     <title>@ViewData["Title"] - Librería</title>
     <link rel="stylesheet" href="~/css/site.css" />
 </head>
+
 <body>
     <header class="app-header">
+        <button
+            type="button"
+            class="menu-toggle"
+            id="menuToggle"
+            aria-label="Abrir menú de navegación"
+            aria-controls="sidebar"
+            aria-expanded="false">
+            <span aria-hidden="true">☰</span>
+        </button>
+
         <div class="app-header__brand">
             <a asp-page="/Index" aria-label="Ir al inicio">
                 <img src="~/images/logo-libreria.svg" alt="Librería" />
             </a>
         </div>
-        <nav class="app-nav">
-            <a asp-page="/Index">Inicio</a>
-            <a asp-page="/Categorias/Index">Categorías</a>
-            <a asp-page="/Marcas/Index">Marcas</a>
-            <a asp-page="/Productos/Index">Productos</a>
-            <a asp-page="/Historico/Index">Histórico de costos</a>
-        </nav>
     </header>
 
-    <main class="app-main">
-        @RenderBody()
-    </main>
+    <aside
+        class="app-sidebar"
+        id="sidebar"
+        aria-label="Navegación principal">
 
-    <footer class="app-footer">
-        <p>Proyecto académico - Clean Code &amp; SOLID</p>
-    </footer>
+        <nav class="sidebar-nav">
+
+            <a class="sidebar-link" asp-page="/Index">
+                Inicio
+            </a>
+
+            <details class="sidebar-group">
+                <summary class="sidebar-group__title">
+                    Productos
+                </summary>
+
+                <div class="sidebar-group__items">
+                    <a asp-page="/Productos/Index">
+                        Consultar productos
+                    </a>
+
+                    <a asp-page="/Productos/Create">
+                        Registrar producto
+                    </a>
+                </div>
+            </details>
+
+            <details class="sidebar-group">
+                <summary class="sidebar-group__title">
+                    Catálogo
+                </summary>
+
+                <div class="sidebar-group__items">
+                    <a asp-page="/Categorias/Index">
+                        Categorías
+                    </a>
+
+                    <a asp-page="/Marcas/Index">
+                        Marcas
+                    </a>
+                </div>
+            </details>
+
+        </nav>
+    </aside>
+
+    <button
+        type="button"
+        class="sidebar-overlay"
+        id="sidebarOverlay"
+        aria-label="Cerrar menú">
+    </button>
+
+    <div class="app-content">
+        <main class="app-main">
+            @RenderBody()
+        </main>
+
+        <footer class="app-footer">
+            <p>Proyecto académico - Clean Code &amp; SOLID</p>
+        </footer>
+    </div>
+
+    <script src="~/js/site.js"></script>
 </body>
 </html>
