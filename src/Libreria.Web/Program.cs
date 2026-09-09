@@ -19,23 +19,9 @@ builder.Services.AddScoped<CategoriaValidator>();
 builder.Services.AddScoped<IMarcaRepository, MarcaRepository>();
 builder.Services.AddScoped<MarcaValidator>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
-builder.Services.AddScoped<CatalogoProductoRepository>();
-builder.Services.AddScoped<IConsultaCatalogoProductoRepository>(
-    provider => provider.GetRequiredService<CatalogoProductoRepository>());
-builder.Services.AddScoped<IValidacionCatalogoProductoRepository>(
-    provider => provider.GetRequiredService<CatalogoProductoRepository>());
-builder.Services.AddScoped<IComparadorCostoProducto, CostoProductoService>();
-builder.Services.AddScoped<ProductoService>();
-builder.Services.AddScoped<IConsultaProductosService>(
-    provider => provider.GetRequiredService<ProductoService>());
-builder.Services.AddScoped<IRegistroProductoService>(
-    provider => provider.GetRequiredService<ProductoService>());
-builder.Services.AddScoped<IEdicionProductoService>(
-    provider => provider.GetRequiredService<ProductoService>());
-builder.Services.AddScoped<IConsultaProductoDetalleService>(
-    provider => provider.GetRequiredService<ProductoService>());
-builder.Services.AddScoped<IBajaProductoService>(
-    provider => provider.GetRequiredService<ProductoService>());
+builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoRepository>();
+builder.Services.AddScoped<CostoProductoService>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<ProductoValidator>();
 builder.Services.AddScoped<IHistoricoCostoRepository, HistoricoCostoRepository>();
 

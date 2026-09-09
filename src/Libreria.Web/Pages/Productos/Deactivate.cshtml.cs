@@ -7,9 +7,9 @@ namespace Libreria.Web.Pages.Productos;
 
 public class DeactivateModel : PageModel
 {
-    private readonly IBajaProductoService _service;
+    private readonly IProductoService _service;
 
-    public DeactivateModel(IBajaProductoService service)
+    public DeactivateModel(IProductoService service)
     {
         _service = service;
     }

@@ -7,9 +7,9 @@ namespace Libreria.Web.Pages.Productos;
 
 public class CreateModel : PageModel
 {
-    private readonly IRegistroProductoService _service;
+    private readonly IProductoService _service;
 
-    public CreateModel(IRegistroProductoService service)
+    public CreateModel(IProductoService service)
     {
         _service = service;
     }

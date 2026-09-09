@@ -9,11 +9,11 @@ namespace Libreria.Web.Pages.Productos.Repositories;
 public class ProductoRepository : IProductoRepository
 {
     private readonly IDbConnectionFactory _connectionFactory;
-    private readonly IComparadorCostoProducto _comparadorCosto;
+    private readonly CostoProductoService _comparadorCosto;
 
     public ProductoRepository(
         IDbConnectionFactory connectionFactory,
-        IComparadorCostoProducto comparadorCosto)
+        CostoProductoService comparadorCosto)
     {
         _connectionFactory = connectionFactory;
         _comparadorCosto = comparadorCosto;

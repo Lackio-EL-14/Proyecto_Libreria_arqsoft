@@ -7,9 +7,9 @@ namespace Libreria.Web.Pages.Productos;
 
 public class DetailsModel : PageModel
 {
-    private readonly IConsultaProductoDetalleService _service;
+    private readonly IProductoService _service;
 
-    public DetailsModel(IConsultaProductoDetalleService service)
+    public DetailsModel(IProductoService service)
     {
         _service = service;
     }

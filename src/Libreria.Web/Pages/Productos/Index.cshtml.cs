@@ -7,9 +7,9 @@ namespace Libreria.Web.Pages.Productos;
 
 public class IndexModel : PageModel
 {
-    private readonly IConsultaProductosService _service;
+    private readonly IProductoService _service;
 
-    public IndexModel(IConsultaProductosService service)
+    public IndexModel(IProductoService service)
     {
         _service = service;
     }
