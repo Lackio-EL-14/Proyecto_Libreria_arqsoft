@@ -5,12 +5,7 @@ using Libreria.Web.Pages.Marcas.Models;
 
 namespace Libreria.Web.Pages.Marcas.Repositories;
 
-public class MarcaRepository :
-    IListadoMarcasRepository,
-    IRegistroMarcaRepository,
-    IEdicionMarcaRepository,
-    IBajaMarcaRepository,
-    IValidadorMarcaRepository
+public class MarcaRepository : IMarcaRepository
 {
     private readonly IDbConnectionFactory _connectionFactory;
 

@@ -7,9 +7,9 @@ namespace Libreria.Web.Pages.Marcas;
 
 public class DeactivateModel : PageModel
 {
-    private readonly IBajaMarcaRepository _repository;
+    private readonly IMarcaRepository _repository;
 
-    public DeactivateModel(IBajaMarcaRepository repository)
+    public DeactivateModel(IMarcaRepository repository)
     {
         _repository = repository;
     }

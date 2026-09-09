@@ -16,17 +16,7 @@ builder.Services
 
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<CategoriaValidator>();
-builder.Services.AddScoped<MarcaRepository>();
-builder.Services.AddScoped<IListadoMarcasRepository>(
-    provider => provider.GetRequiredService<MarcaRepository>());
-builder.Services.AddScoped<IRegistroMarcaRepository>(
-    provider => provider.GetRequiredService<MarcaRepository>());
-builder.Services.AddScoped<IEdicionMarcaRepository>(
-    provider => provider.GetRequiredService<MarcaRepository>());
-builder.Services.AddScoped<IBajaMarcaRepository>(
-    provider => provider.GetRequiredService<MarcaRepository>());
-builder.Services.AddScoped<IValidadorMarcaRepository>(
-    provider => provider.GetRequiredService<MarcaRepository>());
+builder.Services.AddScoped<IMarcaRepository, MarcaRepository>();
 builder.Services.AddScoped<MarcaValidator>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<CatalogoProductoRepository>();

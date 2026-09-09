@@ -8,11 +8,11 @@ namespace Libreria.Web.Pages.Marcas;
 
 public class EditModel : PageModel
 {
-    private readonly IEdicionMarcaRepository _repository;
+    private readonly IMarcaRepository _repository;
     private readonly MarcaValidator _validator;
 
     public EditModel(
-        IEdicionMarcaRepository repository,
+        IMarcaRepository repository,
         MarcaValidator validator)
     {
         _repository = repository;

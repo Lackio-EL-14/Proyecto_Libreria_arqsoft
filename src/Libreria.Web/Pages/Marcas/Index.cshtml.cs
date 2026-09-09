@@ -6,9 +6,9 @@ namespace Libreria.Web.Pages.Marcas;
 
 public class IndexModel : PageModel
 {
-    private readonly IListadoMarcasRepository _repository;
+    private readonly IMarcaRepository _repository;
 
-    public IndexModel(IListadoMarcasRepository repository)
+    public IndexModel(IMarcaRepository repository)
     {
         _repository = repository;
     }
