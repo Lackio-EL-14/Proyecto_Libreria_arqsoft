@@ -35,10 +35,15 @@ GO
 IF COL_LENGTH('dbo.Categoria', 'Codigo') IS NULL
 BEGIN
     ALTER TABLE dbo.Categoria ADD Codigo NVARCHAR(20) NULL;
-    UPDATE dbo.Categoria
-    SET Codigo = CONCAT(N'CAT-', RIGHT(N'000000' + CONVERT(NVARCHAR(6), CategoriaId), 6));
-    ALTER TABLE dbo.Categoria ALTER COLUMN Codigo NVARCHAR(20) NOT NULL;
 END
+GO
+
+UPDATE dbo.Categoria
+SET Codigo = CONCAT(N'CAT-', RIGHT(N'000000' + CONVERT(NVARCHAR(6), CategoriaId), 6))
+WHERE Codigo IS NULL OR LTRIM(RTRIM(Codigo)) = N'';
+GO
+
+ALTER TABLE dbo.Categoria ALTER COLUMN Codigo NVARCHAR(20) NOT NULL;
 GO
 
 IF NOT EXISTS (
