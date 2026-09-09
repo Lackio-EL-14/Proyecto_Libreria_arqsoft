@@ -9,7 +9,10 @@ using Libreria.Web.Pages.Productos.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddRazorPages();
+builder.Services
+    .AddRazorPages()
+    .AddMvcOptions(options =>
+        options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 
 builder.Services.AddScoped<CategoriaRepository>();
 builder.Services.AddScoped<IListadoCategoriasRepository>(
