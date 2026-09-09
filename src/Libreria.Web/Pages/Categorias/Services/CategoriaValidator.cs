@@ -6,9 +6,9 @@ namespace Libreria.Web.Pages.Categorias.Services;
 
 public class CategoriaValidator
 {
-    private readonly IValidadorCategoriaRepository _repository;
+    private readonly ICategoriaRepository _repository;
 
-    public CategoriaValidator(IValidadorCategoriaRepository repository)
+    public CategoriaValidator(ICategoriaRepository repository)
     {
         _repository = repository;
     }

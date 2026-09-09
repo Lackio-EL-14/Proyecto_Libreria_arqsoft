@@ -14,19 +14,7 @@ builder.Services
     .AddMvcOptions(options =>
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 
-builder.Services.AddScoped<CategoriaRepository>();
-builder.Services.AddScoped<IListadoCategoriasRepository>(
-    provider => provider.GetRequiredService<CategoriaRepository>());
-builder.Services.AddScoped<IRegistroCategoriaRepository>(
-    provider => provider.GetRequiredService<CategoriaRepository>());
-builder.Services.AddScoped<IEdicionCategoriaRepository>(
-    provider => provider.GetRequiredService<CategoriaRepository>());
-builder.Services.AddScoped<IBajaCategoriaRepository>(
-    provider => provider.GetRequiredService<CategoriaRepository>());
-builder.Services.AddScoped<IReactivacionCategoriaRepository>(
-    provider => provider.GetRequiredService<CategoriaRepository>());
-builder.Services.AddScoped<IValidadorCategoriaRepository>(
-    provider => provider.GetRequiredService<CategoriaRepository>());
+builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<CategoriaValidator>();
 builder.Services.AddScoped<MarcaRepository>();
 builder.Services.AddScoped<IListadoMarcasRepository>(

@@ -7,9 +7,9 @@ namespace Libreria.Web.Pages.Categorias;
 
 public class IndexModel : PageModel
 {
-    private readonly IListadoCategoriasRepository _repository;
+    private readonly ICategoriaRepository _repository;
 
-    public IndexModel(IListadoCategoriasRepository repository)
+    public IndexModel(ICategoriaRepository repository)
     {
         _repository = repository;
     }

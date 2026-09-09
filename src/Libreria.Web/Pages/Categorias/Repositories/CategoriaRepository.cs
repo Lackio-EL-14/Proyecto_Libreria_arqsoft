@@ -5,13 +5,7 @@ using Libreria.Web.Pages.Categorias.Models;
 
 namespace Libreria.Web.Pages.Categorias.Repositories;
 
-public class CategoriaRepository :
-    IListadoCategoriasRepository,
-    IRegistroCategoriaRepository,
-    IEdicionCategoriaRepository,
-    IBajaCategoriaRepository,
-    IReactivacionCategoriaRepository,
-    IValidadorCategoriaRepository
+public class CategoriaRepository : ICategoriaRepository
 {
     private readonly IDbConnectionFactory _connectionFactory;
 
