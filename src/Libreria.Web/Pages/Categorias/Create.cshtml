@@ -4,44 +4,44 @@
     ViewData["Title"] = "Registrar Categoría";
 }
 
-<div class="container mt-4">
-    <h2>Registrar Nueva Categoría</h2>
-    <hr />
-
-    <div class="row">
-        <div class="col-md-6">
-            <form method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <div class="mb-3">
-                    <label asp-for="Input.Codigo" class="form-label">Código <span class="text-danger">*</span></label>
-                    <input asp-for="Input.Codigo" class="form-control" placeholder="Ej: LIBROS" maxlength="20" />
-                    <span asp-validation-for="Input.Codigo" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Input.Nombre" class="form-label">Nombre de la Categoría <span class="text-danger">*</span></label>
-                    <input asp-for="Input.Nombre" class="form-control" placeholder="Ej: Útiles Escolares" />
-                    <span asp-validation-for="Input.Nombre" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Input.Descripcion" class="form-label">Descripción</label>
-                    <textarea asp-for="Input.Descripcion" class="form-control" rows="3" placeholder="Descripción opcional de la categoría"></textarea>
-                    <span asp-validation-for="Input.Descripcion" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Input.Ubicacion" class="form-label">Ubicación <span class="text-danger">*</span></label>
-                    <input asp-for="Input.Ubicacion" class="form-control" placeholder="Ej: Pasillo A" maxlength="100" />
-                    <span asp-validation-for="Input.Ubicacion" class="text-danger"></span>
-                </div>
-
-                <div class="mt-4">
-                    <button type="submit" class="btn btn-primary">Guardar Categoría</button>
-                    <a asp-page="./Index" class="btn btn-secondary">Cancelar</a>
-                </div>
-            </form>
-        </div>
+<div class="page-header">
+    <div>
+        <h1>Registrar Nueva Categoría</h1>
+        <p>Ingrese los datos de la nueva categoría del catálogo.</p>
     </div>
 </div>
 
+<div class="form-card">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+        
+        <div class="form-group">
+            <label asp-for="Input.Codigo">Código <span class="text-danger">*</span></label>
+            <input asp-for="Input.Codigo" class="form-control" placeholder="Ej: LIBROS" maxlength="20" />
+            <span asp-validation-for="Input.Codigo" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Input.Nombre">Nombre de la Categoría <span class="text-danger">*</span></label>
+            <input asp-for="Input.Nombre" class="form-control" placeholder="Ej: Útiles Escolares" />
+            <span asp-validation-for="Input.Nombre" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Input.Descripcion">Descripción</label>
+            <textarea asp-for="Input.Descripcion" class="form-control" rows="3" placeholder="Descripción opcional de la categoría"></textarea>
+            <span asp-validation-for="Input.Descripcion" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Input.Ubicacion">Ubicación <span class="text-danger">*</span></label>
+            <input asp-for="Input.Ubicacion" class="form-control" placeholder="Ej: Pasillo A" maxlength="100" />
+            <span asp-validation-for="Input.Ubicacion" class="text-danger"></span>
+        </div>
+
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn--primary">Guardar Categoría</button>
+            <a asp-page="./Index" class="btn btn--secondary">Cancelar</a>
+        </div>
+    </form>
+</div>

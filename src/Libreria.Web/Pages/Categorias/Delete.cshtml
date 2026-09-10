@@ -4,38 +4,39 @@
     ViewData["Title"] = "Dar de Baja Categoría";
 }
 
-<div style="margin-top: 20px; max-width: 600px;">
-    <h2 style="color: red;">Confirmar Baja de Categoría</h2>
-    <hr />
+<div class="page-header">
+    <div>
+        <h1 style="color: #B91C1C;">Confirmar Baja de Categoría</h1>
+        <p>Verifique la información antes de proceder con la desactivación.</p>
+    </div>
+</div>
 
-    <div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+<div class="form-card">
+    <div style="background-color: #FEF2F2; color: #991B1B; padding: 1.25rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #FCA5A5;">
         <strong>¿Estás seguro de que deseas desactivar esta categoría?</strong><br />
         Esta acción la ocultará de los formularios de registro (Estado = Inactivo), pero no eliminará su historial en el sistema.
     </div>
 
     @if (Model.TieneProductos)
     {
-        <div style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #ffeeba;">
+        <div style="background-color: #FFFBEB; color: #92400E; padding: 1.25rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #FCD34D;">
             <strong>⚠️ Advertencia:</strong> Esta categoría tiene productos activos asociados. 
             Darla de baja no eliminará los productos, pero la categoría ya no estará disponible para nuevas asignaciones.
         </div>
     }
 
-    <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px;">
-        <p><strong>Código:</strong> @Model.Categoria?.Codigo</p>
-        <p><strong>Nombre:</strong> @Model.Categoria?.Nombre</p>
-        <p><strong>Descripción:</strong> @(string.IsNullOrEmpty(Model.Categoria?.Descripcion) ? "N/A" : Model.Categoria?.Descripcion)</p>
-        <p><strong>Ubicación:</strong> @Model.Categoria?.Ubicacion</p>
+    <!-- Tarjeta interna para mostrar los datos de la categoría -->
+    <div style="margin-bottom: 2rem; padding: 1.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-base); background-color: var(--color-bg);">
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Código:</strong> @Model.Categoria?.Codigo</p>
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Nombre:</strong> @Model.Categoria?.Nombre</p>
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Descripción:</strong> @(string.IsNullOrEmpty(Model.Categoria?.Descripcion) ? "N/A" : Model.Categoria?.Descripcion)</p>
+        <p style="margin-bottom: 0; font-size: 0.95rem;"><strong>Ubicación:</strong> @Model.Categoria?.Ubicacion</p>
     </div>
 
-    <form method="post">
+    <form method="post" style="display: flex; gap: 1rem;">
         <input type="hidden" asp-for="CategoriaId" />
         
-        <button type="submit" style="padding: 10px 15px; background-color: #dc3545; color: white; border: none; cursor: pointer; font-weight: bold;">
-            Confirmar Baja
-        </button>
-        <a asp-page="./Index" style="margin-left: 10px; text-decoration: none; padding: 10px 15px; background-color: #6c757d; color: white;">
-            Cancelar
-        </a>
+        <button type="submit" class="btn" style="background-color: #DC2626; color: white;">Confirmar Baja</button>
+        <a asp-page="./Index" class="btn btn--secondary">Cancelar</a>
     </form>
 </div>

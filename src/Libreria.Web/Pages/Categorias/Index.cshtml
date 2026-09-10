@@ -4,59 +4,74 @@
     ViewData["Title"] = "Categorías";
 }
 
-<h1>Categorías</h1>
+<div class="page-header">
+    <div>
+        <h1>Categorías</h1>
+        <p>Gestión y consulta de las categorías registradas.</p>
+    </div>
+    <a asp-page="./Create" class="btn btn--primary">+ Registrar Nueva Categoría</a>
+</div>
 
 @if (TempData["MensajeExito"] != null)
 {
-    <div style="color: green; border: 1px solid green; padding: 10px; margin-bottom: 15px; border-radius: 5px;">
+    <div style="background-color: #E8F0EB; color: var(--color-accent); padding: 1rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #A3C2B1;">
         @TempData["MensajeExito"]
     </div>
 }
 
-<div style="margin-bottom: 20px;">
-    <a asp-page="./Create" style="margin-right: 20px; font-weight: bold; text-decoration: none;">+ Registrar Nueva Categoría</a>
+<!-- Filtro horizontal compacto -->
+<form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; background-color: var(--color-surface); padding: 1.25rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
     
-    <form method="get" style="display: inline-block;">
-        <input type="text" name="Busqueda" asp-for="Busqueda" placeholder="Código, nombre o ubicación" style="padding: 5px; width: 220px;" />
-        <button type="submit" style="padding: 5px 10px;">Buscar</button>
+    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 250px;">
+        <label for="Busqueda">Buscar por código, nombre o ubicación:</label>
+        <input type="text" name="Busqueda" asp-for="Busqueda" class="form-control" placeholder="Ej: LIBROS" />
+    </div>
+
+    <div style="display: flex; gap: 0.5rem;">
+        <button type="submit" class="btn btn--secondary">Buscar</button>
         @if (!string.IsNullOrEmpty(Model.Busqueda))
         {
-            <a asp-page="./Index" style="margin-left: 10px; color: red; text-decoration: none;">Limpiar filtro</a>
+            <a asp-page="./Index" class="btn btn--secondary">Limpiar</a>
         }
-    </form>
-</div>
+    </div>
+</form>
 
 @if (!Model.Categorias.Any())
 {
-    <p>No hay categorías registradas todavía o ninguna coincide con la búsqueda.</p>
+    <div style="text-align: center; color: var(--color-secondary); padding: 2rem; background-color: var(--color-surface); border-radius: var(--radius-base); border: 1px solid var(--color-border);">
+        <p>No hay categorías registradas todavía o ninguna coincide con la búsqueda.</p>
+    </div>
 }
 else
 {
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Código</th>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Ubicación</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var categoria in Model.Categorias)
-            {
+    <div class="table-container">
+        <table>
+            <thead>
                 <tr>
-                    <td>@categoria.Codigo</td>
-                    <td>@categoria.Nombre</td>
-                    <td>@(string.IsNullOrEmpty(categoria.Descripcion) ? "N/A" : categoria.Descripcion)</td>
-                    <td>@categoria.Ubicacion</td>
-                    <td>
-                        <a asp-page="./Edit" asp-route-id="@categoria.CategoriaId">Editar</a>
-                        <span>|</span>
-                        <a asp-page="./Delete" asp-route-id="@categoria.CategoriaId" style="color: red;">Baja</a>
-                    </td>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Ubicación</th>
+                    <th style="text-align: right;">Acciones</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var categoria in Model.Categorias)
+                {
+                    <tr>
+                        <td style="font-weight: 600;">@categoria.Codigo</td>
+                        <td>@categoria.Nombre</td>
+                        <td>@(string.IsNullOrEmpty(categoria.Descripcion) ? "—" : categoria.Descripcion)</td>
+                        <td>@categoria.Ubicacion</td>
+                        <td>
+                            <div class="table-actions">
+                                <a asp-page="./Edit" asp-route-id="@categoria.CategoriaId" class="btn-table">Editar</a>
+                                <a asp-page="./Delete" asp-route-id="@categoria.CategoriaId" class="btn-table btn-table--danger">Baja</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }

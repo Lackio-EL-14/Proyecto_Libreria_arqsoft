@@ -5,103 +5,110 @@
     ViewData["Title"] = "Productos";
 }
 
-<h1>Productos</h1>
-
-<p>
-    <a asp-page="Create">Registrar producto</a>
-</p>
+<div class="page-header">
+    <div>
+        <h1>Productos</h1>
+        <p>Gestión del catálogo de productos e inventario.</p>
+    </div>
+    <a asp-page="Create" class="btn btn--primary">+ Registrar producto</a>
+</div>
 
 @if (TempData["MensajeExito"] is string mensaje)
 {
-    <p>@mensaje</p>
+    <div style="background-color: #E8F0EB; color: var(--color-accent); padding: 1rem; border-radius: var(--radius-base); margin-bottom: 1rem; border: 1px solid #A3C2B1;">
+        @mensaje
+    </div>
 }
 
-<form method="get">
-    <label for="Busqueda">Buscar producto</label>
+<!-- Filtros en Grilla Horizontal -->
+<form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; background-color: var(--color-surface); padding: 1.25rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+    
+    <div class="form-group" style="margin-bottom: 0; flex: 2; min-width: 200px;">
+        <label for="Busqueda">Buscar producto</label>
+        <input type="text" id="Busqueda" name="Busqueda" class="form-control" value="@Model.Busqueda" placeholder="Nombre o descripción" />
+    </div>
 
-    <input type="text"
-           id="Busqueda"
-           name="Busqueda"
-           value="@Model.Busqueda"
-           placeholder="Nombre o descripción" />
+    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+        <label for="CategoriaId">Categoría</label>
+        <select id="CategoriaId" name="CategoriaId" class="form-control">
+            <option value="">Todas</option>
+            @foreach (var categoria in Model.Categorias)
+            {
+                <option value="@categoria.CategoriaId" selected="@(Model.CategoriaId == categoria.CategoriaId)">
+                    @categoria.Nombre
+                </option>
+            }
+        </select>
+    </div>
 
-    <label for="CategoriaId">Categoría</label>
+    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+        <label for="MarcaId">Marca</label>
+        <select id="MarcaId" name="MarcaId" class="form-control">
+            <option value="">Todas</option>
+            @foreach (var marca in Model.Marcas)
+            {
+                <option value="@marca.MarcaId" selected="@(Model.MarcaId == marca.MarcaId)">
+                    @marca.Nombre
+                </option>
+            }
+        </select>
+    </div>
 
-    <select id="CategoriaId" name="CategoriaId">
-        <option value="">Todas</option>
-
-        @foreach (var categoria in Model.Categorias)
-        {
-            <option value="@categoria.CategoriaId"
-                    selected="@(Model.CategoriaId == categoria.CategoriaId)">
-                @categoria.Nombre
-            </option>
-        }
-    </select>
-
-    <label for="MarcaId">Marca</label>
-
-    <select id="MarcaId" name="MarcaId">
-        <option value="">Todas</option>
-
-        @foreach (var marca in Model.Marcas)
-        {
-            <option value="@marca.MarcaId"
-                    selected="@(Model.MarcaId == marca.MarcaId)">
-                @marca.Nombre
-            </option>
-        }
-    </select>
-
-    <button type="submit">Buscar</button>
+    <div style="display: flex; gap: 0.5rem;">
+        <button type="submit" class="btn btn--secondary">Filtrar</button>
+    </div>
 </form>
-
-
 
 @if (Model.Productos.Count == 0)
 {
-    @if (!string.IsNullOrWhiteSpace(Model.Busqueda)
-        || Model.CategoriaId.HasValue
-        || Model.MarcaId.HasValue)
-    {
-        <p>No se encontraron productos que coincidan con los filtros seleccionados.</p>
-    }
-    else
-    {
-        <p>No hay productos registrados todavía.</p>
-    }
+    <div style="text-align: center; color: var(--color-secondary); padding: 2rem; background-color: var(--color-surface); border-radius: var(--radius-base); border: 1px solid var(--color-border);">
+        @if (!string.IsNullOrWhiteSpace(Model.Busqueda) || Model.CategoriaId.HasValue || Model.MarcaId.HasValue)
+        {
+            <p>No se encontraron productos que coincidan con los filtros seleccionados.</p>
+        }
+        else
+        {
+            <p>No hay productos registrados todavía.</p>
+        }
+    </div>
 }
 else
 {
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>Categoría</th>
-                <th>Marca</th>
-                <th>Stock</th>
-                <th>Precio venta</th>
-                <th>Costo adquisición</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var producto in Model.Productos)
-            {
+    <div class="table-container">
+        <table>
+            <thead>
                 <tr>
-                    <td>@producto.Nombre</td>
-                    <td>@producto.Categoria</td>
-                    <td>@producto.Marca</td>
-                    <td>@producto.Stock</td>
-                    <td>@producto.PrecioVenta.ToString("0.00")</td>
-                    <td>@producto.CostoAdquisicionActual.ToString("0.00")</td>
-                    <td>
-                        <a asp-page="Details" asp-route-id="@producto.ProductoId">Ver</a>
-                        <a asp-page="Edit" asp-route-id="@producto.ProductoId">Editar</a>
-                        <a asp-page="Deactivate" asp-route-id="@producto.ProductoId">Dar de baja</a>
-                    </td>
+                    <th>Nombre</th>
+                    <th>Categoría</th>
+                    <th>Marca</th>
+                    <th>Stock</th>
+                    <th>Precio venta</th>
+                    <th>Costo adquisición</th>
+                    <th style="text-align: right;">Acciones</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var producto in Model.Productos)
+                {
+                    <tr>
+                        <td style="font-weight: 600;">@producto.Nombre</td>
+                        <td>@producto.Categoria</td>
+                        <td>@producto.Marca</td>
+                        <td>
+                            <span class="badge @(producto.Stock <= 5 ? "badge--accent" : "")">@producto.Stock</span>
+                        </td>
+                        <td>Bs. @producto.PrecioVenta.ToString("0.00")</td>
+                        <td>Bs. @producto.CostoAdquisicionActual.ToString("0.00")</td>
+                        <td>
+                            <div class="table-actions">
+                                <a asp-page="Details" asp-route-id="@producto.ProductoId" class="btn-table">Ver</a>
+                                <a asp-page="Edit" asp-route-id="@producto.ProductoId" class="btn-table">Editar</a>
+                                <a asp-page="Deactivate" asp-route-id="@producto.ProductoId" class="btn-table btn-table--danger">Dar de baja</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
