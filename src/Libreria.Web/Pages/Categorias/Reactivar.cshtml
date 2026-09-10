@@ -4,30 +4,31 @@
     ViewData["Title"] = "Reactivar Categoría";
 }
 
-<div style="margin-top: 20px; max-width: 600px;">
-    <h2 style="color: green;">Confirmar Reactivación</h2>
-    <hr />
+<div class="page-header">
+    <div>
+        <h1 style="color: var(--color-accent);">Confirmar Reactivación</h1>
+        <p>Verifique la información antes de proceder.</p>
+    </div>
+</div>
 
-    <div style="background-color: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+<div class="form-card">
+    <div style="background-color: #E8F0EB; color: var(--color-accent-hover); padding: 1.25rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #A3C2B1;">
         <strong>¿Estás seguro de que deseas reactivar esta categoría?</strong><br />
         Esta acción hará que la categoría vuelva a estar disponible en todos los formularios de registro de productos (Estado = Activo).
     </div>
 
-    <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px;">
-        <p><strong>Código:</strong> @Model.Categoria?.Codigo</p>
-        <p><strong>Nombre:</strong> @Model.Categoria?.Nombre</p>
-        <p><strong>Descripción:</strong> @(string.IsNullOrEmpty(Model.Categoria?.Descripcion) ? "N/A" : Model.Categoria?.Descripcion)</p>
-        <p><strong>Ubicación:</strong> @Model.Categoria?.Ubicacion</p>
+    <!-- Tarjeta interna para mostrar los datos de la categoría -->
+    <div style="margin-bottom: 2rem; padding: 1.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-base); background-color: var(--color-bg);">
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Código:</strong> @Model.Categoria?.Codigo</p>
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Nombre:</strong> @Model.Categoria?.Nombre</p>
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Descripción:</strong> @(string.IsNullOrEmpty(Model.Categoria?.Descripcion) ? "N/A" : Model.Categoria?.Descripcion)</p>
+        <p style="margin-bottom: 0; font-size: 0.95rem;"><strong>Ubicación:</strong> @Model.Categoria?.Ubicacion</p>
     </div>
 
-    <form method="post">
+    <form method="post" style="display: flex; gap: 1rem;">
         <input type="hidden" asp-for="CategoriaId" />
         
-        <button type="submit" style="padding: 10px 15px; background-color: #28a745; color: white; border: none; cursor: pointer; font-weight: bold;">
-            Confirmar Reactivación
-        </button>
-        <a asp-page="./Index" style="margin-left: 10px; text-decoration: none; padding: 10px 15px; background-color: #6c757d; color: white;">
-            Cancelar
-        </a>
+        <button type="submit" class="btn btn--primary" style="background-color: var(--color-accent);">Confirmar Reactivación</button>
+        <a asp-page="./Index" class="btn btn--secondary">Cancelar</a>
     </form>
 </div>

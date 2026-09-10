@@ -5,78 +5,45 @@
     ViewData["Title"] = "Editar marca";
 }
 
-<h1>Editar marca</h1>
-
-<p>Modifique los datos de la marca seleccionada.</p>
-
-<form method="post">
-
-    <input type="hidden" asp-for="MarcaId" />
-
-    <div asp-validation-summary="ModelOnly"></div>
-
+<div class="page-header">
     <div>
-        <label asp-for="Input.Nombre">Nombre:</label>
-        <br />
-
-        <input
-            asp-for="Input.Nombre"
-            maxlength="100" />
-
-        <br />
-
-        <span asp-validation-for="Input.Nombre"></span>
+        <h1>Editar marca</h1>
+        <p>Modifique los datos de la marca seleccionada.</p>
     </div>
+</div>
 
-    <br />
+<div class="form-card">
+    <form method="post">
+        <input type="hidden" asp-for="MarcaId" />
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
 
-    <div>
-        <label asp-for="Input.Descripcion">Descripción:</label>
-        <br />
+        <div class="form-group">
+            <label asp-for="Input.Nombre">Nombre: <span class="text-danger">*</span></label>
+            <input asp-for="Input.Nombre" class="form-control" maxlength="100" />
+            <span asp-validation-for="Input.Nombre" class="text-danger"></span>
+        </div>
 
-        <textarea
-            asp-for="Input.Descripcion"
-            maxlength="255"
-            rows="4"></textarea>
+        <div class="form-group">
+            <label asp-for="Input.Descripcion">Descripción:</label>
+            <textarea asp-for="Input.Descripcion" class="form-control" maxlength="255" rows="4"></textarea>
+            <span asp-validation-for="Input.Descripcion" class="text-danger"></span>
+        </div>
 
-        <br />
+        <div class="form-group">
+            <label asp-for="Input.PaisOrigen">País de origen:</label>
+            <input asp-for="Input.PaisOrigen" class="form-control" maxlength="100" />
+            <span asp-validation-for="Input.PaisOrigen" class="text-danger"></span>
+        </div>
 
-        <span asp-validation-for="Input.Descripcion"></span>
-    </div>
+        <div class="form-group">
+            <label asp-for="Input.SitioWeb">Sitio web:</label>
+            <input asp-for="Input.SitioWeb" class="form-control" maxlength="200" placeholder="https://ejemplo.com" />
+            <span asp-validation-for="Input.SitioWeb" class="text-danger"></span>
+        </div>
 
-    <br />
-
-    <div>
-        <label asp-for="Input.PaisOrigen">País de origen:</label>
-        <br />
-
-        <input
-            asp-for="Input.PaisOrigen"
-            maxlength="100" />
-
-        <br />
-
-        <span asp-validation-for="Input.PaisOrigen"></span>
-    </div>
-
-    <br />
-
-    <div>
-        <label asp-for="Input.SitioWeb">Sitio web:</label>
-        <br />
-        <input asp-for="Input.SitioWeb" maxlength="200" placeholder="https://ejemplo.com" />
-        <br />
-        <span asp-validation-for="Input.SitioWeb"></span>
-    </div>
-
-    <br />
-
-    <button type="submit">
-        Guardar cambios
-    </button>
-
-    <a asp-page="./Index">
-        Cancelar
-    </a>
-
-</form>
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn--primary">Guardar cambios</button>
+            <a asp-page="./Index" class="btn btn--secondary">Cancelar</a>
+        </div>
+    </form>
+</div>

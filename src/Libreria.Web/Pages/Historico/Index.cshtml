@@ -4,30 +4,40 @@
     ViewData["Title"] = "Histórico de costos";
 }
 
-<h1>Histórico de costos</h1>
+<div class="page-header">
+    <div>
+        <h1>Histórico de costos</h1>
+        <p>Auditoría de variaciones de precios de adquisición a lo largo del tiempo.</p>
+    </div>
+</div>
 
 @if (!string.IsNullOrWhiteSpace(Model.MensajeError))
 {
-    <div class="alert alert-danger" role="alert">
-        @Model.MensajeError
+    <div class="form-card" style="text-align: center; padding: 3rem 2rem;">
+        <h3 style="color: #991B1B; margin-bottom: 0.5rem;">⚠️ Información no disponible</h3>
+        <p style="color: var(--color-secondary);">@Model.MensajeError</p>
+        <div style="margin-top: 1.5rem;">
+            <a asp-page="/Productos/Index" class="btn btn--secondary">Volver al catálogo</a>
+        </div>
     </div>
 }
 else
 {
-    <div class="mb-3">
-        <h4>@Model.NombreProducto</h4>
+    <div style="margin-bottom: 1.5rem; padding: 1.25rem; background-color: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-base); box-shadow: var(--shadow-sm);">
+        <h4 style="color: var(--color-primary); margin: 0;">Producto: @Model.NombreProducto</h4>
     </div>
 
     @if (Model.Historial.Count == 0)
     {
-        <div class="alert alert-info" role="alert">
-            Este producto no tiene registros históricos de costo.
+        <div style="text-align: center; color: var(--color-secondary); padding: 3rem 2rem; background-color: var(--color-surface); border-radius: var(--radius-base); border: 1px solid var(--color-border);">
+            <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Este producto no tiene registros históricos de costo.</p>
+            <p style="font-size: 0.9rem;">Los cambios de precio se registrarán aquí automáticamente.</p>
         </div>
     }
     else
     {
-        <div>
-            <table class="data-table">
+        <div class="table-container">
+            <table>
                 <thead>
                     <tr>
                         <th>Fecha</th>
@@ -41,49 +51,44 @@ else
                     @foreach (var item in Model.Historial)
                     {
                         <tr>
-                            <td>
-                                @item.FechaVigencia.ToString("dd/MM/yyyy HH:mm")
-                            </td>
-
+                            <td>@item.FechaVigencia.ToString("dd/MM/yyyy HH:mm")</td>
                             <td>
                                 @if (item.CostoAnterior.HasValue)
                                 {
-                                    @item.CostoAnterior.Value.ToString("0.00")
+                                    <span>Bs. @item.CostoAnterior.Value.ToString("0.00")</span>
                                 }
                                 else
                                 {
-                                    <span>—</span>
+                                    <span style="color: var(--color-secondary);">—</span>
                                 }
                             </td>
-
-                            <td>
-                                @item.CostoNuevo.ToString("0.00")
-                            </td>
-
+                            <td style="font-weight: 600;">Bs. @item.CostoNuevo.ToString("0.00")</td>
                             <td>
                                 @if (item.VariacionAbsoluta.HasValue)
                                 {
                                     var variacion = item.VariacionAbsoluta.Value;
-
                                     if (variacion > 0)
                                     {
-                                        <span>+@variacion.ToString("0.00")</span>
+                                        <span style="color: #991B1B; font-weight: 600; background-color: #FEF2F2; padding: 0.2rem 0.5rem; border-radius: var(--radius-sm);">+@variacion.ToString("0.00")</span>
+                                    }
+                                    else if (variacion < 0)
+                                    {
+                                        <span style="color: var(--color-accent); font-weight: 600; background-color: #E8F0EB; padding: 0.2rem 0.5rem; border-radius: var(--radius-sm);">@variacion.ToString("0.00")</span>
                                     }
                                     else
                                     {
-                                        <span>@variacion.ToString("0.00")</span>
+                                        <span style="color: var(--color-secondary);">0.00</span>
                                     }
                                 }
                                 else
                                 {
-                                    <span>—</span>
+                                    <span style="color: var(--color-secondary);">—</span>
                                 }
                             </td>
-
                             <td>
                                 @if (string.IsNullOrWhiteSpace(item.Motivo))
                                 {
-                                    <span>—</span>
+                                    <span style="color: var(--color-secondary);">—</span>
                                 }
                                 else
                                 {
@@ -97,14 +102,14 @@ else
         </div>
     }
 
-    <p>
+    <div style="margin-top: 2rem;">
         @if (Model.ProductoActivo)
         {
-            <a asp-page="/Productos/Details" asp-route-id="@Model.ProductoId">Volver al producto</a>
+            <a asp-page="/Productos/Details" asp-route-id="@Model.ProductoId" class="btn btn--secondary">Volver al producto</a>
         }
         else
         {
-            <a asp-page="/Productos/Index">Volver a productos</a>
+            <a asp-page="/Productos/Index" class="btn btn--secondary">Volver a productos</a>
         }
-    </p>
+    </div>
 }

@@ -4,41 +4,46 @@
     ViewData["Title"] = "Editar Categoría";
 }
 
-<div style="margin-top: 20px;">
-    <h2>Editar Categoría</h2>
-    <hr />
+<div class="page-header">
+    <div>
+        <h1>Editar Categoría</h1>
+        <p>Modifique los datos de la categoría seleccionada.</p>
+    </div>
+</div>
 
-    <form method="post" style="max-width: 500px;">
+<div class="form-card">
+    <form method="post">
         <input type="hidden" asp-for="CategoriaId" />
-        <div asp-validation-summary="ModelOnly" style="color: red;"></div>
+        
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
 
-        <div style="margin-bottom: 15px;">
-            <label asp-for="Input.Codigo" style="font-weight: bold; display: block; margin-bottom: 5px;">Código *</label>
-            <input asp-for="Input.Codigo" maxlength="20" style="width: 100%; padding: 8px;" />
-            <span asp-validation-for="Input.Codigo" style="color: red; font-size: 14px;"></span>
+        <div class="form-group">
+            <label asp-for="Input.Codigo">Código <span class="text-danger">*</span></label>
+            <input asp-for="Input.Codigo" class="form-control" maxlength="20" />
+            <span asp-validation-for="Input.Codigo" class="text-danger"></span>
         </div>
 
-        <div style="margin-bottom: 15px;">
-            <label asp-for="Input.Nombre" style="font-weight: bold; display: block; margin-bottom: 5px;">Nombre de la Categoría *</label>
-            <input asp-for="Input.Nombre" style="width: 100%; padding: 8px;" />
-            <span asp-validation-for="Input.Nombre" style="color: red; font-size: 14px;"></span>
+        <div class="form-group">
+            <label asp-for="Input.Nombre">Nombre de la Categoría <span class="text-danger">*</span></label>
+            <input asp-for="Input.Nombre" class="form-control" />
+            <span asp-validation-for="Input.Nombre" class="text-danger"></span>
         </div>
 
-        <div style="margin-bottom: 15px;">
-            <label asp-for="Input.Descripcion" style="font-weight: bold; display: block; margin-bottom: 5px;">Descripción</label>
-            <textarea asp-for="Input.Descripcion" rows="3" style="width: 100%; padding: 8px;"></textarea>
-            <span asp-validation-for="Input.Descripcion" style="color: red; font-size: 14px;"></span>
+        <div class="form-group">
+            <label asp-for="Input.Descripcion">Descripción</label>
+            <textarea asp-for="Input.Descripcion" class="form-control" rows="3"></textarea>
+            <span asp-validation-for="Input.Descripcion" class="text-danger"></span>
         </div>
 
-        <div style="margin-bottom: 15px;">
-            <label asp-for="Input.Ubicacion" style="font-weight: bold; display: block; margin-bottom: 5px;">Ubicación *</label>
-            <input asp-for="Input.Ubicacion" maxlength="100" style="width: 100%; padding: 8px;" />
-            <span asp-validation-for="Input.Ubicacion" style="color: red; font-size: 14px;"></span>
+        <div class="form-group">
+            <label asp-for="Input.Ubicacion">Ubicación <span class="text-danger">*</span></label>
+            <input asp-for="Input.Ubicacion" class="form-control" maxlength="100" />
+            <span asp-validation-for="Input.Ubicacion" class="text-danger"></span>
         </div>
 
-        <div style="margin-top: 20px;">
-            <button type="submit" style="padding: 10px 15px; background-color: #007bff; color: white; border: none; cursor: pointer;">Actualizar Categoría</button>
-            <a asp-page="./Index" style="margin-left: 10px; text-decoration: none; padding: 10px 15px; background-color: #6c757d; color: white;">Cancelar</a>
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn--primary">Actualizar Categoría</button>
+            <a asp-page="./Index" class="btn btn--secondary">Cancelar</a>
         </div>
     </form>
 </div>

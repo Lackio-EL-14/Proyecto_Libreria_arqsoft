@@ -1,40 +1,41 @@
-const menuToggle = document.getElementById("menuToggle");
-const sidebar = document.getElementById("sidebar");
-const sidebarOverlay = document.getElementById("sidebarOverlay");
+document.addEventListener("DOMContentLoaded", function () {
+    const menuToggle = document.getElementById("menuToggle");
+    const sidebar = document.getElementById("sidebar");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
 
-function abrirMenu() {
-    sidebar.classList.add("app-sidebar--open");
-    sidebarOverlay.classList.add("sidebar-overlay--visible");
-
-    menuToggle.setAttribute("aria-expanded", "true");
-    document.body.classList.add("menu-open");
-}
-
-function cerrarMenu() {
-    sidebar.classList.remove("app-sidebar--open");
-    sidebarOverlay.classList.remove("sidebar-overlay--visible");
-
-    menuToggle.setAttribute("aria-expanded", "false");
-    document.body.classList.remove("menu-open");
-}
-
-function alternarMenu() {
-    const estaAbierto =
-        sidebar.classList.contains("app-sidebar--open");
-
-    if (estaAbierto) {
-        cerrarMenu();
+    if (!menuToggle || !sidebar || !sidebarOverlay) {
         return;
     }
 
-    abrirMenu();
-}
-
-menuToggle.addEventListener("click", alternarMenu);
-sidebarOverlay.addEventListener("click", cerrarMenu);
-
-document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") {
-        cerrarMenu();
+    function abrirMenu() {
+        sidebar.classList.add("is-open");
+        sidebarOverlay.classList.add("is-open");
+        document.body.classList.add("menu-open");
+        menuToggle.setAttribute("aria-expanded", "true");
     }
+
+    function cerrarMenu() {
+        sidebar.classList.remove("is-open");
+        sidebarOverlay.classList.remove("is-open");
+        document.body.classList.remove("menu-open");
+        menuToggle.setAttribute("aria-expanded", "false");
+    }
+
+    function alternarMenu() {
+        const estaAbierto = sidebar.classList.contains("is-open");
+        if (estaAbierto) {
+            cerrarMenu();
+        } else {
+            abrirMenu();
+        }
+    }
+
+    menuToggle.addEventListener("click", alternarMenu);
+    sidebarOverlay.addEventListener("click", cerrarMenu);
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && sidebar.classList.contains("is-open")) {
+            cerrarMenu();
+        }
+    });
 });
