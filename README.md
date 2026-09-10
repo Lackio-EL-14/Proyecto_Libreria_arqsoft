@@ -6,7 +6,7 @@ en Docker. Aplica Clean Code y principios SOLID.
 ## Estructura del repo
 
 ```
-Proyecto_Libreria_arqsoft/
+LibreriaSystem/
 ├── docker-compose.yml       # Contenedor de SQL Server
 ├── db/
 │   └── schema.sql            # Las 4 tablas + datos semilla opcionales
@@ -28,43 +28,23 @@ Proyecto_Libreria_arqsoft/
 - Git
 - Editor: Visual Studio, VS Code (con la extensión C# Dev Kit) o Rider — cualquiera sirve
 
-## 2. Clonar el repositorio y entrar a `develop`
+## 2. Clonar el repositorio
 
 ```bash
-git clone https://github.com/Lackio-EL-14/Proyecto_Libreria_arqsoft.git
-cd Proyecto_Libreria_arqsoft
-git switch develop
-git pull origin develop
+git clone <URL-del-repo>
+cd LibreriaSystem
 ```
-
-Todos los comandos de Docker deben ejecutarse desde esta carpeta raíz, donde
-se encuentran `README.md`, `docker-compose.yml`, `db/` y `src/`.
 
 ## 3. Levantar la base de datos con Docker
-
-Abre **Docker Desktop manualmente** y espera hasta que indique que el motor
-está en ejecución. La primera vez, descarga la imagen de SQL Server:
-
-```bash
-docker compose pull db
-```
 
 ```bash
 docker compose up -d
 ```
 
-Espera unos 15-20 segundos y confirma que `libreria-db` aparezca como
-`healthy`:
+Espera unos 15-20 segundos a que el contenedor esté "healthy":
 
 ```bash
-docker compose ps
-```
-
-Si el contenedor existe pero no refleja los cambios, recréalo conservando el
-volumen de datos:
-
-```bash
-docker compose up -d --force-recreate
+docker ps
 ```
 
 ## 4. Aplicar el esquema (las 4 tablas)
@@ -78,19 +58,10 @@ docker exec libreria-db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Lib
 > `docker exec libreria-db ls /opt` para ver el nombre exacto de la carpeta
 > en tu versión de imagen (puede ser `mssql-tools` sin el 18) y ajusta la ruta.
 
-Ejecuta este paso al preparar el proyecto y después de traer cambios que
-modifiquen `db/schema.sql`. El script es seguro de re-ejecutar: actualiza el
-esquema sin duplicar tablas ni datos semilla.
+Solo se necesita correr este paso **una vez** (o cada vez que borres el volumen
+`mssql_data`). El script es seguro de re-ejecutar: no duplica tablas ni datos.
 
-## 5. Ejecutar el proyecto con Visual Studio
-
-1. En Visual Studio selecciona **Abrir un proyecto o una solución**.
-2. Abre `src/Libreria.Web/Libreria.Web.csproj`.
-3. Espera a que Visual Studio restaure las dependencias NuGet.
-4. Selecciona `Libreria.Web` como proyecto de inicio y ejecútalo con el botón
-   verde o con `F5`.
-
-También puede ejecutarse desde terminal:
+## 5. Ejecutar el proyecto
 
 ```bash
 cd src/Libreria.Web
@@ -114,25 +85,22 @@ Una vez dentro hagan las consultas que necesiten
 
 ## 6. Cómo trabajar en equipo sin bloquearse
 
-- **No trabajes directo sobre `develop`.** Cada persona actualiza `develop` y
-  crea su rama:
+- **No trabajes directo sobre `main`.** Cada persona crea su rama:
   ```bash
-  git switch develop
-  git pull origin develop
   git checkout -b feature/categorias-crud
   ```
 - Haz commits pequeños y frecuentes, y sube tu rama:
   ```bash
   git push origin feature/categorias-crud
   ```
-- Abre un Pull Request a `develop` cuando tu historia de usuario esté lista.
+- Abre un Pull Request a `main` cuando tu historia de usuario esté lista.
   Así evitamos que alguien sobrescriba el trabajo de otro.
 - **Antes de empezar a programar cada día**, trae los últimos cambios:
   ```bash
-  git checkout develop
+  git checkout main
   git pull
   git checkout tu-rama
-  git merge develop
+  git merge main
   ```
 
 ### Quién trabaja en qué carpeta (evita conflictos de archivos)
@@ -162,9 +130,9 @@ según la consigna del trabajo.
 - El acceso a datos usa `IDbConnectionFactory` (interfaz) en vez de crear
   `SqlConnection` directamente en cada página — es un ejemplo concreto de
   **Inversión de Dependencias (SOLID)** que se puede mencionar en el informe.
-- Las páginas Razor dependen de contratos específicos y delegan el acceso
-  ADO.NET a repositorios. Las validaciones de negocio viven en clases
-  separadas de las entidades.
+- `Pages/Categorias/Index.cshtml.cs` es un ejemplo funcional completo de
+  consulta con ADO.NET puro (parametrizado, sin concatenar SQL) — úsenlo
+  como plantilla para el resto de los módulos.
 - La contraseña de SQL Server (`Libreria2026!`) está en texto plano en
   `docker-compose.yml` y `appsettings.json` porque el proyecto corre solo en
   local para fines académicos. No es una práctica recomendada para producción.

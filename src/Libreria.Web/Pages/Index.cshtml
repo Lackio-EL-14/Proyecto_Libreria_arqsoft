@@ -4,139 +4,26 @@
     ViewData["Title"] = "Inicio";
 }
 
-<style>
-    /* Estilos estructurales propios del layout de esta vista */
-    .home-hero {
-        background-color: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-base);
-        padding: 2rem;
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-        box-shadow: var(--shadow-sm);
-    }
-
-    .home-hero__logo {
-        width: 72px;
-        height: 72px;
-        flex-shrink: 0;
-    }
-
-    .home-hero h1 {
-        font-size: 1.5rem;
-        color: var(--color-primary);
-        margin-bottom: 0.35rem;
-    }
-
-    .home-hero p {
-        color: var(--color-secondary);
-        font-size: 0.95rem;
-        line-height: 1.4;
-    }
-
-    .home-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.25rem;
-    }
-
-    .card {
-        background-color: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-base);
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        box-shadow: var(--shadow-sm);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
-    }
-
-    .card__header {
-        margin-bottom: 1rem;
-    }
-
-    .card__title {
-        font-size: 1.15rem;
-        color: var(--color-primary);
-        margin-bottom: 0.4rem;
-    }
-
-    .card__description {
-        font-size: 0.85rem;
-        color: var(--color-secondary);
-        line-height: 1.4;
-    }
-
-    .card__actions {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        margin-top: 1rem;
-    }
-</style>
-
-<!-- Hero Section con Logo e Identidad -->
-<header class="home-hero">
-    <img src="~/images/icono.svg" alt="Logotipo Librería" class="home-hero__logo" />
-    <div>
-        <h1>Sistema de Administración de Librería</h1>
-        <p>Panel central para el control de inventario, catálogo de artículos, consulta de variaciones de costos y operaciones.</p>
-    </div>
-</header>
-
-<!-- Dashboard Grid de Accesos Directos -->
-<section class="home-grid">
-    <!-- Módulo Inventario -->
-    <article class="card">
-        <div class="card__header">
-            <h2 class="card__title">📦 Inventario y Catálogo</h2>
-            <p class="card__description">Gestión de productos escolares y libros, categorías y marcas de la librería.</p>
-        </div>
-        <div class="card__actions">
-            <a asp-page="/Productos/Index" class="btn btn--primary">Productos</a>
-            <a asp-page="/Categorias/Index" class="btn btn--secondary">Categorías</a>
-            <a asp-page="/Marcas/Index" class="btn btn--secondary">Marcas</a>
-        </div>
-    </article>
-
-    <!-- Módulo Histórico de Costos -->
-    <article class="card">
-        <div class="card__header">
-            <h2 class="card__title">📈 Precios y Costos</h2>
-            <p class="card__description">Auditoría y seguimiento de la variación de costos de adquisición de los productos.</p>
-        </div>
-        <div class="card__actions">
-            <a asp-page="/Historico/Index" class="btn btn--primary">Consultar Histórico</a>
-        </div>
-    </article>
-
-    <!-- Módulo Ventas -->
-    <article class="card">
-        <div class="card__header">
-            <h2 class="card__title">🛒 Ventas</h2>
-            <p class="card__description">Atención en mostrador, emisión de notas de venta y facturación.</p>
-        </div>
-        <div class="card__actions">
-            <span class="badge">Próxima Fase</span>
-        </div>
-    </article>
-
-    <!-- Módulo Compras -->
-    <article class="card">
-        <div class="card__header">
-            <h2 class="card__title">📥 Compras / Adquisición</h2>
-            <p class="card__description">Recepción de mercadería de proveedores y control de lotes de ingreso.</p>
-        </div>
-        <div class="card__actions">
-            <span class="badge">Próxima Fase</span>
-        </div>
-    </article>
+<section class="home-hero">
+    <h1>Sistema de inventario y ventas</h1>
+    <p>Gestión de categorías, marcas y productos de la librería.</p>
 </section>
+
+<div class="home-grid">
+    <a class="home-card" asp-page="/Categorias/Index">
+        <h2>Categorías</h2>
+        <p>Clasificación de productos.</p>
+    </a>
+    <a class="home-card" asp-page="/Marcas/Index">
+        <h2>Marcas</h2>
+        <p>Marcas registradas de productos.</p>
+    </a>
+    <a class="home-card" asp-page="/Productos/Index">
+        <h2>Productos</h2>
+        <p>Inventario y stock disponible.</p>
+    </a>
+    <a class="home-card" asp-page="/Historico/Index">
+        <h2>Histórico de costos</h2>
+        <p>Variación del costo de adquisición.</p>
+    </a>
+</div>

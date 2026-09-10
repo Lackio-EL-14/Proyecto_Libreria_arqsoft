@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" role="img" aria-labelledby="title description">
-  <title id="title">Librería</title>
-  <desc id="description">Libro abierto con el nombre de la aplicación</desc>
-  <path fill="#d8d6cd" d="M6 9c12-3 22 0 28 6v25c-7-5-16-7-28-4V9Zm56 0c-12-3-22 0-28 6v25c7-5 16-7 28-4V9Z"/>
-  <path fill="none" stroke="#ffffff" stroke-linecap="round" stroke-width="2" d="M34 15v25M11 17c7-1 13 0 18 4m-18 5c7-1 13 0 18 4m28-13c-7-1-13 0-18 4m18 5c-7-1-13 0-18 4"/>
-  <text x="76" y="31" fill="#f4f3f0" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600" letter-spacing="2">LIBRERÍA</text>
-</svg>
