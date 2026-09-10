@@ -1,0 +1,42 @@
+@page
+@model Libreria.Web.Pages.Marcas.DeactivateModel
+
+@{
+    ViewData["Title"] = "Dar de baja marca";
+}
+
+<div class="page-header">
+    <div>
+        <h1 style="color: #B91C1C;">Dar de baja marca</h1>
+        <p>Verifique la información antes de proceder con la desactivación.</p>
+    </div>
+</div>
+
+<div class="form-card">
+    <div style="background-color: #FEF2F2; color: #991B1B; padding: 1.25rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #FCA5A5;">
+        <strong>Está a punto de dar de baja la siguiente marca.</strong><br />
+        Esta acción la ocultará de los registros futuros.
+    </div>
+
+    @if (Model.Marca.ProductosActivos > 0)
+    {
+        <div style="background-color: #FFFBEB; color: #92400E; padding: 1.25rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #FCD34D;">
+            <strong>⚠️ Advertencia:</strong> esta marca tiene @Model.Marca.ProductosActivos producto(s) activo(s) asociado(s).<br />
+            Los productos existentes no serán eliminados ni modificados.
+        </div>
+    }
+
+    <!-- Tarjeta interna de datos -->
+    <div style="margin-bottom: 2rem; padding: 1.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-base); background-color: var(--color-bg);">
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Nombre:</strong> @Model.Marca.Nombre</p>
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Descripción:</strong> @(Model.Marca.Descripcion ?? "—")</p>
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>País de origen:</strong> @Model.Marca.PaisOrigen</p>
+        <p style="margin-bottom: 0; font-size: 0.95rem;"><strong>Sitio web:</strong> @(Model.Marca.SitioWeb ?? "—")</p>
+    </div>
+
+    <form method="post" style="display: flex; gap: 1rem;">
+        <input type="hidden" asp-for="MarcaId" />
+        <button type="submit" class="btn" style="background-color: #DC2626; color: white;">Confirmar baja</button>
+        <a asp-page="./Index" class="btn btn--secondary">Cancelar</a>
+    </form>
+</div>

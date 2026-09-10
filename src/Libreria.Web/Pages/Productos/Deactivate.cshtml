@@ -1,0 +1,42 @@
+@page "{id:int}"
+@model Libreria.Web.Pages.Productos.DeactivateModel
+
+@{
+    ViewData["Title"] = "Dar de baja producto";
+}
+
+<div class="page-header">
+    <div>
+        <h1 style="color: #B91C1C;">Dar de baja producto</h1>
+        <p>Verifique la información antes de desactivar este registro.</p>
+    </div>
+</div>
+
+<div class="form-card">
+    <div style="background-color: #FEF2F2; color: #991B1B; padding: 1.25rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #FCA5A5;">
+        <strong>Está a punto de dar de baja el siguiente producto.</strong><br />
+        El producto dejará de estar disponible para ventas, pero se conservarán sus datos y su historial de costos.
+    </div>
+
+    @if (Model.Producto.Stock > 0)
+    {
+        <div style="background-color: #FFFBEB; color: #92400E; padding: 1.25rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #FCD34D;">
+            <strong>⚠️ Advertencia de Inventario:</strong> este producto todavía tiene <strong>@Model.Producto.Stock unidad(es)</strong> disponibles.
+        </div>
+    }
+
+    <!-- Tarjeta interna de datos -->
+    <div style="margin-bottom: 2rem; padding: 1.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-base); background-color: var(--color-bg);">
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Nombre:</strong> @Model.Producto.Nombre</p>
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Categoría:</strong> @Model.Producto.Categoria</p>
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Marca:</strong> @Model.Producto.Marca</p>
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Stock disponible:</strong> @Model.Producto.Stock</p>
+        <p style="margin-bottom: 0; font-size: 0.95rem;"><strong>Precio de venta:</strong> Bs. @Model.Producto.PrecioVenta.ToString("0.00")</p>
+    </div>
+
+    <form method="post" style="display: flex; gap: 1rem;">
+        <input type="hidden" asp-for="ProductoId" />
+        <button type="submit" class="btn" style="background-color: #DC2626; color: white;">Confirmar baja</button>
+        <a asp-page="Details" asp-route-id="@Model.ProductoId" class="btn btn--secondary">Cancelar</a>
+    </form>
+</div>

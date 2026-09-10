@@ -1,12 +1,30 @@
 using Libreria.Web.Data;
+using Libreria.Web.Pages.Categorias.Repositories;
+using Libreria.Web.Pages.Categorias.Services;
+using Libreria.Web.Pages.Marcas.Repositories;
+using Libreria.Web.Pages.Marcas.Services;
+using Libreria.Web.Pages.Historico.Repositories;
+using Libreria.Web.Pages.Productos.Services;
+using Libreria.Web.Pages.Productos.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddRazorPages();
+builder.Services
+    .AddRazorPages()
+    .AddMvcOptions(options =>
+        options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 
-// Registramos la fábrica de conexiones ADO.NET como Singleton.
-// Cualquier PageModel puede pedirla por inyección de dependencias
-// en vez de crear un SqlConnection directamente (Inversión de Dependencias - SOLID).
+builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+builder.Services.AddScoped<CategoriaValidator>();
+builder.Services.AddScoped<IMarcaRepository, MarcaRepository>();
+builder.Services.AddScoped<MarcaValidator>();
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoRepository>();
+builder.Services.AddScoped<CostoProductoService>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<ProductoValidator>();
+builder.Services.AddScoped<IHistoricoCostoRepository, HistoricoCostoRepository>();
+
 builder.Services.AddSingleton<IDbConnectionFactory>(sp =>
 {
     var connectionString = builder.Configuration.GetConnectionString("LibreriaDb")

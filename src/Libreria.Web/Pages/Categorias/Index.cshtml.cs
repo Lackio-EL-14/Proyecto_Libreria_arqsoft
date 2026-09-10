@@ -1,45 +1,26 @@
-using Libreria.Web.Data;
+using Libreria.Web.Pages.Categorias.Models;
+using Libreria.Web.Pages.Categorias.Repositories;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Libreria.Web.Pages.Categorias;
 
 public class IndexModel : PageModel
 {
-    private readonly IDbConnectionFactory _connectionFactory;
+    private readonly ICategoriaRepository _repository;
 
-    public IndexModel(IDbConnectionFactory connectionFactory)
+    public IndexModel(ICategoriaRepository repository)
     {
-        _connectionFactory = connectionFactory;
+        _repository = repository;
     }
 
-    public List<CategoriaListItem> Categorias { get; private set; } = new();
+    public IReadOnlyList<Categoria> Categorias { get; private set; } = [];
 
-    public void OnGet()
+    [BindProperty(SupportsGet = true)]
+    public string? Busqueda { get; set; }
+
+    public async Task OnGetAsync()
     {
-        // EJEMPLO DE REFERENCIA para todo el equipo: así se hace una
-        // consulta con ADO.NET puro (sin Entity Framework). El resto del
-        // CRUD (Insert/Update/Delete) de cualquier tabla sigue el mismo
-        // patrón: pedir la conexión a la fábrica, crear un SqlCommand,
-        // PARAMETRIZAR siempre (nunca concatenar strings, por SQL Injection)
-        // y ejecutar.
-        using var connection = _connectionFactory.CreateConnection();
-        using var command = connection.CreateCommand();
-        command.CommandText = @"
-            SELECT CategoriaId, Nombre, Descripcion, Estado
-            FROM Categoria
-            WHERE Estado = 1
-            ORDER BY Nombre";
-
-        using var reader = command.ExecuteReader();
-        while (reader.Read())
-        {
-            Categorias.Add(new CategoriaListItem(
-                reader.GetInt32(0),
-                reader.GetString(1),
-                reader.IsDBNull(2) ? null : reader.GetString(2),
-                reader.GetBoolean(3)));
-        }
+        Categorias = await _repository.ObtenerActivasAsync(Busqueda);
     }
 }
-
-public record CategoriaListItem(int CategoriaId, string Nombre, string? Descripcion, bool Estado);

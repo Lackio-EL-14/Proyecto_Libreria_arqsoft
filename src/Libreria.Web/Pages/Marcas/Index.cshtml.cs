@@ -1,13 +1,24 @@
+using Libreria.Web.Pages.Marcas.Models;
+using Libreria.Web.Pages.Marcas.Repositories;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Libreria.Web.Pages.Marcas;
 
 public class IndexModel : PageModel
 {
-    public void OnGet()
+    private readonly IMarcaRepository _repository;
+
+    public IndexModel(IMarcaRepository repository)
     {
-        // TODO (US-05 a US-08): seguir el patrón de
-        // Pages/Categorias/Index.cshtml.cs, que ya tiene un ejemplo
-        // funcional de consulta con ADO.NET.
+        _repository = repository;
+    }
+
+    public IReadOnlyList<MarcaListItem> Marcas { get; private set; } = [];
+    public string? NombreBusqueda { get; private set; }
+
+    public void OnGet(string? nombre)
+    {
+        NombreBusqueda = nombre?.Trim();
+        Marcas = _repository.ObtenerActivas(NombreBusqueda);
     }
 }

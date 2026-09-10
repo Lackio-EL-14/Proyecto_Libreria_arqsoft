@@ -1,11 +1,35 @@
 @page
 @model Libreria.Web.Pages.ErrorModel
 @{
-    ViewData["Title"] = "Error";
+    ViewData["Title"] = "Error del Sistema";
 }
 
-<h1>Ocurrió un error</h1>
-@if (Model.ShowRequestId)
-{
-    <p><strong>Request ID:</strong> @Model.RequestId</p>
-}
+<div class="page-header">
+    <div>
+        <h1 style="color: #B91C1C;">Ocurrió un problema</h1>
+        <p>Lo sentimos, el sistema ha encontrado un error inesperado.</p>
+    </div>
+</div>
+
+<div class="form-card" style="text-align: center; padding: 3rem 2rem; max-width: 600px;">
+    
+    <h3 style="color: #991B1B; margin-bottom: 1rem;">Algo no salió como esperábamos</h3>
+    
+    <p style="color: var(--color-secondary); margin-bottom: 1.5rem; line-height: 1.5;">
+        No pudimos procesar tu solicitud en este momento. Por favor, intenta realizar la acción nuevamente o regresa al panel principal.
+    </p>
+
+    @if (Model.ShowRequestId)
+    {
+        <div style="background-color: #FEF2F2; color: #991B1B; padding: 0.85rem 1.5rem; border-radius: var(--radius-base); border: 1px solid #FCA5A5; display: inline-block; margin-bottom: 2rem;">
+            <p style="margin: 0; font-size: 0.85rem;">
+                <strong>ID de Rastreo de Soporte:</strong> <br/>
+                <code>@Model.RequestId</code>
+            </p>
+        </div>
+    }
+
+    <div>
+        <a asp-page="/Index" class="btn btn--primary">Volver al Inicio</a>
+    </div>
+</div>
