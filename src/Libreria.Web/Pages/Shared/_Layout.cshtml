@@ -3,113 +3,30 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Sistema Librería</title>
+    <title>@ViewData["Title"] - Librería</title>
     <link rel="stylesheet" href="~/css/site.css" />
 </head>
-
 <body>
     <header class="app-header">
-        <button
-            type="button"
-            class="menu-toggle"
-            id="menuToggle"
-            aria-label="Abrir menú de navegación"
-            aria-controls="sidebar"
-            aria-expanded="false">
-            <span aria-hidden="true">☰</span>
-        </button>
-
         <div class="app-header__brand">
-            <a asp-page="/Index" aria-label="Ir al inicio" class="brand-link">
-                <img src="~/images/icono.svg" alt="Librería" class="brand-logo" />
-                <span>Librería</span>
-            </a>
+            <!-- TODO: reemplazar por el logo real del equipo (requisito de la rúbrica) -->
+            <span class="app-header__name">LIBRERÍA</span>
         </div>
+        <nav class="app-nav">
+            <a asp-page="/Index">Inicio</a>
+            <a asp-page="/Categorias/Index">Categorías</a>
+            <a asp-page="/Marcas/Index">Marcas</a>
+            <a asp-page="/Productos/Index">Productos</a>
+            <a asp-page="/Historico/Index">Histórico de costos</a>
+        </nav>
     </header>
 
-    <aside
-        class="app-sidebar"
-        id="sidebar"
-        aria-label="Navegación principal">
+    <main class="app-main">
+        @RenderBody()
+    </main>
 
-        <nav class="sidebar-nav">
-
-            <a class="sidebar-link" asp-page="/Index">
-                Inicio
-            </a>
-
-            <!-- Módulo Inventario: Productos, Categorías y Marcas -->
-            <details class="sidebar-group" open>
-                <summary class="sidebar-group__title">
-                    Inventario
-                </summary>
-
-                <div class="sidebar-group__items">
-                    <a asp-page="/Productos/Index">
-                        Consultar productos
-                    </a>
-                    <a asp-page="/Productos/Create">
-                        Registrar producto
-                    </a>
-                    <a asp-page="/Categorias/Index">
-                        Categorías
-                    </a>
-                    <a asp-page="/Marcas/Index">
-                        Marcas
-                    </a>
-                </div>
-            </details>
-
-            <!-- Módulo Histórico de Costos -->
-            <details class="sidebar-group" open>
-                <summary class="sidebar-group__title">
-                    Precios y Costos
-                </summary>
-
-                <div class="sidebar-group__items">
-                    <a asp-page="/Historico/Index">
-                        Histórico de costos
-                    </a>
-                </div>
-            </details>
-
-            <!-- Módulos Adicionales (Ventas y Compras) -->
-            <details class="sidebar-group">
-                <summary class="sidebar-group__title">
-                    Operaciones
-                </summary>
-
-                <div class="sidebar-group__items">
-                    <a href="#" style="pointer-events: none; opacity: 0.6; display: flex; justify-content: space-between; align-items: center;">
-                        Ventas <span class="badge">Próx.</span>
-                    </a>
-                    <a href="#" style="pointer-events: none; opacity: 0.6; display: flex; justify-content: space-between; align-items: center;">
-                        Compras <span class="badge">Próx.</span>
-                    </a>
-                </div>
-            </details>
-
-        </nav>
-    </aside>
-
-    <button
-        type="button"
-        class="sidebar-overlay"
-        id="sidebarOverlay"
-        aria-label="Cerrar menú">
-    </button>
-
-    <div class="app-content">
-        <main class="app-main">
-            @RenderBody()
-        </main>
-
-        <footer class="app-footer">
-            <p>Proyecto académico - Clean Code &amp; SOLID</p>
-        </footer>
-    </div>
-
-    <script src="~/js/site.js"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+    <footer class="app-footer">
+        <p>Proyecto académico — Clean Code &amp; SOLID</p>
+    </footer>
 </body>
 </html>
