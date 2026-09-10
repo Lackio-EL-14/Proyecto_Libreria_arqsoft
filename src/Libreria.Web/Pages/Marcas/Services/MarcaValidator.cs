@@ -5,9 +5,9 @@ namespace Libreria.Web.Pages.Marcas.Services;
 
 public class MarcaValidator
 {
-    private readonly IValidadorMarcaRepository _repository;
+    private readonly IMarcaRepository _repository;
 
-    public MarcaValidator(IValidadorMarcaRepository repository)
+    public MarcaValidator(IMarcaRepository repository)
     {
         _repository = repository;
     }

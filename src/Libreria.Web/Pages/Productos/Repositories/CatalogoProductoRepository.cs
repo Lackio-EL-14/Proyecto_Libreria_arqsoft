@@ -5,9 +5,7 @@ using Libreria.Web.Pages.Productos.Models;
 
 namespace Libreria.Web.Pages.Productos.Repositories;
 
-public class CatalogoProductoRepository :
-    IConsultaCatalogoProductoRepository,
-    IValidacionCatalogoProductoRepository
+public class CatalogoProductoRepository : ICatalogoProductoRepository
 {
     private readonly IDbConnectionFactory _connectionFactory;
 

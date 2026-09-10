@@ -7,9 +7,9 @@ namespace Libreria.Web.Pages.Productos;
 
 public class EditModel : PageModel
 {
-    private readonly IEdicionProductoService _service;
+    private readonly IProductoService _service;
 
-    public EditModel(IEdicionProductoService service)
+    public EditModel(IProductoService service)
     {
         _service = service;
     }

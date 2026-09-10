@@ -7,9 +7,9 @@ namespace Libreria.Web.Pages.Categorias;
 
 public class DeleteModel : PageModel
 {
-    private readonly IBajaCategoriaRepository _repository;
+    private readonly ICategoriaRepository _repository;
 
-    public DeleteModel(IBajaCategoriaRepository repository)
+    public DeleteModel(ICategoriaRepository repository)
     {
         _repository = repository;
     }

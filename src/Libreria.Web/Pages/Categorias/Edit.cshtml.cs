@@ -8,11 +8,11 @@ namespace Libreria.Web.Pages.Categorias;
 
 public class EditModel : PageModel
 {
-    private readonly IEdicionCategoriaRepository _repository;
+    private readonly ICategoriaRepository _repository;
     private readonly CategoriaValidator _validator;
 
     public EditModel(
-        IEdicionCategoriaRepository repository,
+        ICategoriaRepository repository,
         CategoriaValidator validator)
     {
         _repository = repository;

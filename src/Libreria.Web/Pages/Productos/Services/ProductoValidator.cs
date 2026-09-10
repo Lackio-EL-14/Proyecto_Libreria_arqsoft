@@ -5,9 +5,9 @@ namespace Libreria.Web.Pages.Productos.Services;
 
 public class ProductoValidator
 {
-    private readonly IValidacionCatalogoProductoRepository _catalogoRepository;
+    private readonly ICatalogoProductoRepository _catalogoRepository;
 
-    public ProductoValidator(IValidacionCatalogoProductoRepository catalogoRepository)
+    public ProductoValidator(ICatalogoProductoRepository catalogoRepository)
     {
         _catalogoRepository = catalogoRepository;
     }

@@ -3,20 +3,15 @@ using Libreria.Web.Pages.Productos.Repositories;
 
 namespace Libreria.Web.Pages.Productos.Services;
 
-public class ProductoService :
-    IConsultaProductosService,
-    IRegistroProductoService,
-    IEdicionProductoService,
-    IConsultaProductoDetalleService,
-    IBajaProductoService
+public class ProductoService : IProductoService
 {
     private readonly IProductoRepository _productoRepository;
-    private readonly IConsultaCatalogoProductoRepository _catalogoRepository;
+    private readonly ICatalogoProductoRepository _catalogoRepository;
     private readonly ProductoValidator _validator;
 
     public ProductoService(
         IProductoRepository productoRepository,
-        IConsultaCatalogoProductoRepository catalogoRepository,
+        ICatalogoProductoRepository catalogoRepository,
         ProductoValidator validator)
     {
         _productoRepository = productoRepository;
