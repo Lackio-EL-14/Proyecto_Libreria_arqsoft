@@ -1,6 +1,10 @@
-using Libreria.Web.Pages.Categorias.Models;
-using Libreria.Web.Pages.Categorias.Repositories;
-using Libreria.Web.Pages.Categorias.Services;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Libreria.Web.Data.Factories;
+using Libreria.Web.Data.Repositories;
+using Libreria.Web.Domain.Entities;
+using Libreria.Web.Business.Validators;
+using Libreria.Web.Pages.Categorias.Models; 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -8,14 +12,14 @@ namespace Libreria.Web.Pages.Categorias;
 
 public class CreateModel : PageModel
 {
-    private readonly ICategoriaRepository _repository;
+    private readonly ICrudRepository<Categoria> _repository;
     private readonly CategoriaValidator _validator;
 
     public CreateModel(
-        ICategoriaRepository repository,
+        CrudRepositoryFactory<Categoria> factory,
         CategoriaValidator validator)
     {
-        _repository = repository;
+        _repository = factory.CrearRepositorio();
         _validator = validator;
     }
 

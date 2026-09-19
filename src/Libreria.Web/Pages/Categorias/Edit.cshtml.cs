@@ -1,6 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Libreria.Web.Data.Factories;
+using Libreria.Web.Data.Repositories;
+using Libreria.Web.Domain.Entities;
+using Libreria.Web.Business.Validators;
 using Libreria.Web.Pages.Categorias.Models;
-using Libreria.Web.Pages.Categorias.Repositories;
-using Libreria.Web.Pages.Categorias.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -8,32 +13,32 @@ namespace Libreria.Web.Pages.Categorias;
 
 public class EditModel : PageModel
 {
-    private readonly ICategoriaRepository _repository;
+    private readonly ICrudRepository<Categoria> _repository;
     private readonly CategoriaValidator _validator;
 
     public EditModel(
-        ICategoriaRepository repository,
+        CrudRepositoryFactory<Categoria> factory,
         CategoriaValidator validator)
     {
-        _repository = repository;
+        _repository = factory.CrearRepositorio();
         _validator = validator;
     }
 
     [BindProperty]
-    public int CategoriaId { get; set; }
+    public Guid PublicId { get; set; }
 
     [BindProperty]
     public CategoriaInput Input { get; set; } = new();
 
-    public async Task<IActionResult> OnGetAsync(int id)
+    public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        var categoria = await _repository.ObtenerActivaPorIdAsync(id);
+        var categoria = await _repository.ObtenerPorPublicIdAsync(id, true);
         if (categoria is null)
         {
             return NotFound();
         }
 
-        CategoriaId = categoria.CategoriaId;
+        PublicId = categoria.PublicId;
         Input = new CategoriaInput
         {
             Codigo = categoria.Codigo,
@@ -47,7 +52,7 @@ public class EditModel : PageModel
     public async Task<IActionResult> OnPostAsync()
     {
         _validator.Normalizar(Input);
-        var errores = await _validator.ValidarAsync(Input, CategoriaId);
+        var errores = await _validator.ValidarAsync(Input, PublicId);
         AgregarErrores(errores);
 
         if (!ModelState.IsValid)
@@ -57,7 +62,7 @@ public class EditModel : PageModel
 
         var actualizada = await _repository.ActualizarAsync(new Categoria
         {
-            CategoriaId = CategoriaId,
+            PublicId = PublicId,
             Codigo = Input.Codigo,
             Nombre = Input.Nombre,
             Descripcion = Input.Descripcion,

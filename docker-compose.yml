@@ -17,5 +17,15 @@ services:
       timeout: 5s
       retries: 10
 
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: libreria-db-init
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./db/schema.sql:/scripts/schema.sql:ro
+    command: /opt/mssql-tools18/bin/sqlcmd -S db -U sa -P "Libreria2026!" -C -i /scripts/schema.sql
+
 volumes:
   mssql_data:
