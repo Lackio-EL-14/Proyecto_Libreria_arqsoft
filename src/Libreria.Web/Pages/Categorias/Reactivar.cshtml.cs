@@ -1,5 +1,8 @@
-using Libreria.Web.Pages.Categorias.Models;
-using Libreria.Web.Pages.Categorias.Repositories;
+using System;
+using System.Threading.Tasks;
+using Libreria.Web.Data.Factories;
+using Libreria.Web.Data.Repositories;
+using Libreria.Web.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -7,33 +10,33 @@ namespace Libreria.Web.Pages.Categorias;
 
 public class ReactivarModel : PageModel
 {
-    private readonly ICategoriaRepository _repository;
+    private readonly ICrudRepository<Categoria> _repository;
 
-    public ReactivarModel(ICategoriaRepository repository)
+    public ReactivarModel(CrudRepositoryFactory<Categoria> factory)
     {
-        _repository = repository;
+        _repository = factory.CrearRepositorio();
     }
 
     [BindProperty]
-    public int CategoriaId { get; set; }
+    public Guid PublicId { get; set; }
 
     public Categoria? Categoria { get; private set; }
 
-    public async Task<IActionResult> OnGetAsync(int id)
+    public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        Categoria = await _repository.ObtenerInactivaPorIdAsync(id);
+        Categoria = await _repository.ObtenerPorPublicIdAsync(id, false);
         if (Categoria is null)
         {
             return NotFound();
         }
 
-        CategoriaId = Categoria.CategoriaId;
+        PublicId = Categoria.PublicId;
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!await _repository.ReactivarAsync(CategoriaId))
+        if (!await _repository.CambiarEstadoAsync(PublicId, true))
         {
             return NotFound();
         }

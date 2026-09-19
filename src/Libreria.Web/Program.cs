@@ -1,6 +1,7 @@
 using Libreria.Web.Data;
-using Libreria.Web.Pages.Categorias.Repositories;
-using Libreria.Web.Pages.Categorias.Services;
+using Libreria.Web.Data.Factories;
+using Libreria.Web.Domain.Entities;
+using Libreria.Web.Business.Validators;
 using Libreria.Web.Pages.Marcas.Repositories;
 using Libreria.Web.Pages.Marcas.Services;
 using Libreria.Web.Pages.Historico.Repositories;
@@ -14,8 +15,9 @@ builder.Services
     .AddMvcOptions(options =>
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 
-builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+builder.Services.AddScoped<CrudRepositoryFactory<Categoria>, CategoriaRepositoryFactory>();
 builder.Services.AddScoped<CategoriaValidator>();
+
 builder.Services.AddScoped<IMarcaRepository, MarcaRepository>();
 builder.Services.AddScoped<MarcaValidator>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
