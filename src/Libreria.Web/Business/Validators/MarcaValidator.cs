@@ -2,6 +2,7 @@ using Libreria.Web.Data.Factories;
 using Libreria.Web.Data.Repositories;
 using Libreria.Web.Domain.Entities;
 using Libreria.Web.Pages.Marcas.Models;
+using Libreria.Web.Domain.Catalogs;
 
 namespace Libreria.Web.Business.Validators;
 
@@ -18,7 +19,7 @@ public class MarcaValidator
     {
         input.Nombre = NormalizarTexto(input.Nombre ?? string.Empty);
         input.Descripcion = NormalizarTextoOpcional(input.Descripcion);
-        input.PaisOrigen = NormalizarTexto(input.PaisOrigen ?? string.Empty);
+        input.PaisOrigen = PaisesMarca.Normalizar(input.PaisOrigen);
         input.SitioWeb = input.SitioWeb?.Trim();
 
         if (string.IsNullOrWhiteSpace(input.SitioWeb))
@@ -63,10 +64,10 @@ public class MarcaValidator
             errores["Input.PaisOrigen"] =
                 "El país de origen es obligatorio.";
         }
-        else if (input.PaisOrigen.Length > 100)
+        else if (!PaisesMarca.EsValido(input.PaisOrigen))
         {
             errores["Input.PaisOrigen"] =
-                "El país de origen no puede superar los 100 caracteres.";
+                "Seleccione un país de la lista.";
         }
 
         if (input.SitioWeb?.Length > 200)

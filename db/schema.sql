@@ -94,9 +94,44 @@ BEGIN
 END
 GO
 
-UPDATE dbo.Marca
-SET PaisOrigen = N'No especificado'
-WHERE PaisOrigen IS NULL OR LTRIM(RTRIM(PaisOrigen)) = N'';
+DECLARE @PaisesValidos TABLE (
+    Nombre NVARCHAR(100) PRIMARY KEY
+);
+
+INSERT INTO @PaisesValidos (Nombre)
+VALUES
+    (N'No especificado'),
+    (N'Alemania'),
+    (N'Argentina'),
+    (N'Bolivia'),
+    (N'Brasil'),
+    (N'Canadá'),
+    (N'Chile'),
+    (N'China'),
+    (N'Colombia'),
+    (N'Corea del Sur'),
+    (N'Ecuador'),
+    (N'España'),
+    (N'Estados Unidos'),
+    (N'Francia'),
+    (N'India'),
+    (N'Italia'),
+    (N'Japón'),
+    (N'México'),
+    (N'Paraguay'),
+    (N'Perú'),
+    (N'Reino Unido'),
+    (N'Uruguay'),
+    (N'Venezuela');
+
+UPDATE m
+SET PaisOrigen = COALESCE(p.Nombre, N'No especificado')
+FROM dbo.Marca m
+OUTER APPLY (
+    SELECT TOP 1 pv.Nombre
+    FROM @PaisesValidos pv
+    WHERE pv.Nombre = LTRIM(RTRIM(m.PaisOrigen))
+) p;
 GO
 
 ALTER TABLE dbo.Marca ALTER COLUMN PaisOrigen NVARCHAR(100) NOT NULL;

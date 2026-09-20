@@ -1,4 +1,5 @@
 @page "{id:guid}"
+@using Libreria.Web.Domain.Catalogs
 @model Libreria.Web.Pages.Marcas.EditModel
 
 @{
@@ -31,7 +32,17 @@
 
         <div class="form-group">
             <label asp-for="Input.PaisOrigen">País de origen:</label>
-            <input asp-for="Input.PaisOrigen" class="form-control" maxlength="100" />
+            <select asp-for="Input.PaisOrigen" class="form-control">
+            <option value="">Seleccione un país</option>
+
+            @foreach (var pais in PaisesMarca.Todos)
+            {
+                <option value="@pais">@pais</option>
+            }
+            </select>
+
+
+
             <span asp-validation-for="Input.PaisOrigen" class="text-danger"></span>
         </div>
 
