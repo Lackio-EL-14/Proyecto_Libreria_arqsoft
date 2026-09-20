@@ -5,7 +5,7 @@ using Libreria.Web.Data.Repositories;
 using Libreria.Web.Domain.Catalogs;
 using Libreria.Web.Domain.Entities;
 using Libreria.Web.Business.Validators;
-using Libreria.Web.Pages.Categorias.Models; 
+using Libreria.Web.Pages.Categorias.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
