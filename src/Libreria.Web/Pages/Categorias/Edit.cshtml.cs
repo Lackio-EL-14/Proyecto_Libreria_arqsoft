@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Libreria.Web.Data.Factories;
 using Libreria.Web.Data.Repositories;
+using Libreria.Web.Domain.Catalogs;
 using Libreria.Web.Domain.Entities;
 using Libreria.Web.Business.Validators;
 using Libreria.Web.Pages.Categorias.Models;
@@ -29,6 +30,8 @@ public class EditModel : PageModel
 
     [BindProperty]
     public CategoriaInput Input { get; set; } = new();
+
+    public IReadOnlyList<string> Ubicaciones => UbicacionesCategoria.Todas;
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {

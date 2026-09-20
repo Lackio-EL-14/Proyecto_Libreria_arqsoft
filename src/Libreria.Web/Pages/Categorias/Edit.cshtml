@@ -37,7 +37,13 @@
 
         <div class="form-group">
             <label asp-for="Input.Ubicacion">Ubicación <span class="text-danger">*</span></label>
-            <input asp-for="Input.Ubicacion" class="form-control" maxlength="100" />
+            <select asp-for="Input.Ubicacion" class="form-control">
+                <option value="">Seleccione una ubicación</option>
+                @foreach (var ubicacion in Model.Ubicaciones)
+                {
+                    <option value="@ubicacion">@ubicacion</option>
+                }
+            </select>
             <span asp-validation-for="Input.Ubicacion" class="text-danger"></span>
         </div>
 
