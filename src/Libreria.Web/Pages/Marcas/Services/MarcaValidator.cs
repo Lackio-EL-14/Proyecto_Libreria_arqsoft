@@ -34,6 +34,8 @@ public class MarcaValidator
         {
             errores["Input.Nombre"] = "El nombre de la marca es obligatorio.";
         }
+
+        
         else if (input.Nombre.Length > 100)
         {
             errores["Input.Nombre"] = "El nombre no puede superar los 100 caracteres.";

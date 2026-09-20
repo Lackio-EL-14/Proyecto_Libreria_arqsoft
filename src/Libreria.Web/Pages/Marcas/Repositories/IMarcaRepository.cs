@@ -11,4 +11,5 @@ public interface IMarcaRepository
     MarcaBajaView? ObtenerActivaParaBaja(int marcaId);
     bool DarDeBaja(int marcaId);
     bool ExisteNombre(string nombre, int? excluirId);
+    
 }
