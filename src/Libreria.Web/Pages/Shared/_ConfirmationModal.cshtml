@@ -1,0 +1,28 @@
+@model Libreria.Web.Pages.Shared.Models.ConfirmationModalModel
+
+<dialog id="@Model.Id" class="confirmation-modal" aria-labelledby="@(Model.Id)-title">
+    <form method="post" asp-page-handler="@Model.Handler" class="confirmation-modal__content">
+        <header class="confirmation-modal__header">
+            <h2 id="@(Model.Id)-title">@Model.Titulo</h2>
+            <button type="button" class="confirmation-modal__close" data-confirmation-close aria-label="Cerrar">×</button>
+        </header>
+
+        <div class="confirmation-modal__body">
+            <p>@Model.Mensaje <strong data-confirmation-name></strong>.</p>
+
+            @if (!string.IsNullOrWhiteSpace(Model.MensajeAdvertencia))
+            {
+                <div class="confirmation-modal__warning" data-confirmation-warning hidden>
+                    <strong>Advertencia:</strong> @Model.MensajeAdvertencia
+                </div>
+            }
+
+            <input type="hidden" name="@Model.CampoIdentificador" data-confirmation-id />
+        </div>
+
+        <footer class="confirmation-modal__actions">
+            <button type="button" class="btn btn--secondary" data-confirmation-close>@Model.TextoCancelar</button>
+            <button type="submit" class="btn btn--danger">@Model.TextoConfirmar</button>
+        </footer>
+    </form>
+</dialog>
