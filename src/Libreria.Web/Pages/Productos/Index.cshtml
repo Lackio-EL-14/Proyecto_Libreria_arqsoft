@@ -101,9 +101,9 @@ else
                         <td>Bs. @producto.CostoAdquisicionActual.ToString("0.00")</td>
                         <td>
                             <div class="table-actions">
-                                <a asp-page="Details" asp-route-id="@producto.ProductoId" class="btn-table">Ver</a>
-                                <a asp-page="Edit" asp-route-id="@producto.ProductoId" class="btn-table">Editar</a>
-                                <a asp-page="Deactivate" asp-route-id="@producto.ProductoId" class="btn-table btn-table--danger">Dar de baja</a>
+                                <a asp-page="Details" asp-route-id="@producto.PublicId" class="btn-table">Ver</a>
+                                <a asp-page="Edit" asp-route-id="@producto.PublicId" class="btn-table">Editar</a>
+                                <a asp-page="Deactivate" asp-route-id="@producto.PublicId" class="btn-table btn-table--danger">Dar de baja</a>
                             </div>
                         </td>
                     </tr>

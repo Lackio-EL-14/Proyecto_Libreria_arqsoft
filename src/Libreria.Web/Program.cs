@@ -18,11 +18,11 @@ builder.Services
 builder.Services.AddScoped<CrudRepositoryFactory<Categoria>, CategoriaRepositoryFactory>();
 builder.Services.AddScoped<CategoriaValidator>();
 
+
 builder.Services.AddScoped<IMarcaRepository, MarcaRepository>();
 builder.Services.AddScoped<MarcaValidator>();
-builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<CrudRepositoryFactory<Producto>, ProductoRepositoryFactory>();
 builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoRepository>();
-builder.Services.AddScoped<CostoProductoService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<ProductoValidator>();
 builder.Services.AddScoped<IHistoricoCostoRepository, HistoricoCostoRepository>();
