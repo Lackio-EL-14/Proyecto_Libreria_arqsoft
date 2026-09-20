@@ -1,7 +1,7 @@
 namespace Libreria.Web.Pages.Productos.Models;
 
 public record ProductoListItem(
-    int ProductoId,
+    Guid PublicId,
     string Nombre,
     int Stock,
     decimal PrecioVenta,

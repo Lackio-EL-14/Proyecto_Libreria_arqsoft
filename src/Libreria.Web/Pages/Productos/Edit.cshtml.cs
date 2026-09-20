@@ -2,20 +2,25 @@ using Libreria.Web.Pages.Productos.Models;
 using Libreria.Web.Pages.Productos.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Libreria.Web.Data.Factories;
+using Libreria.Web.Data.Repositories;
+using Libreria.Web.Domain.Entities;
 
 namespace Libreria.Web.Pages.Productos;
 
 public class EditModel : PageModel
 {
     private readonly IProductoService _service;
+    private readonly ICrudRepository<Producto> _repository;
 
-    public EditModel(IProductoService service)
+    public EditModel(
+     IProductoService service,
+     CrudRepositoryFactory<Producto> factory)
     {
         _service = service;
+        _repository = factory.CrearRepositorio();
     }
-
-    [BindProperty]
-    public int ProductoId { get; set; }
+    public Guid PublicId { get; private set; }
 
     [BindProperty]
     public ProductoInput Input { get; set; } = new();
@@ -23,24 +28,26 @@ public class EditModel : PageModel
     public IReadOnlyList<CategoriaOption> Categorias { get; private set; } = [];
     public IReadOnlyList<MarcaOption> Marcas { get; private set; } = [];
 
-    public IActionResult OnGet(int id)
+    public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        var edicion = _service.ObtenerEdicion(id);
+        var edicion = await _service.ObtenerEdicionAsync(id, _repository);
+
         if (edicion is null)
         {
             return NotFound();
         }
 
-        ProductoId = edicion.ProductoId;
+        PublicId = id;
         Input = edicion.Input;
         Categorias = edicion.Categorias;
         Marcas = edicion.Marcas;
+
         return Page();
     }
 
-    public IActionResult OnPost()
+    public async Task<IActionResult> OnPostAsync(Guid id)
     {
-        var resultado = _service.Actualizar(ProductoId, Input);
+        var resultado = await _service.ActualizarAsync(id, Input, _repository);
         if (resultado.NoEncontrado)
         {
             return NotFound();
@@ -49,21 +56,24 @@ public class EditModel : PageModel
         if (!resultado.Exitoso)
         {
             AgregarErrores(resultado.Errores);
-            CargarOpciones();
+            PublicId = id;
+            await CargarOpcionesAsync(id);
             return Page();
         }
 
         TempData["MensajeExito"] = "Producto actualizado correctamente.";
-        return RedirectToPage("Details", new { id = ProductoId });
+
+        return RedirectToPage("Details", new { id });
     }
 
-    private void CargarOpciones()
+    private async Task CargarOpcionesAsync(Guid publicId)
     {
-        var edicion = _service.ObtenerEdicion(ProductoId);
+        var edicion = await _service.ObtenerEdicionAsync(publicId, _repository);
         if (edicion is null)
         {
             return;
         }
+
         Categorias = edicion.Categorias;
         Marcas = edicion.Marcas;
     }

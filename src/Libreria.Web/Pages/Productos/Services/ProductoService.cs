@@ -1,33 +1,52 @@
 using Libreria.Web.Pages.Productos.Models;
 using Libreria.Web.Pages.Productos.Repositories;
+using Libreria.Web.Data.Repositories;
+using Libreria.Web.Domain.Entities;
 
 namespace Libreria.Web.Pages.Productos.Services;
 
 public class ProductoService : IProductoService
 {
-    private readonly IProductoRepository _productoRepository;
     private readonly ICatalogoProductoRepository _catalogoRepository;
     private readonly ProductoValidator _validator;
 
     public ProductoService(
-        IProductoRepository productoRepository,
         ICatalogoProductoRepository catalogoRepository,
         ProductoValidator validator)
     {
-        _productoRepository = productoRepository;
         _catalogoRepository = catalogoRepository;
         _validator = validator;
     }
 
-    public ProductoListado ObtenerListado(
-        string? busqueda,
-        int? categoriaId,
-        int? marcaId)
+
+    public async Task<ProductoListado> ObtenerListadoAsync(
+    string? busqueda,
+    int? categoriaId,
+    int? marcaId,
+    ICrudRepository<Producto> repository)
     {
+        var productos = await repository.ObtenerActivasAsync(busqueda);
+
+        var categorias = _catalogoRepository.ObtenerCategoriasActivas();
+        var marcas = _catalogoRepository.ObtenerMarcasActivas();
+
+        var productosFiltrados = productos
+            .Where(p => !categoriaId.HasValue || p.CategoriaId == categoriaId.Value)
+            .Where(p => !marcaId.HasValue || p.MarcaId == marcaId.Value)
+            .Select(p => new ProductoListItem(
+                p.PublicId,
+                p.Nombre,
+                p.Stock,
+                p.PrecioVenta,
+                p.CostoAdquisicionActual,
+                categorias.FirstOrDefault(c => c.CategoriaId == p.CategoriaId)?.Nombre ?? string.Empty,
+                marcas.FirstOrDefault(m => m.MarcaId == p.MarcaId)?.Nombre ?? string.Empty))
+            .ToList();
+
         return new ProductoListado(
-            _productoRepository.ObtenerProductos(busqueda, categoriaId, marcaId),
-            _catalogoRepository.ObtenerCategoriasActivas(),
-            _catalogoRepository.ObtenerMarcasActivas());
+            productosFiltrados,
+            categorias,
+            marcas);
     }
 
     public ProductoFormulario ObtenerFormulario()
@@ -37,74 +56,81 @@ public class ProductoService : IProductoService
             _catalogoRepository.ObtenerMarcasActivas());
     }
 
-    public ResultadoOperacion Registrar(ProductoInput input)
+    public async Task<ResultadoOperacion> RegistrarAsync(
+      ProductoInput input,
+      ICrudRepository<Producto> repository)
     {
         _validator.Normalizar(input);
+
         var errores = _validator.Validar(input);
         if (errores.Count > 0)
         {
             return ResultadoOperacion.Invalido(errores);
         }
 
-        _productoRepository.CrearConHistorico(input);
+        var producto = new Producto
+        {
+            Nombre = input.Nombre,
+            DescripcionEspecifica = input.DescripcionEspecifica,
+            FechaVencimiento = input.FechaVencimiento,
+            Stock = input.Stock,
+            PrecioVenta = input.PrecioVenta,
+            CostoAdquisicionActual = input.CostoAdquisicion,
+            CategoriaId = input.CategoriaId,
+            MarcaId = input.MarcaId
+        };
+
+        await repository.CrearAsync(producto);
+
         return ResultadoOperacion.Correcto();
     }
 
-    public ProductoEdicion? ObtenerEdicion(int productoId)
+    public async Task<ProductoDetalle?> ObtenerDetalleAsync(
+    Guid publicId,
+    ICrudRepository<Producto> repository)
     {
-        var producto = _productoRepository.ObtenerActivoPorId(productoId);
+        var producto = await repository.ObtenerPorPublicIdAsync(publicId, true);
+
         if (producto is null)
         {
             return null;
         }
 
-        return new ProductoEdicion(
+        var categorias = _catalogoRepository.ObtenerCategoriasActivas();
+        var marcas = _catalogoRepository.ObtenerMarcasActivas();
+
+        var nombreCategoria = categorias
+            .FirstOrDefault(c => c.CategoriaId == producto.CategoriaId)?.Nombre ?? string.Empty;
+
+        var nombreMarca = marcas
+            .FirstOrDefault(m => m.MarcaId == producto.MarcaId)?.Nombre ?? string.Empty;
+
+        return new ProductoDetalle(
             producto.ProductoId,
-            CrearInputEdicion(producto),
-            _catalogoRepository.ObtenerCategoriasActivas(),
-            _catalogoRepository.ObtenerMarcasActivas());
+            producto.Nombre,
+            producto.DescripcionEspecifica,
+            producto.FechaVencimiento,
+            producto.Stock,
+            producto.PrecioVenta,
+            producto.CostoAdquisicionActual,
+            producto.CategoriaId,
+            nombreCategoria,
+            producto.MarcaId,
+            nombreMarca);
     }
 
-    public ResultadoOperacion Actualizar(int productoId, ProductoInput input)
+    public async Task<ProductoEdicion?> ObtenerEdicionAsync(
+    Guid publicId,
+    ICrudRepository<Producto> repository)
     {
-        if (_productoRepository.ObtenerActivoPorId(productoId) is null)
+        var producto = await repository.ObtenerPorPublicIdAsync(publicId, true);
+
+        if (producto is null)
         {
-            return ResultadoOperacion.NoExiste();
+            return null;
         }
 
-        _validator.Normalizar(input);
-        var errores = _validator.Validar(input);
-        if (errores.Count > 0)
-        {
-            return ResultadoOperacion.Invalido(errores);
-        }
-
-        return _productoRepository.ActualizarConHistorico(
-                productoId,
-                input,
-                "Edición manual")
-            ? ResultadoOperacion.Correcto()
-            : ResultadoOperacion.NoExiste();
-    }
-
-    public ProductoDetalle? ObtenerDetalle(int productoId)
-    {
-        return _productoRepository.ObtenerActivoPorId(productoId);
-    }
-
-    public ProductoDetalle? ObtenerParaBaja(int productoId)
-    {
-        return _productoRepository.ObtenerActivoPorId(productoId);
-    }
-
-    public bool DarDeBaja(int productoId)
-    {
-        return _productoRepository.DarDeBaja(productoId);
-    }
-
-    private static ProductoInput CrearInputEdicion(ProductoDetalle producto)
-    {
-        return new ProductoInput
+        var input = new ProductoInput
         {
             Nombre = producto.Nombre,
             DescripcionEspecifica = producto.DescripcionEspecifica,
@@ -115,5 +141,59 @@ public class ProductoService : IProductoService
             CategoriaId = producto.CategoriaId,
             MarcaId = producto.MarcaId
         };
+
+        return new ProductoEdicion(
+            producto.ProductoId,
+            input,
+            _catalogoRepository.ObtenerCategoriasActivas(),
+            _catalogoRepository.ObtenerMarcasActivas());
+    }
+
+    public async Task<ResultadoOperacion> ActualizarAsync(
+    Guid publicId,
+    ProductoInput input,
+    ICrudRepository<Producto> repository)
+    {
+        var producto = await repository.ObtenerPorPublicIdAsync(publicId, true);
+
+        if (producto is null)
+        {
+            return ResultadoOperacion.NoExiste();
+        }
+
+        _validator.Normalizar(input);
+
+        var errores = _validator.Validar(input);
+        if (errores.Count > 0)
+        {
+            return ResultadoOperacion.Invalido(errores);
+        }
+
+        producto.Nombre = input.Nombre;
+        producto.DescripcionEspecifica = input.DescripcionEspecifica;
+        producto.FechaVencimiento = input.FechaVencimiento;
+        producto.Stock = input.Stock;
+        producto.PrecioVenta = input.PrecioVenta;
+        producto.CostoAdquisicionActual = input.CostoAdquisicion;
+        producto.CategoriaId = input.CategoriaId;
+        producto.MarcaId = input.MarcaId;
+
+        return await repository.ActualizarAsync(producto)
+            ? ResultadoOperacion.Correcto()
+            : ResultadoOperacion.NoExiste();
+    }
+
+    public async Task<ProductoDetalle?> ObtenerParaBajaAsync(
+    Guid publicId,
+    ICrudRepository<Producto> repository)
+    {
+        return await ObtenerDetalleAsync(publicId, repository);
+    }
+
+    public async Task<bool> DarDeBajaAsync(
+    Guid publicId,
+    ICrudRepository<Producto> repository)
+    {
+        return await repository.CambiarEstadoAsync(publicId, false);
     }
 }
