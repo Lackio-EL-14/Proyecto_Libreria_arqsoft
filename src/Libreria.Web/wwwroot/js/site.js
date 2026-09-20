@@ -39,3 +39,56 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+    const modalTriggers = document.querySelectorAll("[data-confirmation-trigger]");
+    let lastTrigger = null;
+
+    modalTriggers.forEach(function (trigger) {
+        trigger.addEventListener("click", function () {
+            const modal = document.getElementById(trigger.dataset.modalTarget);
+            if (!modal) {
+                return;
+            }
+
+            const name = modal.querySelector("[data-confirmation-name]");
+            const identifier = modal.querySelector("[data-confirmation-id]");
+            const warning = modal.querySelector("[data-confirmation-warning]");
+
+            if (name) {
+                name.textContent = trigger.dataset.entityName || "";
+            }
+
+            if (identifier) {
+                identifier.value = trigger.dataset.entityId || "";
+            }
+
+            if (warning) {
+                warning.hidden = trigger.dataset.hasWarning !== "true";
+            }
+
+            lastTrigger = trigger;
+            modal.showModal();
+        });
+    });
+
+    document.querySelectorAll(".confirmation-modal").forEach(function (modal) {
+        modal.querySelectorAll("[data-confirmation-close]").forEach(function (button) {
+            button.addEventListener("click", function () {
+                modal.close();
+            });
+        });
+
+        modal.addEventListener("click", function (event) {
+            if (event.target === modal) {
+                modal.close();
+            }
+        });
+
+        modal.addEventListener("close", function () {
+            if (lastTrigger) {
+                lastTrigger.focus();
+            }
+        });
+    });
+});
