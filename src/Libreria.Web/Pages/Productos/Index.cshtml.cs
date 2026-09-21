@@ -2,16 +2,24 @@ using Libreria.Web.Pages.Productos.Models;
 using Libreria.Web.Pages.Productos.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Libreria.Web.Data.Factories;
+using Libreria.Web.Data.Repositories;
+using Libreria.Web.Domain.Entities;
+
 
 namespace Libreria.Web.Pages.Productos;
 
 public class IndexModel : PageModel
 {
     private readonly IProductoService _service;
+    private readonly ICrudRepository<Producto> _repository;
 
-    public IndexModel(IProductoService service)
+    public IndexModel(
+      IProductoService service,
+      CrudRepositoryFactory<Producto> factory)
     {
         _service = service;
+        _repository = factory.CrearRepositorio();
     }
 
     public IReadOnlyList<ProductoListItem> Productos { get; private set; } = [];
@@ -27,9 +35,14 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public int? MarcaId { get; set; }
 
-    public void OnGet()
+    public async Task OnGetAsync()
     {
-        var listado = _service.ObtenerListado(Busqueda, CategoriaId, MarcaId);
+        var listado = await _service.ObtenerListadoAsync(
+              Busqueda,
+              CategoriaId,
+              MarcaId,
+              _repository);
+
         Productos = listado.Productos;
         Categorias = listado.Categorias;
         Marcas = listado.Marcas;

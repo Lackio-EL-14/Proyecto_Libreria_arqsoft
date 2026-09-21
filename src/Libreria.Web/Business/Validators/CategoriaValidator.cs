@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Libreria.Web.Data.Factories;
 using Libreria.Web.Data.Repositories;
+using Libreria.Web.Domain.Catalogs;
 using Libreria.Web.Domain.Entities;
 using Libreria.Web.Pages.Categorias.Models;
 
@@ -23,7 +24,7 @@ namespace Libreria.Web.Business.Validators
             input.Codigo = (input.Codigo ?? string.Empty).Trim().ToUpperInvariant();
             input.Nombre = NormalizarTexto(input.Nombre ?? string.Empty);
             input.Descripcion = NormalizarTextoOpcional(input.Descripcion);
-            input.Ubicacion = NormalizarTexto(input.Ubicacion ?? string.Empty);
+            input.Ubicacion = (input.Ubicacion ?? string.Empty).Trim();
         }
 
         public async Task<IReadOnlyDictionary<string, string>> ValidarAsync(
@@ -71,9 +72,9 @@ namespace Libreria.Web.Business.Validators
             {
                 errores["Input.Ubicacion"] = "La ubicación de la categoría es obligatoria.";
             }
-            else if (input.Ubicacion.Length > 100)
+            else if (!UbicacionesCategoria.EsValida(input.Ubicacion))
             {
-                errores["Input.Ubicacion"] = "La ubicación no puede exceder los 100 caracteres.";
+                errores["Input.Ubicacion"] = "Seleccione una ubicación válida de la lista.";
             }
 
             return errores;

@@ -13,16 +13,19 @@ builder.Services
     .AddMvcOptions(options =>
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 
+// Fábricas base del Factory Method
 builder.Services.AddScoped<CrudRepositoryFactory<Categoria>, CategoriaRepositoryFactory>();
-builder.Services.AddScoped<CategoriaValidator>();
-
 builder.Services.AddScoped<CrudRepositoryFactory<Marca>, MarcaRepositoryFactory>();
+builder.Services.AddScoped<CrudRepositoryFactory<Producto>, ProductoRepositoryFactory>();
+
+// Validadores
+builder.Services.AddScoped<CategoriaValidator>();
 builder.Services.AddScoped<MarcaValidator>();
-builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
-builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoRepository>();
-builder.Services.AddScoped<CostoProductoService>();
-builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<ProductoValidator>();
+
+// Servicios y Repositorios adicionales (Catálogo, Histórico)
+builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoRepository>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IHistoricoCostoRepository, HistoricoCostoRepository>();
 
 builder.Services.AddSingleton<IDbConnectionFactory>(sp =>

@@ -22,12 +22,16 @@ BEGIN
         Codigo            NVARCHAR(20) NOT NULL,
         Nombre            NVARCHAR(100) NOT NULL,
         Descripcion       NVARCHAR(255) NULL,
-        Ubicacion         NVARCHAR(100) NOT NULL,
+        Ubicacion         NVARCHAR(100) NOT NULL
+            CONSTRAINT DF_Categoria_Ubicacion DEFAULT (N'Sin asignar'),
         Estado            BIT NOT NULL DEFAULT (1),
         FechaCreacion     DATETIME2 NOT NULL DEFAULT (SYSDATETIME()),
         FechaModificacion DATETIME2 NULL,
         CONSTRAINT UQ_Categoria_Codigo UNIQUE (Codigo),
-        CONSTRAINT UQ_Categoria_Nombre UNIQUE (Nombre)
+        CONSTRAINT UQ_Categoria_Nombre UNIQUE (Nombre),
+        CONSTRAINT CK_Categoria_Ubicacion CHECK (
+            Ubicacion IN (N'Estante principal', N'Depósito', N'Vitrina', N'Bodega', N'Sin asignar')
+        )
     );
 END
 GO
@@ -60,6 +64,41 @@ IF COL_LENGTH('dbo.Categoria', 'Ubicacion') IS NULL
 BEGIN
     ALTER TABLE dbo.Categoria ADD Ubicacion NVARCHAR(100) NOT NULL
         CONSTRAINT DF_Categoria_Ubicacion DEFAULT (N'Sin asignar');
+END
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.default_constraints dc
+    INNER JOIN sys.columns c
+        ON c.object_id = dc.parent_object_id
+       AND c.column_id = dc.parent_column_id
+    WHERE dc.parent_object_id = OBJECT_ID('dbo.Categoria')
+      AND c.name = 'Ubicacion'
+)
+BEGIN
+    ALTER TABLE dbo.Categoria ADD CONSTRAINT DF_Categoria_Ubicacion
+        DEFAULT (N'Sin asignar') FOR Ubicacion;
+END
+GO
+
+UPDATE dbo.Categoria
+SET Ubicacion = CASE UPPER(LTRIM(RTRIM(Ubicacion)))
+    WHEN N'ESTANTE PRINCIPAL' THEN N'Estante principal'
+    WHEN N'DEPÓSITO' THEN N'Depósito'
+    WHEN N'VITRINA' THEN N'Vitrina'
+    WHEN N'BODEGA' THEN N'Bodega'
+    WHEN N'SIN ASIGNAR' THEN N'Sin asignar'
+    ELSE N'Sin asignar'
+END;
+GO
+
+IF OBJECT_ID('dbo.CK_Categoria_Ubicacion', 'C') IS NULL
+BEGIN
+    ALTER TABLE dbo.Categoria WITH CHECK ADD CONSTRAINT CK_Categoria_Ubicacion
+        CHECK (Ubicacion IN (
+            N'Estante principal', N'Depósito', N'Vitrina', N'Bodega', N'Sin asignar'
+        ));
 END
 GO
 
@@ -197,9 +236,9 @@ GO
 IF NOT EXISTS (SELECT 1 FROM dbo.Categoria)
 BEGIN
     INSERT INTO dbo.Categoria (Codigo, Nombre, Descripcion, Ubicacion) VALUES
-        (N'MAT-ESC', N'Material escolar', N'Cuadernos, lápices, útiles en general', N'Pasillo A'),
-        (N'LIBROS', N'Libros', N'Libros de texto y literatura', N'Pasillo B'),
-        (N'ARTE', N'Arte y manualidades', N'Pinturas, pinceles, acrílicos', N'Pasillo C');
+        (N'MAT-ESC', N'Material escolar', N'Cuadernos, lápices, útiles en general', N'Estante principal'),
+        (N'LIBROS', N'Libros', N'Libros de texto y literatura', N'Bodega'),
+        (N'ARTE', N'Arte y manualidades', N'Pinturas, pinceles, acrílicos', N'Vitrina');
 END
 GO
 
@@ -209,5 +248,39 @@ BEGIN
         (N'Acrilex', N'Pinturas y productos de arte', N'Brasil', N'https://acrilex.com.br'),
         (N'Norma', N'Cuadernos y útiles escolares', N'Colombia', N'https://www.norma.com'),
         (N'Genérico', N'Sin marca específica', N'No especificado', NULL);
+END
+GO
+
+-- =========================================================
+-- MIGRACIÓN US-18: Identificadores Públicos (GUID)
+-- =========================================================
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Categoria') AND name = 'PublicId')
+BEGIN
+    ALTER TABLE dbo.Categoria ADD PublicId UNIQUEIDENTIFIER NULL;
+    EXEC('UPDATE dbo.Categoria SET PublicId = NEWID() WHERE PublicId IS NULL');
+    ALTER TABLE dbo.Categoria ALTER COLUMN PublicId UNIQUEIDENTIFIER NOT NULL;
+    ALTER TABLE dbo.Categoria ADD CONSTRAINT DF_Categoria_PublicId DEFAULT NEWID() FOR PublicId;
+    ALTER TABLE dbo.Categoria ADD CONSTRAINT UQ_Categoria_PublicId UNIQUE (PublicId);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Marca') AND name = 'PublicId')
+BEGIN
+    ALTER TABLE dbo.Marca ADD PublicId UNIQUEIDENTIFIER NULL;
+    EXEC('UPDATE dbo.Marca SET PublicId = NEWID() WHERE PublicId IS NULL');
+    ALTER TABLE dbo.Marca ALTER COLUMN PublicId UNIQUEIDENTIFIER NOT NULL;
+    ALTER TABLE dbo.Marca ADD CONSTRAINT DF_Marca_PublicId DEFAULT NEWID() FOR PublicId;
+    ALTER TABLE dbo.Marca ADD CONSTRAINT UQ_Marca_PublicId UNIQUE (PublicId);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Producto') AND name = 'PublicId')
+BEGIN
+    ALTER TABLE dbo.Producto ADD PublicId UNIQUEIDENTIFIER NULL;
+    EXEC('UPDATE dbo.Producto SET PublicId = NEWID() WHERE PublicId IS NULL');
+    ALTER TABLE dbo.Producto ALTER COLUMN PublicId UNIQUEIDENTIFIER NOT NULL;
+    ALTER TABLE dbo.Producto ADD CONSTRAINT DF_Producto_PublicId DEFAULT NEWID() FOR PublicId;
+    ALTER TABLE dbo.Producto ADD CONSTRAINT UQ_Producto_PublicId UNIQUE (PublicId);
 END
 GO
