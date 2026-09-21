@@ -75,8 +75,8 @@ else
                         </td>
                         <td>
                             <div class="table-actions">
-                                <a asp-page="./Edit" asp-route-id="@marca.MarcaId" class="btn-table">Editar</a>
-                                <a asp-page="./Deactivate" asp-route-id="@marca.MarcaId" class="btn-table btn-table--danger">Dar de baja</a>
+                                <a asp-page="./Edit" asp-route-id="@marca.PublicId" class="btn-table">Editar</a>
+                                <a asp-page="./Deactivate" asp-route-id="@marca.PublicId" class="btn-table btn-table--danger">Dar de baja</a>
                             </div>
                         </td>
                     </tr>
@@ -84,4 +84,4 @@ else
             </tbody>
         </table>
     </div>
-}
+}   

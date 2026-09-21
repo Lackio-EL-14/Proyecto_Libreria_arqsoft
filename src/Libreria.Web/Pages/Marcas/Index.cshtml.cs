@@ -1,24 +1,27 @@
-using Libreria.Web.Pages.Marcas.Models;
-using Libreria.Web.Pages.Marcas.Repositories;
+using Libreria.Web.Data.Factories;
+using Libreria.Web.Data.Repositories;
+using Libreria.Web.Domain.Entities;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Libreria.Web.Pages.Marcas;
 
 public class IndexModel : PageModel
 {
-    private readonly IMarcaRepository _repository;
+    private readonly ICrudRepository<Marca> _repository;
 
-    public IndexModel(IMarcaRepository repository)
+    public IndexModel(CrudRepositoryFactory<Marca> factory)
     {
-        _repository = repository;
+        _repository = factory.CrearRepositorio();
     }
 
-    public IReadOnlyList<MarcaListItem> Marcas { get; private set; } = [];
+    public IReadOnlyList<Marca> Marcas { get; private set; } = [];
     public string? NombreBusqueda { get; private set; }
 
-    public void OnGet(string? nombre)
+    public async Task OnGetAsync(string? nombre)
     {
         NombreBusqueda = nombre?.Trim();
-        Marcas = _repository.ObtenerActivas(NombreBusqueda);
+
+        Marcas = await _repository.ObtenerActivasAsync(
+            NombreBusqueda);
     }
 }
