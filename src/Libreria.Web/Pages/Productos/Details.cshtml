@@ -53,13 +53,26 @@
         </div>
 
         <div>
-            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">Fecha de vencimiento</p>
-            <p>
-                @(Model.Producto.FechaVencimiento.HasValue
-                    ? Model.Producto.FechaVencimiento.Value.ToString("dd/MM/yyyy")
-                    : "Sin fecha de vencimiento")
+            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">
+                Perecedero
             </p>
+            <p>@(Model.Producto.EsPerecedero ? "Sí" : "No")</p>
         </div>
+
+        @if (Model.Producto.EsPerecedero)
+        {
+            <div>
+                <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">
+                    Fecha de vencimiento
+                </p>
+                <p>
+                    @(Model.Producto.FechaVencimiento.HasValue
+                        ? Model.Producto.FechaVencimiento.Value.ToString("dd/MM/yyyy")
+                        : "Sin fecha de vencimiento")
+                </p>
+            </div>
+        }
+
     </div>
 
     <div style="border-top: 1px solid var(--color-border); padding-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">

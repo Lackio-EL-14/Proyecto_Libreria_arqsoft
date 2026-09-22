@@ -81,6 +81,7 @@ else
                     <th>Nombre</th>
                     <th>Categoría</th>
                     <th>Marca</th>
+                    <th>Perecedero</th>
                     <th>Stock</th>
                     <th>Precio venta</th>
                     <th>Costo adquisición</th>
@@ -94,6 +95,7 @@ else
                         <td style="font-weight: 600;">@producto.Nombre</td>
                         <td>@producto.Categoria</td>
                         <td>@producto.Marca</td>
+                        <td>@(producto.EsPerecedero ? "Sí" : "No")</td>
                         <td>
                             <span class="badge @(producto.Stock <= 5 ? "badge--accent" : "")">@producto.Stock</span>
                         </td>

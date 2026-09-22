@@ -190,6 +190,7 @@ BEGIN
         Nombre                NVARCHAR(150) NOT NULL,
         DescripcionEspecifica NVARCHAR(500) NULL,
         FechaVencimiento      DATE NULL,
+        EsPerecedero          BIT NOT NULL DEFAULT (0),
         Stock                 INT NOT NULL DEFAULT (0),
         PrecioVenta           DECIMAL(10,2) NOT NULL,
         CostoAdquisicionActual DECIMAL(10,2) NOT NULL DEFAULT (0),
@@ -207,6 +208,22 @@ BEGIN
         CONSTRAINT CK_Producto_CostoAdquisicionActual CHECK (CostoAdquisicionActual >= 0)
     );
 END
+GO
+
+
+IF COL_LENGTH('dbo.Producto', 'EsPerecedero') IS NULL
+BEGIN
+    ALTER TABLE dbo.Producto
+    ADD EsPerecedero BIT NOT NULL
+        CONSTRAINT DF_Producto_EsPerecedero DEFAULT (0);
+END
+GO
+
+-- Los productos existentes que ya tenían fecha de vencimiento
+-- pasan automáticamente a ser perecederos.
+UPDATE dbo.Producto
+SET EsPerecedero = 1
+WHERE FechaVencimiento IS NOT NULL;
 GO
 
 -- ---------------------------------------------------------

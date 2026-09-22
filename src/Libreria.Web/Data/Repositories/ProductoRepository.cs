@@ -27,7 +27,7 @@ namespace Libreria.Web.Data.Repositories
 
             command.CommandText = @"
         SELECT ProductoId, PublicId, Nombre, DescripcionEspecifica,
-               FechaVencimiento, Stock, PrecioVenta,
+               EsPerecedero, FechaVencimiento, Stock, PrecioVenta,
                CostoAdquisicionActual, CategoriaId, MarcaId,
                Estado, FechaCreacion, FechaModificacion
         FROM Producto
@@ -63,7 +63,7 @@ namespace Libreria.Web.Data.Repositories
 
             command.CommandText = @"
                 SELECT ProductoId, PublicId, Nombre, DescripcionEspecifica,
-                       FechaVencimiento, Stock, PrecioVenta,
+                       EsPerecedero, FechaVencimiento, Stock, PrecioVenta,
                        CostoAdquisicionActual, CategoriaId, MarcaId,
                        Estado, FechaCreacion, FechaModificacion
                 FROM Producto
@@ -131,6 +131,7 @@ namespace Libreria.Web.Data.Repositories
                         UPDATE Producto
                         SET Nombre = @Nombre,
                             DescripcionEspecifica = @DescripcionEspecifica,
+                            EsPerecedero = @EsPerecedero,
                             FechaVencimiento = @FechaVencimiento,
                             Stock = @Stock,
                             PrecioVenta = @PrecioVenta,
@@ -255,6 +256,8 @@ namespace Libreria.Web.Data.Repositories
                     reader.IsDBNull(reader.GetOrdinal("DescripcionEspecifica"))
                         ? null
                         : reader.GetString(reader.GetOrdinal("DescripcionEspecifica")),
+                EsPerecedero = reader.GetBoolean(
+                    reader.GetOrdinal("EsPerecedero")),
 
                 FechaVencimiento =
                     reader.IsDBNull(reader.GetOrdinal("FechaVencimiento"))
@@ -297,10 +300,10 @@ namespace Libreria.Web.Data.Repositories
 
             command.CommandText = @"
                 INSERT INTO Producto
-                    (Nombre, DescripcionEspecifica, FechaVencimiento, Stock,
+                    (Nombre, DescripcionEspecifica, EsPerecedero, FechaVencimiento, Stock,
                      PrecioVenta, CostoAdquisicionActual, CategoriaId, MarcaId, Estado)
                 VALUES
-                    (@Nombre, @DescripcionEspecifica, @FechaVencimiento, @Stock,
+                    (@Nombre, @DescripcionEspecifica, @EsPerecedero, @FechaVencimiento, @Stock,
                      @PrecioVenta, @CostoAdquisicionActual, @CategoriaId, @MarcaId, 1);
 
                 SELECT CAST(SCOPE_IDENTITY() AS INT)";
@@ -343,6 +346,8 @@ namespace Libreria.Web.Data.Repositories
                 command,
                 "@DescripcionEspecifica",
                 producto.DescripcionEspecifica ?? (object)DBNull.Value);
+
+            AgregarParametro(command, "@EsPerecedero", producto.EsPerecedero);
 
             AgregarParametro(
                 command,
