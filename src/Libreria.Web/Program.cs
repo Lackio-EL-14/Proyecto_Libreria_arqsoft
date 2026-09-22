@@ -28,13 +28,14 @@ builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoReposito
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IHistoricoCostoRepository, HistoricoCostoRepository>();
 
-builder.Services.AddSingleton<IDbConnectionFactory>(sp =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("LibreriaDb")
-        ?? throw new InvalidOperationException(
-            "Falta la cadena de conexión 'LibreriaDb' en appsettings.json");
-    return new SqlConnectionFactory(connectionString);
-});
+var connectionString = builder.Configuration.GetConnectionString("LibreriaDb")
+    ?? throw new InvalidOperationException(
+        "Falta la cadena de conexión 'LibreriaDb' en appsettings.json");
+var connectionStringSingleton = ConnectionStringSingleton.Instancia;
+connectionStringSingleton.Configurar(connectionString);
+
+builder.Services.AddSingleton(connectionStringSingleton);
+builder.Services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
 
 var app = builder.Build();
 

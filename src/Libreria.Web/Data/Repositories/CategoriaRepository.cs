@@ -71,11 +71,21 @@ namespace Libreria.Web.Data.Repositories
             await using var command = connection.CreateCommand();
             
             command.CommandText = @"
+                DECLARE @NumeroCodigo INT = NEXT VALUE FOR dbo.CategoriaCodigoSequence;
+                DECLARE @CodigoGenerado NVARCHAR(20) = CONCAT(
+                    N'CAT-',
+                    CASE
+                        WHEN @NumeroCodigo < 1000
+                            THEN RIGHT(N'000' + CONVERT(NVARCHAR(10), @NumeroCodigo), 3)
+                        ELSE CONVERT(NVARCHAR(10), @NumeroCodigo)
+                    END
+                );
+
                 INSERT INTO Categoria
                     (Codigo, Nombre, Descripcion, Ubicacion, Estado,
                      FechaCreacion, FechaModificacion)
                 VALUES
-                    (@Codigo, @Nombre, @Descripcion, @Ubicacion, 1,
+                    (@CodigoGenerado, @Nombre, @Descripcion, @Ubicacion, 1,
                      SYSDATETIME(), SYSDATETIME())";
                      
             AgregarDatosCategoria(command, categoria);
@@ -98,6 +108,7 @@ namespace Libreria.Web.Data.Repositories
                   AND Estado = 1";
                   
             AgregarDatosCategoria(command, categoria);
+            AgregarParametro(command, "@Codigo", categoria.Codigo);
             AgregarParametro(command, "@PublicId", categoria.PublicId);
             
             return await command.ExecuteNonQueryAsync() == 1;
@@ -188,7 +199,6 @@ namespace Libreria.Web.Data.Repositories
 
         private static void AgregarDatosCategoria(DbCommand command, Categoria categoria)
         {
-            AgregarParametro(command, "@Codigo", categoria.Codigo);
             AgregarParametro(command, "@Nombre", categoria.Nombre);
             AgregarParametro(command, "@Descripcion", categoria.Descripcion ?? (object)DBNull.Value);
             AgregarParametro(command, "@Ubicacion", categoria.Ubicacion);

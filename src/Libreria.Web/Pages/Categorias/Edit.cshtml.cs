@@ -55,7 +55,7 @@ public class EditModel : PageModel
     public async Task<IActionResult> OnPostAsync()
     {
         _validator.Normalizar(Input);
-        var errores = await _validator.ValidarAsync(Input, PublicId);
+        var errores = await _validator.ValidarEdicionAsync(Input, PublicId);
         AgregarErrores(errores);
 
         if (!ModelState.IsValid)

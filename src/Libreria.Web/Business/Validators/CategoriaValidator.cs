@@ -27,27 +27,43 @@ namespace Libreria.Web.Business.Validators
             input.Ubicacion = (input.Ubicacion ?? string.Empty).Trim();
         }
 
-        public async Task<IReadOnlyDictionary<string, string>> ValidarAsync(
+        public Task<IReadOnlyDictionary<string, string>> ValidarCreacionAsync(CategoriaInput input)
+        {
+            return ValidarAsync(input, null, false);
+        }
+
+        public Task<IReadOnlyDictionary<string, string>> ValidarEdicionAsync(
             CategoriaInput input,
-            Guid? excluirPublicId = null)
+            Guid excluirPublicId)
+        {
+            return ValidarAsync(input, excluirPublicId, true);
+        }
+
+        private async Task<IReadOnlyDictionary<string, string>> ValidarAsync(
+            CategoriaInput input,
+            Guid? excluirPublicId,
+            bool validarCodigo)
         {
             var errores = new Dictionary<string, string>();
 
-            if (string.IsNullOrWhiteSpace(input.Codigo))
+            if (validarCodigo)
             {
-                errores["Input.Codigo"] = "El código de la categoría es obligatorio.";
-            }
-            else if (input.Codigo.Length > 20)
-            {
-                errores["Input.Codigo"] = "El código no puede exceder los 20 caracteres.";
-            }
-            else if (!Regex.IsMatch(input.Codigo, "^[A-Z0-9-]+$"))
-            {
-                errores["Input.Codigo"] = "El código solo puede contener letras, números y guiones.";
-            }
-            else if (await _repository.ExisteValorAsync("Codigo", input.Codigo, excluirPublicId))
-            {
-                errores["Input.Codigo"] = "El código de la categoría ya está registrado.";
+                if (string.IsNullOrWhiteSpace(input.Codigo))
+                {
+                    errores["Input.Codigo"] = "El código de la categoría es obligatorio.";
+                }
+                else if (input.Codigo.Length > 20)
+                {
+                    errores["Input.Codigo"] = "El código no puede exceder los 20 caracteres.";
+                }
+                else if (!Regex.IsMatch(input.Codigo, "^[A-Z0-9-]+$"))
+                {
+                    errores["Input.Codigo"] = "El código solo puede contener letras, números y guiones.";
+                }
+                else if (await _repository.ExisteValorAsync("Codigo", input.Codigo, excluirPublicId))
+                {
+                    errores["Input.Codigo"] = "El código de la categoría ya está registrado.";
+                }
             }
 
             if (string.IsNullOrWhiteSpace(input.Nombre))

@@ -32,7 +32,7 @@ public class CreateModel : PageModel
     public async Task<IActionResult> OnPostAsync()
     {
         _validator.Normalizar(Input);
-        var errores = await _validator.ValidarAsync(Input);
+        var errores = await _validator.ValidarCreacionAsync(Input);
         AgregarErrores(errores);
 
         if (!ModelState.IsValid)
@@ -42,7 +42,6 @@ public class CreateModel : PageModel
 
         await _repository.CrearAsync(new Categoria
         {
-            Codigo = Input.Codigo,
             Nombre = Input.Nombre,
             Descripcion = Input.Descripcion,
             Ubicacion = Input.Ubicacion
