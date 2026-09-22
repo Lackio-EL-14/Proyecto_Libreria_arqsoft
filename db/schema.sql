@@ -271,6 +271,27 @@ BEGIN
 END
 GO
 
+UPDATE dbo.Categoria
+SET Codigo = CONCAT(
+    N'CAT-',
+    CASE
+        WHEN CategoriaId < 1000
+            THEN RIGHT(N'000' + CONVERT(NVARCHAR(10), CategoriaId), 3)
+        ELSE CONVERT(NVARCHAR(10), CategoriaId)
+    END
+);
+GO
+
+IF OBJECT_ID('dbo.CategoriaCodigoSequence', 'SO') IS NULL
+BEGIN
+    DECLARE @SiguienteCodigo INT = ISNULL((SELECT MAX(CategoriaId) FROM dbo.Categoria), 0) + 1;
+    DECLARE @CrearSecuencia NVARCHAR(MAX) = N'CREATE SEQUENCE dbo.CategoriaCodigoSequence AS INT START WITH '
+        + CONVERT(NVARCHAR(20), @SiguienteCodigo)
+        + N' INCREMENT BY 1;';
+    EXEC sys.sp_executesql @CrearSecuencia;
+END
+GO
+
 IF NOT EXISTS (SELECT 1 FROM dbo.Marca)
 BEGIN
     INSERT INTO dbo.Marca (Nombre, Descripcion, PaisOrigen, SitioWeb) VALUES
