@@ -16,6 +16,11 @@ public class ProductoValidator
     {
         input.Nombre = NormalizarTexto(input.Nombre ?? string.Empty);
         input.DescripcionEspecifica = NormalizarTextoOpcional(input.DescripcionEspecifica);
+
+        if (!input.EsPerecedero)
+        {
+            input.FechaVencimiento = null;
+        }
     }
 
     public IReadOnlyDictionary<string, string> Validar(ProductoInput input)
@@ -36,10 +41,18 @@ public class ProductoValidator
             errores["Input.DescripcionEspecifica"] = "La descripción no puede exceder los 500 caracteres.";
         }
 
-        if (input.FechaVencimiento.HasValue
-            && input.FechaVencimiento.Value.Date < DateTime.Today)
+        if (input.EsPerecedero)
         {
-            errores["Input.FechaVencimiento"] = "La fecha de vencimiento no puede estar en el pasado.";
+            if (!input.FechaVencimiento.HasValue)
+            {
+                errores["Input.FechaVencimiento"] =
+                    "La fecha de vencimiento es obligatoria para productos perecederos.";
+            }
+            else if (input.FechaVencimiento.Value.Date < DateTime.Today)
+            {
+                errores["Input.FechaVencimiento"] =
+                    "La fecha de vencimiento no puede ser anterior a hoy.";
+            }
         }
 
         if (input.Stock < 0)

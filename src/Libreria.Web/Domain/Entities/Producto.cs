@@ -9,6 +9,7 @@ namespace Libreria.Web.Domain.Entities
         public string Nombre { get; set; } = string.Empty;
         public string? DescripcionEspecifica { get; set; }
         public DateTime? FechaVencimiento { get; set; }
+        public bool EsPerecedero { get; set; }
         public int Stock { get; set; }
         public decimal PrecioVenta { get; set; }
         public decimal CostoAdquisicionActual { get; set; }

@@ -1,3 +1,6 @@
 namespace Libreria.Web.Pages.Historico.Models;
 
-public record ProductoHistoricoResumen(string Nombre, bool Estado);
+public record ProductoHistoricoResumen(
+    int ProductoId,
+    string Nombre,
+    bool Estado);

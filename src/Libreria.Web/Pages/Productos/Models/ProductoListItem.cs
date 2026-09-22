@@ -7,5 +7,6 @@ public record ProductoListItem(
     decimal PrecioVenta,
     decimal CostoAdquisicionActual,
     string Categoria,
-    string Marca
+    string Marca,
+    bool EsPerecedero
 );

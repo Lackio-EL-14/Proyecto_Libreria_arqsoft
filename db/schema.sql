@@ -190,6 +190,7 @@ BEGIN
         Nombre                NVARCHAR(150) NOT NULL,
         DescripcionEspecifica NVARCHAR(500) NULL,
         FechaVencimiento      DATE NULL,
+        EsPerecedero          BIT NOT NULL DEFAULT (0),
         Stock                 INT NOT NULL DEFAULT (0),
         PrecioVenta           DECIMAL(10,2) NOT NULL,
         CostoAdquisicionActual DECIMAL(10,2) NOT NULL DEFAULT (0),
@@ -209,6 +210,22 @@ BEGIN
 END
 GO
 
+
+IF COL_LENGTH('dbo.Producto', 'EsPerecedero') IS NULL
+BEGIN
+    ALTER TABLE dbo.Producto
+    ADD EsPerecedero BIT NOT NULL
+        CONSTRAINT DF_Producto_EsPerecedero DEFAULT (0);
+END
+GO
+
+-- Los productos existentes que ya tenían fecha de vencimiento
+-- pasan automáticamente a ser perecederos.
+UPDATE dbo.Producto
+SET EsPerecedero = 1
+WHERE FechaVencimiento IS NOT NULL;
+GO
+
 -- ---------------------------------------------------------
 -- HistoricoCostoProducto
 -- Cada fila es un registro inmutable: nunca se actualiza ni
@@ -220,6 +237,7 @@ BEGIN
         HistoricoCostoId  INT IDENTITY(1,1) PRIMARY KEY,
         ProductoId        INT NOT NULL,
         CostoAdquisicion  DECIMAL(10,2) NOT NULL,
+        FechaVencimiento  DATE NULL,
         TipoCambioUsd     DECIMAL(10,4) NULL,
         Motivo            NVARCHAR(200) NULL, -- ej: 'Registro inicial', 'Edición manual', 'Compra a proveedor'
         FechaVigencia     DATETIME2 NOT NULL DEFAULT (SYSDATETIME()),
@@ -227,6 +245,17 @@ BEGIN
             REFERENCES dbo.Producto (ProductoId),
         CONSTRAINT CK_Historico_Costo CHECK (CostoAdquisicion >= 0)
     );
+END
+GO
+
+-- =========================================================
+-- MIGRACIÓN US-27: Fecha de vencimiento en histórico
+-- =========================================================
+
+IF COL_LENGTH('dbo.HistoricoCostoProducto', 'FechaVencimiento') IS NULL
+BEGIN
+    ALTER TABLE dbo.HistoricoCostoProducto
+    ADD FechaVencimiento DATE NULL;
 END
 GO
 

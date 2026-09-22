@@ -77,9 +77,25 @@
         </div>
 
         <div class="form-group">
-            <label asp-for="Input.FechaVencimiento">Fecha de vencimiento (Opcional)</label>
-            <input asp-for="Input.FechaVencimiento" type="date" class="form-control" />
-             <span asp-validation-for="Input.FechaVencimiento" class="text-danger"></span>
+            <label>
+                <input asp-for="Input.EsPerecedero" id="esPerecedero" />
+                Es perecedero
+            </label>
+        </div>
+
+        <div class="form-group" id="fechaVencimientoGroup">
+            <label asp-for="Input.FechaVencimiento">
+                Fecha de vencimiento <span class="text-danger">*</span>
+            </label>
+
+            <input asp-for="Input.FechaVencimiento"
+                id="fechaVencimiento"
+                type="date"
+                min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                class="form-control" />
+
+            <span asp-validation-for="Input.FechaVencimiento"
+                class="text-danger"></span>
         </div>
 
         <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
@@ -114,4 +130,23 @@
             }
         }
     });
+    const esPerecedero = document.getElementById("esPerecedero");
+    const fechaGroup = document.getElementById("fechaVencimientoGroup");
+    const fechaInput = document.getElementById("fechaVencimiento");
+
+    function actualizarFechaVencimiento() {
+    if (esPerecedero.checked) {
+        fechaGroup.style.display = "block";
+        fechaInput.disabled = false;
+        fechaInput.required = true;
+    } else {
+        fechaInput.required = false;
+        fechaInput.value = "";
+        fechaInput.disabled = true;
+        fechaGroup.style.display = "none";
+    }
+}
+
+    esPerecedero.addEventListener("change", actualizarFechaVencimiento);
+    actualizarFechaVencimiento();
 </script>

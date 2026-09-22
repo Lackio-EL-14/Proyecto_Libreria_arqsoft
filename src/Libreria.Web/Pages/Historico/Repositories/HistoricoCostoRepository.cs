@@ -13,25 +13,29 @@ public class HistoricoCostoRepository : IHistoricoCostoRepository
         _connectionFactory = connectionFactory;
     }
 
-    public ProductoHistoricoResumen? ObtenerProducto(int productoId)
+    public ProductoHistoricoResumen? ObtenerProducto(Guid publicId)
     {
         using var connection = _connectionFactory.CreateConnection();
         using var command = connection.CreateCommand();
 
         command.CommandText = @"
-            SELECT Nombre, Estado
+            SELECT ProductoId, Nombre, Estado
             FROM Producto
-            WHERE ProductoId = @ProductoId";
+            WHERE PublicId = @PublicId";
 
-        AgregarParametro(command, "@ProductoId", productoId);
+        AgregarParametro(command, "@PublicId", publicId);
 
         using var reader = command.ExecuteReader();
+
         if (!reader.Read())
         {
             return null;
         }
 
-        return new ProductoHistoricoResumen(reader.GetString(0), reader.GetBoolean(1));
+        return new ProductoHistoricoResumen(
+            reader.GetInt32(0),
+            reader.GetString(1),
+            reader.GetBoolean(2));
     }
 
     public IReadOnlyList<HistoricoCostoItem> ObtenerHistorico(int productoId)
@@ -47,6 +51,7 @@ public class HistoricoCostoRepository : IHistoricoCostoRepository
                 SELECT
                     HistoricoCostoId,
                     CostoAdquisicion,
+                    FechaVencimiento,
                     Motivo,
                     FechaVigencia,
                     LAG(CostoAdquisicion) OVER (
@@ -58,6 +63,7 @@ public class HistoricoCostoRepository : IHistoricoCostoRepository
             SELECT
                 HistoricoCostoId,
                 CostoAdquisicion,
+                FechaVencimiento,
                 CostoAnterior,
                 Motivo,
                 FechaVigencia
@@ -77,6 +83,11 @@ public class HistoricoCostoRepository : IHistoricoCostoRepository
 
                 CostoNuevo =
                     Convert.ToDecimal(reader["CostoAdquisicion"]),
+
+                FechaVencimiento =
+                    reader["FechaVencimiento"] == DBNull.Value
+                        ? null
+                        : Convert.ToDateTime(reader["FechaVencimiento"]),
 
                 CostoAnterior =
                     reader["CostoAnterior"] == DBNull.Value

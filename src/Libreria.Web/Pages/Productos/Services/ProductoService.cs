@@ -40,7 +40,8 @@ public class ProductoService : IProductoService
                 p.PrecioVenta,
                 p.CostoAdquisicionActual,
                 categorias.FirstOrDefault(c => c.CategoriaId == p.CategoriaId)?.Nombre ?? string.Empty,
-                marcas.FirstOrDefault(m => m.MarcaId == p.MarcaId)?.Nombre ?? string.Empty))
+                marcas.FirstOrDefault(m => m.MarcaId == p.MarcaId)?.Nombre ?? string.Empty
+                ,p.EsPerecedero))
             .ToList();
 
         return new ProductoListado(
@@ -72,6 +73,7 @@ public class ProductoService : IProductoService
         {
             Nombre = input.Nombre,
             DescripcionEspecifica = input.DescripcionEspecifica,
+            EsPerecedero = input.EsPerecedero,
             FechaVencimiento = input.FechaVencimiento,
             Stock = input.Stock,
             PrecioVenta = input.PrecioVenta,
@@ -109,6 +111,7 @@ public class ProductoService : IProductoService
             producto.ProductoId,
             producto.Nombre,
             producto.DescripcionEspecifica,
+            producto.EsPerecedero,
             producto.FechaVencimiento,
             producto.Stock,
             producto.PrecioVenta,
@@ -134,6 +137,7 @@ public class ProductoService : IProductoService
         {
             Nombre = producto.Nombre,
             DescripcionEspecifica = producto.DescripcionEspecifica,
+            EsPerecedero = producto.EsPerecedero,
             FechaVencimiento = producto.FechaVencimiento,
             Stock = producto.Stock,
             PrecioVenta = producto.PrecioVenta,
@@ -171,6 +175,7 @@ public class ProductoService : IProductoService
 
         producto.Nombre = input.Nombre;
         producto.DescripcionEspecifica = input.DescripcionEspecifica;
+        producto.EsPerecedero = input.EsPerecedero;
         producto.FechaVencimiento = input.FechaVencimiento;
         producto.Stock = input.Stock;
         producto.PrecioVenta = input.PrecioVenta;

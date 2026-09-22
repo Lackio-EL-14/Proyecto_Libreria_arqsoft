@@ -7,6 +7,7 @@ public class HistoricoCostoItem
     public decimal CostoNuevo { get; set; }
 
     public decimal? CostoAnterior { get; set; }
+    public DateTime? FechaVencimiento { get; set; }
 
     public DateTime FechaVigencia { get; set; }
 

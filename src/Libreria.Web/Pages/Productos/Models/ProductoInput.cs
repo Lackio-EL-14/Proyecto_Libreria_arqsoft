@@ -7,6 +7,7 @@ public class ProductoInput
     public string Nombre { get; set; } = string.Empty;
 
     public string? DescripcionEspecifica { get; set; }
+    public bool EsPerecedero { get; set; }
 
     public DateTime? FechaVencimiento { get; set; }
 

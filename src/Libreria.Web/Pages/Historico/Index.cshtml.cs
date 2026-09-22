@@ -14,31 +14,31 @@ public class IndexModel : PageModel
         _repository = repository;
     }
 
-    public int ProductoId { get; private set; }
+    public Guid PublicId { get; private set; }
     public string? NombreProducto { get; private set; }
     public bool ProductoActivo { get; private set; }
     public IReadOnlyList<HistoricoCostoItem> Historial { get; private set; } = [];
     public string? MensajeError { get; private set; }
 
-    public IActionResult OnGet(int productoId)
+    public IActionResult OnGet(Guid? publicId)
     {
-        if (productoId <= 0)
+        if (!publicId.HasValue || publicId.Value == Guid.Empty)
         {
-            MensajeError = "Debe seleccionar un producto válido.";
-            return Page();
+            return NotFound();
         }
 
-        ProductoId = productoId;
-        var producto = _repository.ObtenerProducto(productoId);
+        var producto = _repository.ObtenerProducto(publicId.Value);
+
         if (producto is null)
         {
-            MensajeError = "El producto solicitado no existe.";
-            return Page();
+            return NotFound();
         }
 
+        PublicId = publicId.Value;
         NombreProducto = producto.Nombre;
         ProductoActivo = producto.Estado;
-        Historial = _repository.ObtenerHistorico(productoId);
+        Historial = _repository.ObtenerHistorico(producto.ProductoId);
+
         return Page();
     }
 }
