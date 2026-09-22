@@ -94,6 +94,7 @@ namespace Libreria.Web.Data.Repositories
                     transaction,
                     productoId,
                     entidad.CostoAdquisicionActual,
+                    entidad.FechaVencimiento,
                     "Registro inicial");
 
                 await transaction.CommitAsync();
@@ -159,6 +160,7 @@ namespace Libreria.Web.Data.Repositories
                         transaction,
                         datosActuales.Value.ProductoId,
                         entidad.CostoAdquisicionActual,
+                        entidad.FechaVencimiento,
                         "Edición manual");
                 }
 
@@ -318,6 +320,7 @@ namespace Libreria.Web.Data.Repositories
             DbTransaction transaction,
             int productoId,
             decimal costo,
+            DateTime? fechaVencimiento,
             string motivo)
         {
             await using var command = connection.CreateCommand();
@@ -325,12 +328,13 @@ namespace Libreria.Web.Data.Repositories
 
             command.CommandText = @"
                 INSERT INTO HistoricoCostoProducto
-                    (ProductoId, CostoAdquisicion, Motivo)
+                    (ProductoId, CostoAdquisicion, FechaVencimiento, Motivo)
                 VALUES
-                    (@ProductoId, @Costo, @Motivo)";
+                    (@ProductoId, @Costo, @FechaVencimiento, @Motivo)";
 
             AgregarParametro(command, "@ProductoId", productoId);
             AgregarParametro(command, "@Costo", costo);
+            AgregarParametro(command, "@FechaVencimiento", fechaVencimiento ?? (object)DBNull.Value);
             AgregarParametro(command, "@Motivo", motivo);
 
             await command.ExecuteNonQueryAsync();

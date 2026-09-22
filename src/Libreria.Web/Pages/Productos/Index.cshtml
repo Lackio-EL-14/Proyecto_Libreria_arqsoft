@@ -104,6 +104,7 @@ else
                         <td>
                             <div class="table-actions">
                                 <a asp-page="Details" asp-route-id="@producto.PublicId" class="btn-table">Ver</a>
+                                <a asp-page="/Historico/Index" asp-route-publicId="@producto.PublicId" class="btn-table">Histórico</a>
                                 <a asp-page="Edit" asp-route-id="@producto.PublicId" class="btn-table">Editar</a>
                                 <a asp-page="Deactivate" asp-route-id="@producto.PublicId" class="btn-table btn-table--danger">Dar de baja</a>
                             </div>

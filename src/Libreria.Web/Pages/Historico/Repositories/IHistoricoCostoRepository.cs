@@ -4,6 +4,6 @@ namespace Libreria.Web.Pages.Historico.Repositories;
 
 public interface IHistoricoCostoRepository
 {
-    ProductoHistoricoResumen? ObtenerProducto(int productoId);
+    ProductoHistoricoResumen? ObtenerProducto(Guid publicId);
     IReadOnlyList<HistoricoCostoItem> ObtenerHistorico(int productoId);
 }

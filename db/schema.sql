@@ -237,6 +237,7 @@ BEGIN
         HistoricoCostoId  INT IDENTITY(1,1) PRIMARY KEY,
         ProductoId        INT NOT NULL,
         CostoAdquisicion  DECIMAL(10,2) NOT NULL,
+        FechaVencimiento  DATE NULL,
         TipoCambioUsd     DECIMAL(10,4) NULL,
         Motivo            NVARCHAR(200) NULL, -- ej: 'Registro inicial', 'Edición manual', 'Compra a proveedor'
         FechaVigencia     DATETIME2 NOT NULL DEFAULT (SYSDATETIME()),
@@ -244,6 +245,17 @@ BEGIN
             REFERENCES dbo.Producto (ProductoId),
         CONSTRAINT CK_Historico_Costo CHECK (CostoAdquisicion >= 0)
     );
+END
+GO
+
+-- =========================================================
+-- MIGRACIÓN US-27: Fecha de vencimiento en histórico
+-- =========================================================
+
+IF COL_LENGTH('dbo.HistoricoCostoProducto', 'FechaVencimiento') IS NULL
+BEGIN
+    ALTER TABLE dbo.HistoricoCostoProducto
+    ADD FechaVencimiento DATE NULL;
 END
 GO
 
