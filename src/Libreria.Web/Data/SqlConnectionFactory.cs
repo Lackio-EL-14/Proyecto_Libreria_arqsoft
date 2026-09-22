@@ -5,16 +5,16 @@ namespace Libreria.Web.Data;
 
 public class SqlConnectionFactory : IDbConnectionFactory
 {
-    private readonly string _connectionString;
+    private readonly ConnectionStringSingleton _connectionStrings;
 
-    public SqlConnectionFactory(string connectionString)
+    public SqlConnectionFactory(ConnectionStringSingleton connectionStrings)
     {
-        _connectionString = connectionString;
+        _connectionStrings = connectionStrings;
     }
 
     public DbConnection CreateConnection()
     {
-        var connection = new SqlConnection(_connectionString);
+        var connection = new SqlConnection(_connectionStrings.LibreriaDb);
         connection.Open();
         return connection;
     }
