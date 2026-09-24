@@ -60,81 +60,47 @@
     </article>
 </section>
 
-<!-- Secciones Operativas: Accesos Rápidos y Módulos Futuros -->
-<div class="dashboard-sections">
-    <!-- Accesos Rápidos del Catálogo e Histórico -->
-    <section class="dashboard-panel">
-        <div class="dashboard-panel__header">
-            <h2>⚡ Acciones Operativas Rápidas</h2>
-            <p>Acceso directo a las tareas frecuentes del catálogo e inventario.</p>
-        </div>
-        <div class="quick-actions-grid">
-            <a asp-page="/Productos/Create" class="quick-action-item">
-                <span class="quick-action-item__icon">➕</span>
-                <div>
-                    <strong>Registrar Producto</strong>
-                    <p>Alta de nuevo artículo en catálogo</p>
-                </div>
-            </a>
-            <a asp-page="/Productos/Index" class="quick-action-item">
-                <span class="quick-action-item__icon">🔍</span>
-                <div>
-                    <strong>Consultar Inventario</strong>
-                    <p>Búsqueda y filtros por categoría/marca</p>
-                </div>
-            </a>
-            <a asp-page="/Categorias/Create" class="quick-action-item">
-                <span class="quick-action-item__icon">🏷️</span>
-                <div>
-                    <strong>Nueva Categoría</strong>
-                    <p>Asignación de ubicación en almacén</p>
-                </div>
-            </a>
-            <a asp-page="/Marcas/Create" class="quick-action-item">
-                <span class="quick-action-item__icon">🏢</span>
-                <div>
-                    <strong>Nueva Marca</strong>
-                    <p>Registro de proveedor o fabricante</p>
-                </div>
-            </a>
-        </div>
-    </section>
-
-    <!-- Proyección y Visión Comercial (Módulos Futuros) -->
-    <section class="dashboard-panel">
-        <div class="dashboard-panel__header">
-            <h2>🚀 Próximamente (En Desarrollo)</h2>
-            <p>Módulos proyectados en la hoja de ruta de la solución.</p>
-        </div>
-        <div class="future-modules-grid">
-            <div class="future-module-item">
-                <div class="future-module-item__header">
-                    <span>📊 Reportes y Analítica</span>
-                    <span class="badge">🔒 Próx.</span>
-                </div>
-                <p>Informes de rotación de productos y balance de inventario.</p>
+<!-- Accesos Rápidos del Catálogo e Histórico -->
+<section class="dashboard-panel">
+    <div class="dashboard-panel__header">
+        <h2>⚡ Acciones Operativas Rápidas</h2>
+        <p>Acceso directo a las tareas frecuentes del catálogo e inventario.</p>
+    </div>
+    <div class="quick-actions-grid">
+        <a asp-page="/Productos/Create" class="quick-action-item">
+            <span class="quick-action-item__icon">➕</span>
+            <div>
+                <strong>Registrar Producto</strong>
+                <p>Alta de nuevo artículo en catálogo</p>
             </div>
-            <div class="future-module-item">
-                <div class="future-module-item__header">
-                    <span>🛒 Ventas y Facturación</span>
-                    <span class="badge">🔒 Próx.</span>
-                </div>
-                <p>Emisión de notas de venta, tickets y caja en mostrador.</p>
+        </a>
+        <a asp-page="/Productos/Index" class="quick-action-item">
+            <span class="quick-action-item__icon">🔍</span>
+            <div>
+                <strong>Consultar Inventario</strong>
+                <p>Búsqueda y filtros por categoría/marca</p>
             </div>
-            <div class="future-module-item">
-                <div class="future-module-item__header">
-                    <span>📥 Compras a Proveedores</span>
-                    <span class="badge">🔒 Próx.</span>
-                </div>
-                <p>Recepción de órdenes y control de lotes de adquisición.</p>
+        </a>
+        <a asp-page="/Categorias/Create" class="quick-action-item">
+            <span class="quick-action-item__icon">🏷️</span>
+            <div>
+                <strong>Nueva Categoría</strong>
+                <p>Asignación de ubicación en almacén</p>
             </div>
-            <div class="future-module-item">
-                <div class="future-module-item__header">
-                    <span>🛍️ Carrito / Mostrador</span>
-                    <span class="badge">🔒 Próx.</span>
-                </div>
-                <p>Simulador de punto de venta rápido y canasta de artículos.</p>
+        </a>
+        <a asp-page="/Marcas/Create" class="quick-action-item">
+            <span class="quick-action-item__icon">🏢</span>
+            <div>
+                <strong>Nueva Marca</strong>
+                <p>Registro de proveedor o fabricante</p>
             </div>
-        </div>
-    </section>
-</div>
+        </a>
+        <a asp-page="/Historico/Index" class="quick-action-item">
+            <span class="quick-action-item__icon">📈</span>
+            <div>
+                <strong>Histórico de Costos</strong>
+                <p>Auditoría de variaciones de precios</p>
+            </div>
+        </a>
+    </div>
+</section>
