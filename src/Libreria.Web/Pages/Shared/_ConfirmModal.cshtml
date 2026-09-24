@@ -1,7 +1,7 @@
-@model Libreria.Web.Pages.Shared.Models.ConfirmationModalModel
+@model Libreria.Web.Pages.Shared.Models.ConfirmModalModel
 
 <dialog id="@Model.Id" class="confirmation-modal" aria-labelledby="@(Model.Id)-title" aria-modal="true">
-    <form method="post" asp-page-handler="@Model.Handler" class="confirmation-modal__content">
+    <form method="post" asp-page-handler="@Model.Handler" action="@Model.UrlAccion" class="confirmation-modal__content">
         @Html.AntiForgeryToken()
         <header class="confirmation-modal__header">
             <h2 id="@(Model.Id)-title">@Model.Titulo</h2>
@@ -9,12 +9,14 @@
         </header>
 
         <div class="confirmation-modal__body">
-            <p>@Model.Mensaje <strong data-confirm-name></strong>.</p>
+            <p>
+                @Model.MensajePrincipal <strong data-confirm-name></strong>.
+            </p>
 
             @if (!string.IsNullOrWhiteSpace(Model.MensajeAdvertencia))
             {
                 <div class="confirmation-modal__warning" data-confirm-warning hidden>
-                    <strong>⚠️ Advertencia:</strong> @Model.MensajeAdvertencia
+                    <strong>⚠️ Advertencia:</strong> <span data-confirm-warning-text>@Model.MensajeAdvertencia</span>
                 </div>
             }
 
@@ -22,8 +24,8 @@
         </div>
 
         <footer class="confirmation-modal__actions">
-            <button type="button" class="btn btn--secondary" data-confirm-close>@Model.TextoCancelar</button>
-            <button type="submit" class="btn btn--danger">@Model.TextoConfirmar</button>
+            <button type="button" class="btn btn--secondary" data-confirm-close>@Model.TextoBotonCancelar</button>
+            <button type="submit" class="btn btn--danger">@Model.TextoBotonConfirmar</button>
         </footer>
     </form>
 </dialog>

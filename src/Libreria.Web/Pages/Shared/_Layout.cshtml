@@ -1,3 +1,12 @@
+@{
+    var currentPage = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
+    Func<string, string> getActiveClass = (path) =>
+    {
+        if (path == "/Index" && currentPage == "/Index") return "is-active";
+        if (path != "/Index" && currentPage.StartsWith(path, StringComparison.OrdinalIgnoreCase)) return "is-active";
+        return "";
+    };
+}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,109 +16,127 @@
     <link rel="stylesheet" href="~/css/site.css" />
 </head>
 
-<body>
+<body class="app-body">
     <header class="app-header">
-        <button
-            type="button"
-            class="menu-toggle"
-            id="menuToggle"
-            aria-label="Abrir menú de navegación"
-            aria-controls="sidebar"
-            aria-expanded="false">
-            <span aria-hidden="true">☰</span>
-        </button>
+        <div class="app-header__left">
+            <!-- Botón para alternar sidebar móvil / colapso desktop -->
+            <button
+                type="button"
+                class="menu-toggle"
+                id="menuToggle"
+                aria-label="Alternar menú de navegación"
+                aria-controls="sidebar"
+                aria-expanded="false"
+                title="Alternar menú">
+                <span aria-hidden="true">☰</span>
+            </button>
 
-        <div class="app-header__brand">
-            <a asp-page="/Index" aria-label="Ir al inicio" class="brand-link">
-                <img src="~/images/icono.svg" alt="Librería" class="brand-logo" />
-                <span>Librería</span>
-            </a>
+            <div class="app-header__brand">
+                <a asp-page="/Index" aria-label="Ir al inicio" class="brand-link">
+                    <img src="~/images/icono.svg" alt="Librería" class="brand-logo" />
+                    <span class="brand-name">Librería</span>
+                </a>
+            </div>
         </div>
     </header>
 
-    <aside
-        class="app-sidebar"
-        id="sidebar"
-        aria-label="Navegación principal">
+    <div class="app-layout">
+        <!-- Mini-Sidebar Colapsable -->
+        <aside
+            class="app-sidebar"
+            id="sidebar"
+            aria-label="Navegación principal">
 
-        <nav class="sidebar-nav">
+            <div class="sidebar-header">
+                <span class="sidebar-header__title">Navegación</span>
+                <button
+                    type="button"
+                    class="sidebar-collapse-btn"
+                    id="sidebarCollapseBtn"
+                    aria-label="Colapsar o expandir menú lateral"
+                    title="Alternar vista mini-sidebar">
+                    <span class="collapse-icon">◀</span>
+                </button>
+            </div>
 
-            <a class="sidebar-link" asp-page="/Index">
-                Inicio
-            </a>
-
-            <!-- Módulo Inventario: Productos, Categorías y Marcas -->
-            <details class="sidebar-group" open>
-                <summary class="sidebar-group__title">
-                    Inventario
-                </summary>
-
-                <div class="sidebar-group__items">
-                    <a asp-page="/Productos/Index">
-                        Consultar productos
-                    </a>
-                    <a asp-page="/Productos/Create">
-                        Registrar producto
-                    </a>
-                    <a asp-page="/Categorias/Index">
-                        Categorías
-                    </a>
-                    <a asp-page="/Marcas/Index">
-                        Marcas
+            <nav class="sidebar-nav">
+                <!-- Sección Principal -->
+                <div class="sidebar-section">
+                    <span class="sidebar-section__title">General</span>
+                    <a class="sidebar-link @getActiveClass("/Index")" asp-page="/Index" title="Inicio / Dashboard">
+                        <span class="sidebar-link__icon" aria-hidden="true">📊</span>
+                        <span class="sidebar-link__text">Inicio</span>
                     </a>
                 </div>
-            </details>
 
-            <!-- Módulo Histórico de Costos -->
-            <details class="sidebar-group" open>
-                <summary class="sidebar-group__title">
-                    Precios y Costos
-                </summary>
-
-                <div class="sidebar-group__items">
-                    <a asp-page="/Historico/Index">
-                        Histórico de costos
+                <!-- Sección Inventario y Catálogos -->
+                <div class="sidebar-section">
+                    <span class="sidebar-section__title">Inventario</span>
+                    <a class="sidebar-link @getActiveClass("/Productos")" asp-page="/Productos/Index" title="Consultar productos">
+                        <span class="sidebar-link__icon" aria-hidden="true">📦</span>
+                        <span class="sidebar-link__text">Productos</span>
+                    </a>
+                    <a class="sidebar-link @getActiveClass("/Categorias")" asp-page="/Categorias/Index" title="Categorías">
+                        <span class="sidebar-link__icon" aria-hidden="true">🏷️</span>
+                        <span class="sidebar-link__text">Categorías</span>
+                    </a>
+                    <a class="sidebar-link @getActiveClass("/Marcas")" asp-page="/Marcas/Index" title="Marcas">
+                        <span class="sidebar-link__icon" aria-hidden="true">🏢</span>
+                        <span class="sidebar-link__text">Marcas</span>
+                    </a>
+                    <a class="sidebar-link @getActiveClass("/Historico")" asp-page="/Historico/Index" title="Histórico de costos">
+                        <span class="sidebar-link__icon" aria-hidden="true">📈</span>
+                        <span class="sidebar-link__text">Histórico de costos</span>
                     </a>
                 </div>
-            </details>
 
-            <!-- Módulos Adicionales (Ventas y Compras) -->
-            <details class="sidebar-group">
-                <summary class="sidebar-group__title">
-                    Operaciones
-                </summary>
-
-                <div class="sidebar-group__items">
-                    <a href="#" style="pointer-events: none; opacity: 0.6; display: flex; justify-content: space-between; align-items: center;">
-                        Ventas <span class="badge">Próx.</span>
+                <!-- Sección Módulos Futuros / Visión Comercial -->
+                <div class="sidebar-section sidebar-section--future">
+                    <span class="sidebar-section__title">Próximamente</span>
+                    <a href="#" class="sidebar-link sidebar-link--disabled" tabindex="-1" aria-disabled="true" title="Reportes (Próximamente)">
+                        <span class="sidebar-link__icon" aria-hidden="true">📑</span>
+                        <span class="sidebar-link__text">Reportes</span>
+                        <span class="sidebar-link__lock" aria-label="Bloqueado">🔒</span>
                     </a>
-                    <a href="#" style="pointer-events: none; opacity: 0.6; display: flex; justify-content: space-between; align-items: center;">
-                        Compras <span class="badge">Próx.</span>
+                    <a href="#" class="sidebar-link sidebar-link--disabled" tabindex="-1" aria-disabled="true" title="Ventas (Próximamente)">
+                        <span class="sidebar-link__icon" aria-hidden="true">🛒</span>
+                        <span class="sidebar-link__text">Ventas</span>
+                        <span class="sidebar-link__lock" aria-label="Bloqueado">🔒</span>
+                    </a>
+                    <a href="#" class="sidebar-link sidebar-link--disabled" tabindex="-1" aria-disabled="true" title="Compras (Próximamente)">
+                        <span class="sidebar-link__icon" aria-hidden="true">📥</span>
+                        <span class="sidebar-link__text">Compras</span>
+                        <span class="sidebar-link__lock" aria-label="Bloqueado">🔒</span>
+                    </a>
+                    <a href="#" class="sidebar-link sidebar-link--disabled" tabindex="-1" aria-disabled="true" title="Carrito (Próximamente)">
+                        <span class="sidebar-link__icon" aria-hidden="true">🛍️</span>
+                        <span class="sidebar-link__text">Carrito</span>
+                        <span class="sidebar-link__lock" aria-label="Bloqueado">🔒</span>
                     </a>
                 </div>
-            </details>
+            </nav>
+        </aside>
 
-        </nav>
-    </aside>
+        <button
+            type="button"
+            class="sidebar-overlay"
+            id="sidebarOverlay"
+            aria-label="Cerrar menú">
+        </button>
 
-    <button
-        type="button"
-        class="sidebar-overlay"
-        id="sidebarOverlay"
-        aria-label="Cerrar menú">
-    </button>
+        <div class="app-content-wrapper">
+            <main class="app-main" id="main-content">
+                @RenderBody()
+            </main>
 
-    <div class="app-content">
-        <main class="app-main">
-            @RenderBody()
-        </main>
-
-        <footer class="app-footer">
-            <p>Proyecto académico - Clean Code &amp; SOLID</p>
-        </footer>
+            <footer class="app-footer">
+                <p>Proyecto Académico — Clean Code &amp; SOLID | Razor Pages &amp; ADO.NET</p>
+            </footer>
+        </div>
     </div>
 
     <script src="~/js/site.js"></script>
+    <script src="~/js/confirm-modal.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
