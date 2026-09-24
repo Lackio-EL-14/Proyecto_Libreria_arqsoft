@@ -1,5 +1,6 @@
 @page
 @model Libreria.Web.Pages.Marcas.IndexModel
+@using Libreria.Web.Pages.Shared.Models
 
 @{
     ViewData["Title"] = "Marcas";
@@ -8,10 +9,17 @@
 <div class="page-header">
     <div>
         <h1>Marcas</h1>
-        <p>Consulta de marcas registradas en el sistema.</p>
+        <p>Consulta y gestión de marcas registradas en el sistema.</p>
     </div>
     <a asp-page="./Create" class="btn btn--primary">+ Registrar nueva marca</a>
 </div>
+
+@if (TempData["MensajeExito"] != null)
+{
+    <div style="background-color: #E8F0EB; color: var(--color-accent); padding: 1rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #A3C2B1;">
+        @TempData["MensajeExito"]
+    </div>
+}
 
 <!-- Filtro horizontal compacto -->
 <form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; background-color: var(--color-surface); padding: 1.25rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
@@ -34,13 +42,15 @@
 {
     @if (string.IsNullOrWhiteSpace(Model.NombreBusqueda))
     {
-        <p style="text-align: center; color: var(--color-secondary); padding: 2rem;">No hay marcas registradas todavía.</p>
+        <div style="text-align: center; color: var(--color-secondary); padding: 2rem; background-color: var(--color-surface); border-radius: var(--radius-base); border: 1px solid var(--color-border);">
+            <p>No hay marcas registradas todavía.</p>
+        </div>
     }
     else
     {
-        <p style="text-align: center; color: var(--color-secondary); padding: 2rem;">
-            No se encontraron marcas que coincidan con "<strong>@Model.NombreBusqueda</strong>".
-        </p>
+        <div style="text-align: center; color: var(--color-secondary); padding: 2rem; background-color: var(--color-surface); border-radius: var(--radius-base); border: 1px solid var(--color-border);">
+            <p>No se encontraron marcas que coincidan con "<strong>@Model.NombreBusqueda</strong>".</p>
+        </div>
     }
 }
 else
@@ -76,7 +86,16 @@ else
                         <td>
                             <div class="table-actions">
                                 <a asp-page="./Edit" asp-route-id="@marca.PublicId" class="btn-table">Editar</a>
-                                <a asp-page="./Deactivate" asp-route-id="@marca.PublicId" class="btn-table btn-table--danger">Dar de baja</a>
+                                <button
+                                    type="button"
+                                    class="btn-table btn-table--danger"
+                                    data-confirm-trigger
+                                    data-modal-target="marca-baja-modal"
+                                    data-entity-id="@marca.PublicId"
+                                    data-entity-name="@marca.Nombre"
+                                    data-has-warning="@Model.MarcasConProductosActivos.Contains(marca.PublicId).ToString().ToLowerInvariant()">
+                                    Dar de baja
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -84,4 +103,18 @@ else
             </tbody>
         </table>
     </div>
-}   
+}
+
+@await Html.PartialAsync(
+    "_ConfirmModal",
+    new ConfirmModalModel
+    {
+        Id = "marca-baja-modal",
+        Titulo = "Confirmar baja de marca",
+        MensajePrincipal = "¿Desea dar de baja la marca",
+        Handler = "DarDeBaja",
+        CampoIdentificador = "publicId",
+        TextoBotonConfirmar = "Confirmar baja",
+        TextoBotonCancelar = "Cancelar",
+        MensajeAdvertencia = "La marca tiene productos activos asociados. Los productos conservarán su información, pero la marca dejará de estar disponible para nuevas asignaciones."
+    })

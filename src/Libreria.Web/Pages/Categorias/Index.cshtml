@@ -1,6 +1,7 @@
 @page
 @model Libreria.Web.Pages.Categorias.IndexModel
 @using Libreria.Web.Pages.Shared.Models
+
 @{
     ViewData["Title"] = "Categorías";
 }
@@ -70,7 +71,7 @@ else
                                 <button
                                     type="button"
                                     class="btn-table btn-table--danger"
-                                    data-confirmation-trigger
+                                    data-confirm-trigger
                                     data-modal-target="categoria-baja-modal"
                                     data-entity-id="@categoria.PublicId"
                                     data-entity-name="@categoria.Nombre"
@@ -87,14 +88,15 @@ else
 }
 
 @await Html.PartialAsync(
-    "_ConfirmationModal",
-    new ConfirmationModalModel
+    "_ConfirmModal",
+    new ConfirmModalModel
     {
         Id = "categoria-baja-modal",
         Titulo = "Confirmar baja de categoría",
-        Mensaje = "¿Desea dar de baja la categoría",
+        MensajePrincipal = "¿Desea dar de baja la categoría",
         Handler = "DarDeBaja",
-        CampoIdentificador = "PublicId",
-        TextoConfirmar = "Confirmar baja",
+        CampoIdentificador = "publicId",
+        TextoBotonConfirmar = "Confirmar baja",
+        TextoBotonCancelar = "Cancelar",
         MensajeAdvertencia = "La categoría tiene productos activos asociados. Los productos conservarán su información, pero la categoría dejará de estar disponible para nuevas asignaciones."
     })

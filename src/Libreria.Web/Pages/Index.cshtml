@@ -1,142 +1,140 @@
 @page
 @model Libreria.Web.Pages.IndexModel
 @{
-    ViewData["Title"] = "Inicio";
+    ViewData["Title"] = "Panel Principal";
 }
 
-<style>
-    /* Estilos estructurales propios del layout de esta vista */
-    .home-hero {
-        background-color: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-base);
-        padding: 2rem;
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-        box-shadow: var(--shadow-sm);
-    }
-
-    .home-hero__logo {
-        width: 72px;
-        height: 72px;
-        flex-shrink: 0;
-    }
-
-    .home-hero h1 {
-        font-size: 1.5rem;
-        color: var(--color-primary);
-        margin-bottom: 0.35rem;
-    }
-
-    .home-hero p {
-        color: var(--color-secondary);
-        font-size: 0.95rem;
-        line-height: 1.4;
-    }
-
-    .home-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.25rem;
-    }
-
-    .card {
-        background-color: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-base);
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        box-shadow: var(--shadow-sm);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
-    }
-
-    .card__header {
-        margin-bottom: 1rem;
-    }
-
-    .card__title {
-        font-size: 1.15rem;
-        color: var(--color-primary);
-        margin-bottom: 0.4rem;
-    }
-
-    .card__description {
-        font-size: 0.85rem;
-        color: var(--color-secondary);
-        line-height: 1.4;
-    }
-
-    .card__actions {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        margin-top: 1rem;
-    }
-</style>
-
-<!-- Hero Section con Logo e Identidad -->
+<!-- Hero Section Principal -->
 <header class="home-hero">
     <img src="~/images/icono.svg" alt="Logotipo Librería" class="home-hero__logo" />
     <div>
-        <h1>Sistema de Administración de Librería</h1>
-        <p>Panel central para el control de inventario, catálogo de artículos, consulta de variaciones de costos y operaciones.</p>
+        <h1>Sistema de Gestión de Librería</h1>
+        <p>Panel de control operativo, catálogo de inventario, métricas clave y auditoría de costos.</p>
     </div>
 </header>
 
-<!-- Dashboard Grid de Accesos Directos -->
-<section class="home-grid">
-    <!-- Módulo Inventario -->
-    <article class="card">
-        <div class="card__header">
-            <h2 class="card__title">📦 Inventario y Catálogo</h2>
-            <p class="card__description">Gestión de productos escolares y libros, categorías y marcas de la librería.</p>
+<!-- Sección de Indicadores Clave (KPIs / Widgets) -->
+<section class="kpi-grid" aria-label="Indicadores clave del sistema">
+    <!-- Widget 1: Total Productos Activos -->
+    <article class="kpi-card">
+        <div class="kpi-card__icon kpi-card__icon--primary">📦</div>
+        <div class="kpi-card__info">
+            <span class="kpi-card__label">Total Productos Activos</span>
+            <span class="kpi-card__value">@Model.TotalProductos</span>
+            <span class="kpi-card__hint">@(Model.TotalPerecederos) perecederos registrados</span>
         </div>
-        <div class="card__actions">
-            <a asp-page="/Productos/Index" class="btn btn--primary">Productos</a>
-            <a asp-page="/Categorias/Index" class="btn btn--secondary">Categorías</a>
-            <a asp-page="/Marcas/Index" class="btn btn--secondary">Marcas</a>
-        </div>
+        <a asp-page="/Productos/Index" class="kpi-card__link" title="Ver catálogo de productos">Ir al catálogo →</a>
     </article>
 
-    <!-- Módulo Histórico de Costos -->
-    <article class="card">
-        <div class="card__header">
-            <h2 class="card__title">📈 Precios y Costos</h2>
-            <p class="card__description">Auditoría y seguimiento de la variación de costos de adquisición de los productos.</p>
+    <!-- Widget 2: Stock Crítico / Alerta -->
+    <article class="kpi-card @(Model.ProductosStockCritico > 0 ? "kpi-card--warning" : "")">
+        <div class="kpi-card__icon @(Model.ProductosStockCritico > 0 ? "kpi-card__icon--warning" : "kpi-card__icon--primary")">⚠️</div>
+        <div class="kpi-card__info">
+            <span class="kpi-card__label">Stock Crítico (≤ 5 un.)</span>
+            <span class="kpi-card__value @(Model.ProductosStockCritico > 0 ? "text-warning" : "")">@Model.ProductosStockCritico</span>
+            <span class="kpi-card__hint">@(Model.ProductosStockCritico > 0 ? "Requieren reposición urgente" : "Niveles de stock óptimos")</span>
         </div>
-        <div class="card__actions">
-            <a asp-page="/Historico/Index" class="btn btn--primary">Consultar Histórico</a>
-        </div>
+        <a asp-page="/Productos/Index" class="kpi-card__link" title="Consultar productos">Revisar stock →</a>
     </article>
 
-    <!-- Módulo Ventas -->
-    <article class="card">
-        <div class="card__header">
-            <h2 class="card__title">🛒 Ventas</h2>
-            <p class="card__description">Atención en mostrador, emisión de notas de venta y facturación.</p>
+    <!-- Widget 3: Categorías Activas -->
+    <article class="kpi-card">
+        <div class="kpi-card__icon kpi-card__icon--accent">🏷️</div>
+        <div class="kpi-card__info">
+            <span class="kpi-card__label">Categorías Activas</span>
+            <span class="kpi-card__value">@Model.TotalCategorias</span>
+            <span class="kpi-card__hint">Organización y ubicaciones</span>
         </div>
-        <div class="card__actions">
-            <span class="badge">Próxima Fase</span>
-        </div>
+        <a asp-page="/Categorias/Index" class="kpi-card__link" title="Gestionar categorías">Ver categorías →</a>
     </article>
 
-    <!-- Módulo Compras -->
-    <article class="card">
-        <div class="card__header">
-            <h2 class="card__title">📥 Compras / Adquisición</h2>
-            <p class="card__description">Recepción de mercadería de proveedores y control de lotes de ingreso.</p>
+    <!-- Widget 4: Marcas Registradas -->
+    <article class="kpi-card">
+        <div class="kpi-card__icon kpi-card__icon--primary">🏢</div>
+        <div class="kpi-card__info">
+            <span class="kpi-card__label">Marcas Registradas</span>
+            <span class="kpi-card__value">@Model.TotalMarcas</span>
+            <span class="kpi-card__hint">Fabricantes y proveedores</span>
         </div>
-        <div class="card__actions">
-            <span class="badge">Próxima Fase</span>
-        </div>
+        <a asp-page="/Marcas/Index" class="kpi-card__link" title="Gestionar marcas">Ver marcas →</a>
     </article>
 </section>
+
+<!-- Secciones Operativas: Accesos Rápidos y Módulos Futuros -->
+<div class="dashboard-sections">
+    <!-- Accesos Rápidos del Catálogo e Histórico -->
+    <section class="dashboard-panel">
+        <div class="dashboard-panel__header">
+            <h2>⚡ Acciones Operativas Rápidas</h2>
+            <p>Acceso directo a las tareas frecuentes del catálogo e inventario.</p>
+        </div>
+        <div class="quick-actions-grid">
+            <a asp-page="/Productos/Create" class="quick-action-item">
+                <span class="quick-action-item__icon">➕</span>
+                <div>
+                    <strong>Registrar Producto</strong>
+                    <p>Alta de nuevo artículo en catálogo</p>
+                </div>
+            </a>
+            <a asp-page="/Productos/Index" class="quick-action-item">
+                <span class="quick-action-item__icon">🔍</span>
+                <div>
+                    <strong>Consultar Inventario</strong>
+                    <p>Búsqueda y filtros por categoría/marca</p>
+                </div>
+            </a>
+            <a asp-page="/Categorias/Create" class="quick-action-item">
+                <span class="quick-action-item__icon">🏷️</span>
+                <div>
+                    <strong>Nueva Categoría</strong>
+                    <p>Asignación de ubicación en almacén</p>
+                </div>
+            </a>
+            <a asp-page="/Marcas/Create" class="quick-action-item">
+                <span class="quick-action-item__icon">🏢</span>
+                <div>
+                    <strong>Nueva Marca</strong>
+                    <p>Registro de proveedor o fabricante</p>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <!-- Proyección y Visión Comercial (Módulos Futuros) -->
+    <section class="dashboard-panel">
+        <div class="dashboard-panel__header">
+            <h2>🚀 Próximamente (En Desarrollo)</h2>
+            <p>Módulos proyectados en la hoja de ruta de la solución.</p>
+        </div>
+        <div class="future-modules-grid">
+            <div class="future-module-item">
+                <div class="future-module-item__header">
+                    <span>📊 Reportes y Analítica</span>
+                    <span class="badge">🔒 Próx.</span>
+                </div>
+                <p>Informes de rotación de productos y balance de inventario.</p>
+            </div>
+            <div class="future-module-item">
+                <div class="future-module-item__header">
+                    <span>🛒 Ventas y Facturación</span>
+                    <span class="badge">🔒 Próx.</span>
+                </div>
+                <p>Emisión de notas de venta, tickets y caja en mostrador.</p>
+            </div>
+            <div class="future-module-item">
+                <div class="future-module-item__header">
+                    <span>📥 Compras a Proveedores</span>
+                    <span class="badge">🔒 Próx.</span>
+                </div>
+                <p>Recepción de órdenes y control de lotes de adquisición.</p>
+            </div>
+            <div class="future-module-item">
+                <div class="future-module-item__header">
+                    <span>🛍️ Carrito / Mostrador</span>
+                    <span class="badge">🔒 Próx.</span>
+                </div>
+                <p>Simulador de punto de venta rápido y canasta de artículos.</p>
+            </div>
+        </div>
+    </section>
+</div>

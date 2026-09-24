@@ -14,11 +14,14 @@ Proyecto_Libreria_arqsoft/
     └── Libreria.Web/         # Proyecto Razor Pages
         ├── Data/              # Capa ADO.NET (IDbConnectionFactory)
         ├── Pages/
-        │   ├── Categorias/    # US-01 a US-04 — YA tiene un ejemplo funcional
-        │   ├── Marcas/        # US-05 a US-08
-        │   ├── Productos/     # US-09 a US-13
-        │   └── Historico/     # US-14
-        └── wwwroot/css/       # Estilos (paleta sobria, sin plantilla default)
+        │   ├── Categorias/    # Gestión de Categorías
+        │   ├── Marcas/        # Gestión de Marcas
+        │   ├── Productos/     # Catálogo e Inventario
+        │   ├── Historico/     # Auditoría de Costos
+        │   └── Shared/        # Componentes reutilizables (_ConfirmModal, _Layout)
+        └── wwwroot/
+            ├── css/           # Estilos y variables de diseño
+            └── js/            # Scripts (confirm-modal, sidebar)
 ```
 
 ## 1. Requisitos previos (instalar una sola vez)
@@ -82,15 +85,64 @@ Ejecuta este paso al preparar el proyecto y después de traer cambios que
 modifiquen `db/schema.sql`. El script es seguro de re-ejecutar: actualiza el
 esquema sin duplicar tablas ni datos semilla.
 
-## 5. Ejecutar el proyecto con Visual Studio
+## 5. Componente Compartido: Modal de Confirmación (US-28)
 
-1. En Visual Studio selecciona **Abrir un proyecto o una solución**.
-2. Abre `src/Libreria.Web/Libreria.Web.csproj`.
-3. Espera a que Visual Studio restaure las dependencias NuGet.
-4. Selecciona `Libreria.Web` como proyecto de inicio y ejecútalo con el botón
-   verde o con `F5`.
+Para realizar bajas lógicas o acciones críticas sin redirigir a páginas completas, se utiliza el componente compartido `_ConfirmModal.cshtml`.
 
-También puede ejecutarse desde terminal:
+### Cómo invocar el Modal desde cualquier vista Razor
+
+1. **Importar el namespace de modelos:**
+   ```cshtml
+   @using Libreria.Web.Pages.Shared.Models
+   ```
+
+2. **Crear el botón disparador en la tabla o interfaz:**
+   ```cshtml
+   <button
+       type="button"
+       class="btn-table btn-table--danger"
+       data-confirm-trigger
+       data-modal-target="mi-modal-id"
+       data-entity-id="@item.PublicId"
+       data-entity-name="@item.Nombre"
+       data-has-warning="false">
+       Dar de baja
+   </button>
+   ```
+
+3. **Renderizar la vista parcial al final del archivo `.cshtml`:**
+   ```cshtml
+   @await Html.PartialAsync(
+       "_ConfirmModal",
+       new ConfirmModalModel
+       {
+           Id = "mi-modal-id",
+           Titulo = "Confirmar baja de registro",
+           MensajePrincipal = "¿Está seguro de dar de baja el registro",
+           Handler = "DarDeBaja",
+           CampoIdentificador = "publicId",
+           TextoBotonConfirmar = "Confirmar baja",
+           TextoBotonCancelar = "Cancelar",
+           MensajeAdvertencia = "Esta acción desactivará el elemento del catálogo activo."
+       })
+   ```
+
+4. **Recibir la petición en el `PageModel` (`.cshtml.cs`):**
+   ```csharp
+   public async Task<IActionResult> OnPostDarDeBajaAsync(Guid publicId)
+   {
+       await _repository.CambiarEstadoAsync(publicId, false);
+       TempData["MensajeExito"] = "Registro dado de baja correctamente.";
+       return RedirectToPage("./Index");
+   }
+   ```
+
+### Características del Modal
+- **Accesibilidad y Focus Trap:** Navegación por teclado dentro del modal con <kbd>Tab</kbd> y cierre con <kbd>Escape</kbd>.
+- **Cierre por Overlay:** Clic en el fondo oscuro para cancelar la operación.
+- **Advertencias Condicionales:** Muestra advertencias visuales en ámbar/rojo si la entidad posee registros vinculados activos.
+
+## 6. Ejecutar el proyecto con Visual Studio / Terminal
 
 ```bash
 cd src/Libreria.Web
@@ -98,73 +150,30 @@ dotnet restore
 dotnet run
 ```
 
-Abre la URL que muestra la consola (algo como `https://localhost:5001` o
-`http://localhost:5000`).
+Abre la URL que muestra la consola (`http://localhost:5000`).
 
-Si todo salió bien, deberías ver el Home con el menú y, al entrar a
-**Categorías**, la lista con las 3 categorías semilla del script SQL — esa
-página ya está conectada de verdad a la base de datos vía ADO.NET.
-
-#### Para Ingresar al contenerdor de la DB
+#### Para ingresar al contenedor de la base de datos
 
 ```bash
 docker exec -it libreria-db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Libreria2026!' -C
 ```
-Una vez dentro hagan las consultas que necesiten
 
-## 6. Cómo trabajar en equipo sin bloquearse
+## 7. Cómo trabajar en equipo sin bloquearse
 
-- **No trabajes directo sobre `develop`.** Cada persona actualiza `develop` y
-  crea su rama:
+- **No trabajes directo sobre `develop`.** Cada persona actualiza `develop` y crea su rama:
   ```bash
   git switch develop
   git pull origin develop
-  git checkout -b feature/categorias-crud
+  git checkout -b feature/mi-funcionalidad
   ```
 - Haz commits pequeños y frecuentes, y sube tu rama:
   ```bash
-  git push origin feature/categorias-crud
+  git push origin feature/mi-funcionalidad
   ```
 - Abre un Pull Request a `develop` cuando tu historia de usuario esté lista.
-  Así evitamos que alguien sobrescriba el trabajo de otro.
-- **Antes de empezar a programar cada día**, trae los últimos cambios:
-  ```bash
-  git checkout develop
-  git pull
-  git checkout tu-rama
-  git merge develop
-  ```
-
-### Quién trabaja en qué carpeta (evita conflictos de archivos)
-
-| Persona | Carpeta | Historias |
-|---|---|---|
-| 1 | `Pages/Categorias/` | US-01 a US-04 |
-| 2 | `Pages/Marcas/` | US-05 a US-08 |
-| 3 | `Pages/Productos/` (Alta + Consulta) | US-09, US-10, US-13 |
-| 4 | `Pages/Productos/` (Edición + Baja) | US-11, US-12 |
-| 5 | `Pages/Historico/` | US-14 |
-| 6 | `Pages/Shared/_Layout.cshtml`, `wwwroot/css` | US-15 |
-
-> Persona 3 y 4 comparten la carpeta `Productos/` — conviene que se
-> pongan de acuerdo primero en el nombre y los parámetros del método que
-> registra el histórico (en `Data/`), antes de escribir código, para no
-> pisarse cuando junten sus ramas.
-
-## 7. Agregar al docente como colaborador
-
-En GitHub/GitLab: **Settings → Collaborators (o Members) → Add people**, y
-agregar el usuario que indique el docente. Recuerda que esto es obligatorio
-según la consigna del trabajo.
 
 ## 8. Notas de diseño
 
-- El acceso a datos usa `IDbConnectionFactory` (interfaz) en vez de crear
-  `SqlConnection` directamente en cada página — es un ejemplo concreto de
-  **Inversión de Dependencias (SOLID)** que se puede mencionar en el informe.
-- Las páginas Razor dependen de contratos específicos y delegan el acceso
-  ADO.NET a repositorios. Las validaciones de negocio viven en clases
-  separadas de las entidades.
-- La contraseña de SQL Server (`Libreria2026!`) está en texto plano en
-  `docker-compose.yml` y `appsettings.json` porque el proyecto corre solo en
-  local para fines académicos. No es una práctica recomendada para producción.
+- El acceso a datos usa `IDbConnectionFactory` (interfaz) en vez de crear `SqlConnection` directamente en cada página — Inversión de Dependencias (SOLID).
+- Las páginas Razor dependen de contratos específicos y delegan el acceso ADO.NET a repositorios. Las validaciones de negocio viven en clases separadas de las entidades.
+- **Navegación Escalable (US-29):** Mini-Sidebar colapsable con memoria de estado y Dashboard con métricas de KPI en tiempo real.
