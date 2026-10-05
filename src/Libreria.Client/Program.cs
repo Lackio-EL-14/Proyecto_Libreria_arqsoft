@@ -25,11 +25,15 @@ builder.Services.AddScoped<HistoricoRepositoryFactory, HistoricoCostoRepositoryF
 builder.Services.AddScoped<CategoriaValidator>();
 builder.Services.AddScoped<MarcaValidator>();
 builder.Services.AddScoped<ProductoValidator>();
+builder.Services.AddScoped<ClienteValidator>();
 
 // Servicios y Repositorios adicionales (Catálogo, Histórico)
 builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoRepository>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IHistoricoCostoRepository, HistoricoCostoRepository>();
+builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<IVentaRepository, VentaRepository>();
 
 builder.Services.AddScoped<IStockFacade, StockFacade>();
 builder.Services.AddScoped<IVentaFacade, VentaFacade>();
