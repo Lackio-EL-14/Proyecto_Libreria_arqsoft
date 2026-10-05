@@ -7,11 +7,15 @@ using Libreria.Application.Validators;
 using Libreria.Application.Services;
 using Libreria.Application.Ports.Primary;
 using Libreria.Application.Facades;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
-    .AddRazorPages()
+    .AddRazorPages(options =>
+        // US-38: equivale a [Authorize] en todas las páginas; solo el login
+        // (y la página de error) quedan públicas con [AllowAnonymous].
+        options.Conventions.AuthorizeFolder("/"))
     .AddMvcOptions(options =>
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 
@@ -20,16 +24,19 @@ builder.Services.AddScoped<CrudRepositoryFactory<Categoria>, CategoriaRepository
 builder.Services.AddScoped<CrudRepositoryFactory<Marca>, MarcaRepositoryFactory>();
 builder.Services.AddScoped<CrudRepositoryFactory<Producto>, ProductoRepositoryFactory>();
 builder.Services.AddScoped<HistoricoRepositoryFactory, HistoricoCostoRepositoryFactory>();
+builder.Services.AddScoped<UsuarioRepositoryFactory, SqlUsuarioRepositoryFactory>();
 
 // Validadores
 builder.Services.AddScoped<CategoriaValidator>();
 builder.Services.AddScoped<MarcaValidator>();
 builder.Services.AddScoped<ProductoValidator>();
 builder.Services.AddScoped<ClienteValidator>();
+builder.Services.AddScoped<LoginValidator>();
 
 // Servicios y Repositorios adicionales (Catálogo, Histórico)
 builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoRepository>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
 builder.Services.AddScoped<IHistoricoCostoRepository, HistoricoCostoRepository>();
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
@@ -39,6 +46,21 @@ builder.Services.AddScoped<IStockFacade, StockFacade>();
 builder.Services.AddScoped<IVentaFacade, VentaFacade>();
 builder.Services.AddDataProtection();
 builder.Services.AddScoped<Libreria.Application.Ports.Primary.IUrlProtector, Libreria.Infrastructure.Security.UrlProtector>();
+builder.Services.AddScoped<IContrasenaHasher, Libreria.Infrastructure.Security.ContrasenaHasher>();
+
+// US-38: autenticación por cookie de ASP.NET Core
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Cuenta/Login";
+        options.LogoutPath = "/Cuenta/Logout";
+        options.Cookie.Name = "Libreria.Sesion";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+    });
 
 var connectionString = builder.Configuration.GetConnectionString("LibreriaDb")
     ?? throw new InvalidOperationException(
@@ -60,6 +82,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapRazorPages();
 

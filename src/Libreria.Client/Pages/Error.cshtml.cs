@@ -3,6 +3,7 @@ using Libreria.Application.Models;
 using Libreria.Application.Ports.Secondary;
 using Libreria.Application.Factories;
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -10,6 +11,7 @@ namespace Libreria.Client.Pages;
 
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 [IgnoreAntiforgeryToken]
+[AllowAnonymous]
 public class ErrorModel : PageModel
 {
     public string? RequestId { get; set; }

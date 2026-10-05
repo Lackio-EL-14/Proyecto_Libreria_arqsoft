@@ -1,6 +1,6 @@
 -- =========================================================
 -- Esquema inicial: Sistema de inventario - Librería
--- Tablas: Categoria, Marca, Cliente, Producto, HistoricoCostoProducto, Venta, DetalleVenta
+-- Tablas: Categoria, Marca, Cliente, Rol, Usuario, Producto, HistoricoCostoProducto, Venta, DetalleVenta
 -- =========================================================
 
 IF DB_ID('LibreriaDb') IS NULL
@@ -194,6 +194,82 @@ BEGIN
             CHECK (LTRIM(RTRIM(RazonSocial)) <> N'')
     );
 END
+GO
+
+-- ---------------------------------------------------------
+-- Rol (US-37)
+-- ---------------------------------------------------------
+IF OBJECT_ID('dbo.Rol', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Rol (
+        RolId        INT IDENTITY(1,1) PRIMARY KEY,
+        Nombre       NVARCHAR(50) NOT NULL,
+        Descripcion  NVARCHAR(200) NULL,
+        Estado       BIT NOT NULL
+            CONSTRAINT DF_Rol_Estado DEFAULT (1),
+
+        CONSTRAINT UQ_Rol_Nombre UNIQUE (Nombre),
+        CONSTRAINT CK_Rol_Nombre_NoVacio
+            CHECK (LTRIM(RTRIM(Nombre)) <> N'')
+    );
+END
+GO
+
+-- ---------------------------------------------------------
+-- Usuario (US-37)
+-- PasswordHash guarda el hash PBKDF2 generado por
+-- PasswordHasher de ASP.NET Core; nunca la contraseña.
+-- ---------------------------------------------------------
+IF OBJECT_ID('dbo.Usuario', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Usuario (
+        UsuarioId          INT IDENTITY(1,1) PRIMARY KEY,
+        PublicId           UNIQUEIDENTIFIER NOT NULL
+            CONSTRAINT DF_Usuario_PublicId DEFAULT NEWID(),
+        NombreUsuario      NVARCHAR(50) NOT NULL,
+        NombreCompleto     NVARCHAR(150) NOT NULL,
+        PasswordHash       NVARCHAR(500) NOT NULL,
+        RolId              INT NOT NULL,
+        Estado             BIT NOT NULL
+            CONSTRAINT DF_Usuario_Estado DEFAULT (1),
+        FechaCreacion      DATETIME2 NOT NULL
+            CONSTRAINT DF_Usuario_FechaCreacion DEFAULT (SYSDATETIME()),
+        FechaModificacion  DATETIME2 NULL,
+
+        CONSTRAINT UQ_Usuario_PublicId UNIQUE (PublicId),
+        CONSTRAINT UQ_Usuario_NombreUsuario UNIQUE (NombreUsuario),
+        CONSTRAINT FK_Usuario_Rol FOREIGN KEY (RolId)
+            REFERENCES dbo.Rol (RolId),
+        CONSTRAINT CK_Usuario_NombreUsuario_NoVacio
+            CHECK (LTRIM(RTRIM(NombreUsuario)) <> N'')
+    );
+END
+GO
+
+-- Roles base del sistema (se insertan solo si no existen)
+IF NOT EXISTS (SELECT 1 FROM dbo.Rol WHERE Nombre = N'Administrador')
+    INSERT INTO dbo.Rol (Nombre, Descripcion)
+    VALUES (N'Administrador', N'Acceso total: catálogos, ventas, anulaciones y reportes de ganancia');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Rol WHERE Nombre = N'Vendedor')
+    INSERT INTO dbo.Rol (Nombre, Descripcion)
+    VALUES (N'Vendedor', N'Registro de ventas y consulta de catálogo');
+GO
+
+-- Usuarios semilla (contraseñas: Admin2026! y Vendedor2026!)
+IF NOT EXISTS (SELECT 1 FROM dbo.Usuario WHERE NombreUsuario = N'admin')
+    INSERT INTO dbo.Usuario (NombreUsuario, NombreCompleto, PasswordHash, RolId)
+    SELECT N'admin', N'Administrador del sistema',
+           N'AQAAAAIAAYagAAAAEOvA0yb/Qb8i4baG1c5Jyu6QwIsOL+E/+RD5uENxg4ry41ZMRzrjyHVg2gP/OxcS4Q==',
+           RolId
+    FROM dbo.Rol WHERE Nombre = N'Administrador';
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Usuario WHERE NombreUsuario = N'vendedor')
+    INSERT INTO dbo.Usuario (NombreUsuario, NombreCompleto, PasswordHash, RolId)
+    SELECT N'vendedor', N'Vendedor de mostrador',
+           N'AQAAAAIAAYagAAAAEDh3RAQ9Yc7ibdHGSmgl501Txm81qOOimdTVAg2u4ST4xUm/WSwxNhyd8tHeTamYsQ==',
+           RolId
+    FROM dbo.Rol WHERE Nombre = N'Vendedor';
 GO
 
 -- ---------------------------------------------------------
