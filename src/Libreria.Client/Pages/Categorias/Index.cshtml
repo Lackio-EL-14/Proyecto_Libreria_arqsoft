@@ -1,0 +1,103 @@
+@page
+@model Libreria.Client.Pages.Categorias.IndexModel
+@using Libreria.Client.Pages.Shared.Models
+
+@{
+    ViewData["Title"] = "Categorías";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Categorías</h1>
+        <p>Gestión y consulta de las categorías registradas.</p>
+    </div>
+    <a asp-page="./Create" class="btn btn--primary">+ Registrar Nueva Categoría</a>
+</div>
+
+@if (TempData["MensajeExito"] != null)
+{
+    <div style="background-color: #E8F0EB; color: var(--color-accent); padding: 1rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #A3C2B1;">
+        @TempData["MensajeExito"]
+    </div>
+}
+
+<!-- Filtro horizontal compacto -->
+<form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; background-color: var(--color-surface); padding: 1.25rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+    
+    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 250px;">
+        <label for="Busqueda">Buscar por código, nombre o ubicación:</label>
+        <input type="text" name="Busqueda" asp-for="Busqueda" class="form-control" placeholder="Ej: LIBROS" />
+    </div>
+
+    <div style="display: flex; gap: 0.5rem;">
+        <button type="submit" class="btn btn--secondary">Buscar</button>
+        @if (!string.IsNullOrEmpty(Model.Busqueda))
+        {
+            <a asp-page="./Index" class="btn btn--secondary">Limpiar</a>
+        }
+    </div>
+</form>
+
+@if (!Model.Categorias.Any())
+{
+    <div style="text-align: center; color: var(--color-secondary); padding: 2rem; background-color: var(--color-surface); border-radius: var(--radius-base); border: 1px solid var(--color-border);">
+        <p>No hay categorías registradas todavía o ninguna coincide con la búsqueda.</p>
+    </div>
+}
+else
+{
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Ubicación</th>
+                    <th style="text-align: right;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var categoria in Model.Categorias)
+                {
+                    <tr>
+                        <td style="font-weight: 600;">@categoria.Codigo</td>
+                        <td>@categoria.Nombre</td>
+                        <td>@(string.IsNullOrEmpty(categoria.Descripcion) ? "—" : categoria.Descripcion)</td>
+                        <td>@categoria.Ubicacion</td>
+                        <td>
+                            <div class="table-actions">
+                                <!-- US-36: Uso del nuevo TagHelper asp-protected-id para cifrar la URL -->
+                                <a asp-page="./Edit" asp-protected-id="@categoria.PublicId" class="btn-table">Editar</a>
+                                <button
+                                    type="button"
+                                    class="btn-table btn-table--danger"
+                                    data-confirm-trigger
+                                    data-modal-target="categoria-baja-modal"
+                                    data-entity-id="@categoria.PublicId"
+                                    data-entity-name="@categoria.Nombre"
+                                    data-has-warning="@Model.CategoriasConProductosActivos.Contains(categoria.PublicId).ToString().ToLowerInvariant()">
+                                    Dar de baja
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@await Html.PartialAsync(
+    "_ConfirmModal",
+    new ConfirmModalModel
+    {
+        Id = "categoria-baja-modal",
+        Titulo = "Confirmar baja de categoría",
+        MensajePrincipal = "¿Desea dar de baja la categoría",
+        Handler = "DarDeBaja",
+        CampoIdentificador = "publicId",
+        TextoBotonConfirmar = "Confirmar baja",
+        TextoBotonCancelar = "Cancelar",
+        MensajeAdvertencia = "La categoría tiene productos activos asociados. Los productos conservarán su información, pero la categoría dejará de estar disponible para nuevas asignaciones."
+    })

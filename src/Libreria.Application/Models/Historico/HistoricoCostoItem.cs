@@ -1,0 +1,24 @@
+using Libreria.Application.Domain;
+using Libreria.Application.Models;
+using Libreria.Application.Ports.Secondary;
+using Libreria.Application.Factories;
+namespace Libreria.Application.Models;
+
+public class HistoricoCostoItem
+{
+    public int HistoricoCostoId { get; set; }
+
+    public decimal CostoNuevo { get; set; }
+
+    public decimal? CostoAnterior { get; set; }
+    public DateTime? FechaVencimiento { get; set; }
+
+    public DateTime FechaVigencia { get; set; }
+
+    public string? Motivo { get; set; }
+
+    public decimal? VariacionAbsoluta =>
+        CostoAnterior.HasValue
+            ? CostoNuevo - CostoAnterior.Value
+            : null;
+}

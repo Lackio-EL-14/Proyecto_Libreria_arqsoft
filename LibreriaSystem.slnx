@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Libreria.Application/Libreria.Application.csproj" />
+    <Project Path="src/Libreria.Client/Libreria.Client.csproj" />
+    <Project Path="src/Libreria.Infrastructure/Libreria.Infrastructure.csproj" />
+  </Folder>
+</Solution>
