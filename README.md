@@ -85,6 +85,18 @@ Ejecuta este paso al preparar el proyecto y después de traer cambios que
 modifiquen `db/schema.sql`. El script es seguro de re-ejecutar: actualiza el
 esquema sin duplicar tablas ni datos semilla.
 
+### Usuarios de prueba (US-37 / US-38)
+
+Todas las páginas exigen sesión; al abrir la app se redirige a `/Cuenta/Login`.
+El script `schema.sql` crea los roles y estos usuarios semilla:
+
+| Usuario    | Contraseña      | Rol           |
+|------------|-----------------|---------------|
+| `admin`    | `Admin2026!`    | Administrador |
+| `vendedor` | `Vendedor2026!` | Vendedor      |
+
+Las contraseñas se guardan solo como hash (PBKDF2 con `PasswordHasher` de ASP.NET Core).
+
 ## 5. Componente Compartido: Modal de Confirmación (US-28)
 
 Para realizar bajas lógicas o acciones críticas sin redirigir a páginas completas, se utiliza el componente compartido `_ConfirmModal.cshtml`.
