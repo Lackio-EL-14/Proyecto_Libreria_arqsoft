@@ -43,6 +43,11 @@ public class MarcaValidator
             errores["Input.Nombre"] =
                 "El nombre no puede superar los 100 caracteres.";
         }
+        else if (!EsNombreValido(input.Nombre))
+        {
+            errores["Input.Nombre"] =
+                "El nombre solo puede contener letras, números, espacios y guiones.";
+        }
         else if (await _repository.ExisteValorAsync(
                      "Nombre",
                      input.Nombre,
@@ -101,6 +106,15 @@ public class MarcaValidator
             texto.Split(
                 ' ',
                 StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    private static bool EsNombreValido(string nombre)
+    {
+        return nombre.All(
+            caracter =>
+                char.IsLetterOrDigit(caracter) ||
+                char.IsWhiteSpace(caracter) ||
+                caracter == '-');
     }
 
     private static string? NormalizarTextoOpcional(string? texto)
