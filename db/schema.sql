@@ -1,6 +1,6 @@
 -- =========================================================
 -- Esquema inicial: Sistema de inventario - Librería
--- Tablas: Categoria, Marca, Producto, HistoricoCostoProducto
+-- Tablas: Categoria, Marca, Cliente, Producto, HistoricoCostoProducto
 -- =========================================================
 
 IF DB_ID('LibreriaDb') IS NULL
@@ -174,6 +174,26 @@ OUTER APPLY (
 GO
 
 ALTER TABLE dbo.Marca ALTER COLUMN PaisOrigen NVARCHAR(100) NOT NULL;
+GO
+
+-- ---------------------------------------------------------
+-- Cliente
+-- ---------------------------------------------------------
+IF OBJECT_ID('dbo.Cliente', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Cliente (
+        ClienteId    INT IDENTITY(1,1) PRIMARY KEY,
+        CiNit        NVARCHAR(30) NOT NULL,
+        RazonSocial  NVARCHAR(200) NOT NULL,
+        Correo       NVARCHAR(254) NULL,
+
+        CONSTRAINT UQ_Cliente_CiNit UNIQUE (CiNit),
+        CONSTRAINT CK_Cliente_CiNit_NoVacio
+            CHECK (LTRIM(RTRIM(CiNit)) <> N''),
+        CONSTRAINT CK_Cliente_RazonSocial_NoVacia
+            CHECK (LTRIM(RTRIM(RazonSocial)) <> N'')
+    );
+END
 GO
 
 -- ---------------------------------------------------------
