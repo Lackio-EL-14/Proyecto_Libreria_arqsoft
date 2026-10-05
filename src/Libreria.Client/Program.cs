@@ -20,6 +20,7 @@ builder.Services.AddScoped<CrudRepositoryFactory<Categoria>, CategoriaRepository
 builder.Services.AddScoped<CrudRepositoryFactory<Marca>, MarcaRepositoryFactory>();
 builder.Services.AddScoped<CrudRepositoryFactory<Producto>, ProductoRepositoryFactory>();
 builder.Services.AddScoped<HistoricoRepositoryFactory, HistoricoCostoRepositoryFactory>();
+builder.Services.AddScoped<UsuarioRepositoryFactory, SqlUsuarioRepositoryFactory>();
 
 // Validadores
 builder.Services.AddScoped<CategoriaValidator>();
@@ -39,6 +40,7 @@ builder.Services.AddScoped<IStockFacade, StockFacade>();
 builder.Services.AddScoped<IVentaFacade, VentaFacade>();
 builder.Services.AddDataProtection();
 builder.Services.AddScoped<Libreria.Application.Ports.Primary.IUrlProtector, Libreria.Infrastructure.Security.UrlProtector>();
+builder.Services.AddScoped<IContrasenaHasher, Libreria.Infrastructure.Security.ContrasenaHasher>();
 
 var connectionString = builder.Configuration.GetConnectionString("LibreriaDb")
     ?? throw new InvalidOperationException(
