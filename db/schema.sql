@@ -1,6 +1,6 @@
 -- =========================================================
 -- Esquema inicial: Sistema de inventario - Librería
--- Tablas: Categoria, Marca, Cliente, Producto, HistoricoCostoProducto
+-- Tablas: Categoria, Marca, Cliente, Producto, HistoricoCostoProducto, Venta, DetalleVenta
 -- =========================================================
 
 IF DB_ID('LibreriaDb') IS NULL
@@ -276,6 +276,61 @@ IF COL_LENGTH('dbo.HistoricoCostoProducto', 'FechaVencimiento') IS NULL
 BEGIN
     ALTER TABLE dbo.HistoricoCostoProducto
     ADD FechaVencimiento DATE NULL;
+END
+GO
+
+-- ---------------------------------------------------------
+-- Venta
+-- ---------------------------------------------------------
+IF OBJECT_ID('dbo.Venta', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Venta (
+        VentaId             INT IDENTITY(1,1) PRIMARY KEY,
+        PublicId            UNIQUEIDENTIFIER NOT NULL
+            CONSTRAINT DF_Venta_PublicId DEFAULT NEWID(),
+        ClienteId           INT NOT NULL,
+        Estado              NVARCHAR(20) NOT NULL
+            CONSTRAINT DF_Venta_Estado DEFAULT (N'Activa'),
+        UsuarioCreacionId   INT NOT NULL,
+        UsuarioAnulacionId  INT NULL,
+
+        CONSTRAINT UQ_Venta_PublicId UNIQUE (PublicId),
+        CONSTRAINT FK_Venta_Cliente FOREIGN KEY (ClienteId)
+            REFERENCES dbo.Cliente (ClienteId),
+        CONSTRAINT CK_Venta_Estado
+            CHECK (Estado IN (N'Activa', N'Anulada'))
+    );
+END
+GO
+
+-- ---------------------------------------------------------
+-- DetalleVenta
+-- ---------------------------------------------------------
+IF OBJECT_ID('dbo.DetalleVenta', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.DetalleVenta (
+        DetalleVentaId           INT IDENTITY(1,1) PRIMARY KEY,
+        VentaId                  INT NOT NULL,
+        ProductoId               INT NOT NULL,
+        Cantidad                 INT NOT NULL,
+        PrecioUnitarioVenta      DECIMAL(10,2) NOT NULL,
+        CostoAdquisicionUnitario DECIMAL(10,2) NOT NULL,
+        Importe                  DECIMAL(10,2) NOT NULL,
+        Ganancia                 DECIMAL(10,2) NOT NULL,
+
+        CONSTRAINT FK_DetalleVenta_Venta FOREIGN KEY (VentaId)
+            REFERENCES dbo.Venta (VentaId),
+        CONSTRAINT FK_DetalleVenta_Producto FOREIGN KEY (ProductoId)
+            REFERENCES dbo.Producto (ProductoId),
+        CONSTRAINT CK_DetalleVenta_Cantidad
+            CHECK (Cantidad > 0),
+        CONSTRAINT CK_DetalleVenta_Precio
+            CHECK (PrecioUnitarioVenta >= 0),
+        CONSTRAINT CK_DetalleVenta_Costo
+            CHECK (CostoAdquisicionUnitario >= 0),
+        CONSTRAINT CK_DetalleVenta_Importe
+            CHECK (Importe >= 0)
+    );
 END
 GO
 

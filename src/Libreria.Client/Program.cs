@@ -32,6 +32,8 @@ builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoReposito
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IHistoricoCostoRepository, HistoricoCostoRepository>();
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<IVentaRepository, VentaRepository>();
 
 builder.Services.AddScoped<IStockFacade, StockFacade>();
 builder.Services.AddScoped<IVentaFacade, VentaFacade>();

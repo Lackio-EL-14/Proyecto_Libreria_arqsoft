@@ -11,7 +11,7 @@ using System.Data.Common;
 
 namespace Libreria.Infrastructure
 {
-    public class ProductoRepository : ICrudRepository<Producto>
+    public class ProductoRepository : IProductoRepository
     {
 
         private readonly IDbConnectionFactory _connectionFactory;
@@ -29,16 +29,16 @@ namespace Libreria.Infrastructure
             await using var command = connection.CreateCommand();
 
             command.CommandText = @"
-        SELECT ProductoId, PublicId, Nombre, DescripcionEspecifica,
-               EsPerecedero, FechaVencimiento, Stock, PrecioVenta,
-               CostoAdquisicionActual, CategoriaId, MarcaId,
-               Estado, FechaCreacion, FechaModificacion
-        FROM Producto
-        WHERE Estado = 1
-          AND (@Busqueda IS NULL
-               OR Nombre LIKE '%' + @Busqueda + '%'
-               OR DescripcionEspecifica LIKE '%' + @Busqueda + '%')
-        ORDER BY Nombre";
+                SELECT ProductoId, PublicId, Nombre, DescripcionEspecifica,
+                       EsPerecedero, FechaVencimiento, Stock, PrecioVenta,
+                       CostoAdquisicionActual, CategoriaId, MarcaId,
+                       Estado, FechaCreacion, FechaModificacion
+                FROM Producto
+                WHERE Estado = 1
+                  AND (@Busqueda IS NULL
+                       OR Nombre LIKE '%' + @Busqueda + '%'
+                       OR DescripcionEspecifica LIKE '%' + @Busqueda + '%')
+                ORDER BY Nombre";
 
             AgregarParametro(
                 command,
@@ -235,6 +235,66 @@ namespace Libreria.Infrastructure
             AgregarParametro(command, "@PublicId", publicId);
 
             return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
+        }
+
+        public async Task<bool> ActualizarStockAsync(
+    int productoId,
+    int cantidad,
+    IDbConnection connection,
+    IDbTransaction transaction)
+        {
+            if (connection is not DbConnection dbConnection)
+            {
+                throw new ArgumentException(
+                    "La conexión debe ser compatible con DbConnection.",
+                    nameof(connection));
+            }
+
+            if (transaction is not DbTransaction dbTransaction)
+            {
+                throw new ArgumentException(
+                    "La transacción debe ser compatible con DbTransaction.",
+                    nameof(transaction));
+            }
+
+            await using var command = dbConnection.CreateCommand();
+            command.Transaction = dbTransaction;
+
+            command.CommandText = @"
+                UPDATE Producto
+                SET Stock = Stock + @Cantidad,
+                    FechaModificacion = SYSDATETIME()
+                WHERE ProductoId = @ProductoId
+                  AND Estado = 1
+                  AND Stock + @Cantidad >= 0";
+
+            AgregarParametro(command, "@ProductoId", productoId);
+            AgregarParametro(command, "@Cantidad", cantidad);
+
+            return await command.ExecuteNonQueryAsync() == 1;
+        }
+
+        public async Task<decimal?> ObtenerCostoAdquisicionActualAsync(int productoId)
+        {
+            await using var connection = await CrearConexionAbiertaAsync();
+            await using var command = connection.CreateCommand();
+
+            command.CommandText = @"
+                SELECT CostoAdquisicionActual
+                FROM Producto
+                WHERE ProductoId = @ProductoId
+                  AND Estado = 1";
+
+            AgregarParametro(command, "@ProductoId", productoId);
+
+            var resultado = await command.ExecuteScalarAsync();
+
+            if (resultado is null || resultado == DBNull.Value)
+            {
+                return null;
+            }
+
+            return Convert.ToDecimal(resultado);
         }
 
         private async Task<DbConnection> CrearConexionAbiertaAsync()
