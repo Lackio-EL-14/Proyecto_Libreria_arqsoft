@@ -955,3 +955,52 @@ textarea:focus {
         display: none;
     }
 }
+
+/* ==========================================================================
+   AUDITORÍA / TRAZABILIDAD (US-40)
+   ========================================================================== */
+.auditoria-info {
+    max-width: 650px;
+    margin: 1.5rem auto;
+    padding: 1rem 1.25rem;
+    background-color: var(--color-secondary-light);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-base);
+    font-size: 0.85rem;
+}
+
+.form-card .auditoria-info {
+    max-width: none;
+    margin: 0 0 1.5rem;
+}
+
+.auditoria-info__titulo {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.auditoria-info__datos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.75rem;
+}
+
+.auditoria-info__datos dt {
+    color: var(--color-secondary);
+    font-size: 0.78rem;
+}
+
+.auditoria-info__datos dd {
+    font-weight: 600;
+}
+
+.auditoria-info__datos small {
+    display: block;
+    font-weight: 400;
+    color: var(--color-secondary);
+}

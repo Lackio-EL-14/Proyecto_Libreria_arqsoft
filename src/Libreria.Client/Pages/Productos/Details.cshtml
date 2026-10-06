@@ -75,6 +75,11 @@
 
     </div>
 
+    @if (Model.Auditoria is not null)
+    {
+        <partial name="_AuditoriaInfo" model="Model.Auditoria" />
+    }
+
     <div style="border-top: 1px solid var(--color-border); padding-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
         <a asp-page="Edit" asp-route-id="@Model.PublicId" class="btn btn--primary">Editar producto</a>
 

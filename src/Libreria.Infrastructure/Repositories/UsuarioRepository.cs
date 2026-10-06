@@ -40,6 +40,25 @@ public class UsuarioRepository : IUsuarioRepository
             : null;
     }
 
+    public async Task<string?> ObtenerNombreCompletoPorIdAsync(int usuarioId)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = @"
+            SELECT NombreCompleto
+            FROM Usuario
+            WHERE UsuarioId = @UsuarioId";
+
+        AgregarParametro(command, "@UsuarioId", usuarioId, DbType.Int32);
+
+        var resultado = await command.ExecuteScalarAsync();
+
+        return resultado is null || resultado == DBNull.Value
+            ? null
+            : Convert.ToString(resultado);
+    }
+
     private async Task<DbConnection> CrearConexionAbiertaAsync()
     {
         var connection = _connectionFactory.CreateConnection();

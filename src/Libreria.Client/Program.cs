@@ -64,6 +64,7 @@ builder.Services.AddScoped<IContrasenaHasher, Libreria.Infrastructure.Security.C
 // US-40: auditoría (usuario de la sesión actual + nombres para mostrar)
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUsuarioActual, Libreria.Infrastructure.Security.UsuarioActual>();
+builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
 
 // US-38: autenticación por cookie de ASP.NET Core
 builder.Services

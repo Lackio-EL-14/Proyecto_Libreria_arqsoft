@@ -18,15 +18,18 @@ public class EditModel : PageModel
     private readonly ICrudRepository<Categoria> _repository;
     private readonly CategoriaValidator _validator;
     private readonly IUrlProtector _urlProtector; 
+    private readonly IAuditoriaService _auditoriaService;
 
     public EditModel(
         CrudRepositoryFactory<Categoria> factory,
         CategoriaValidator validator,
-        IUrlProtector urlProtector) 
+        IUrlProtector urlProtector,
+        IAuditoriaService auditoriaService) 
     {
         _repository = factory.CrearRepositorio();
         _validator = validator;
         _urlProtector = urlProtector;
+        _auditoriaService = auditoriaService;
     }
 
     [BindProperty]
@@ -36,6 +39,8 @@ public class EditModel : PageModel
     public CategoriaInput Input { get; set; } = new();
 
     public IReadOnlyList<string> Ubicaciones => UbicacionesCategoria.Todas;
+
+    public AuditoriaRegistro? Auditoria { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(string id)
     {
@@ -60,6 +65,11 @@ public class EditModel : PageModel
             Descripcion = categoria.Descripcion,
             Ubicacion = categoria.Ubicacion
         };
+        Auditoria = await _auditoriaService.ObtenerAsync(
+            categoria.UsuarioCreacionId,
+            categoria.FechaCreacion,
+            categoria.UsuarioModificacionId,
+            categoria.FechaModificacion);
         return Page();
     }
 

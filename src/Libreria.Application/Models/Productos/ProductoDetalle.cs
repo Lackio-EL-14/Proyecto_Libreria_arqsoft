@@ -16,4 +16,8 @@ public record ProductoDetalle(
     int CategoriaId,
     string Categoria,
     int MarcaId,
-    string Marca);
+    string Marca,
+    int? UsuarioCreacionId = null,
+    DateTime? FechaCreacion = null,
+    int? UsuarioModificacionId = null,
+    DateTime? FechaModificacion = null);
