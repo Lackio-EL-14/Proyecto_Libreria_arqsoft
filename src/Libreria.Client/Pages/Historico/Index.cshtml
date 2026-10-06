@@ -46,6 +46,7 @@ else
                         <th>Variación</th>
                         <th>Vencimiento</th>
                         <th>Motivo</th>
+                        <th>Registrado por</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -106,6 +107,17 @@ else
                                 else
                                 {
                                     @item.Motivo
+                                }
+                            </td>
+
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(item.RegistradoPor))
+                                {
+                                    <span style="color: var(--color-secondary);">—</span>
+                                }
+                                else
+                                {
+                                    @item.RegistradoPor
                                 }
                             </td>
                         </tr>

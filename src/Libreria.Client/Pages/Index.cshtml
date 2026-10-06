@@ -13,7 +13,19 @@
     </div>
 </header>
 
-<!-- Sección de Indicadores Clave (KPIs / Widgets) -->
+@if (!Model.EsAdministrador)
+{
+    @* US-39: el Vendedor no ve indicadores ni accesos de inventario *@
+    <section class="dashboard-panel">
+        <div class="dashboard-panel__header">
+            <h2>Bienvenido, @(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity?.Name)</h2>
+            <p>Use la sección <strong>Ventas</strong> del menú para registrar y consultar ventas.</p>
+        </div>
+    </section>
+}
+else
+{
+@* Sección de Indicadores Clave (KPIs / Widgets) *@
 <section class="kpi-grid" aria-label="Indicadores clave del sistema">
     <!-- Widget 1: Total Productos Activos -->
     <article class="kpi-card">
@@ -60,7 +72,7 @@
     </article>
 </section>
 
-<!-- Accesos Rápidos del Catálogo e Histórico -->
+@* Accesos Rápidos del Catálogo e Histórico *@
 <section class="dashboard-panel">
     <div class="dashboard-panel__header">
         <h2>⚡ Acciones Operativas Rápidas</h2>
@@ -104,3 +116,4 @@
         </a>
     </div>
 </section>
+}

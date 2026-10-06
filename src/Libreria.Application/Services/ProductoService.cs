@@ -119,7 +119,11 @@ public class ProductoService : IProductoService
             producto.CategoriaId,
             nombreCategoria,
             producto.MarcaId,
-            nombreMarca);
+            nombreMarca,
+            producto.UsuarioCreacionId,
+            producto.FechaCreacion,
+            producto.UsuarioModificacionId,
+            producto.FechaModificacion);
     }
 
     public async Task<ProductoEdicion?> ObtenerEdicionAsync(

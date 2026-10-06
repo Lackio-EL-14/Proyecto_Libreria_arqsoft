@@ -485,3 +485,58 @@ BEGIN
     ALTER TABLE dbo.Producto ADD CONSTRAINT UQ_Producto_PublicId UNIQUE (PublicId);
 END
 GO
+
+-- =========================================================
+-- MIGRACIÓN US-40: Auditoría de usuario
+-- UsuarioCreacionId / UsuarioModificacionId (FK a Usuario,
+-- nullable: los registros anteriores quedan en NULL).
+-- =========================================================
+IF COL_LENGTH('dbo.Categoria', 'UsuarioCreacionId') IS NULL
+    ALTER TABLE dbo.Categoria ADD UsuarioCreacionId INT NULL;
+IF COL_LENGTH('dbo.Categoria', 'UsuarioModificacionId') IS NULL
+    ALTER TABLE dbo.Categoria ADD UsuarioModificacionId INT NULL;
+
+IF COL_LENGTH('dbo.Marca', 'UsuarioCreacionId') IS NULL
+    ALTER TABLE dbo.Marca ADD UsuarioCreacionId INT NULL;
+IF COL_LENGTH('dbo.Marca', 'UsuarioModificacionId') IS NULL
+    ALTER TABLE dbo.Marca ADD UsuarioModificacionId INT NULL;
+
+IF COL_LENGTH('dbo.Producto', 'UsuarioCreacionId') IS NULL
+    ALTER TABLE dbo.Producto ADD UsuarioCreacionId INT NULL;
+IF COL_LENGTH('dbo.Producto', 'UsuarioModificacionId') IS NULL
+    ALTER TABLE dbo.Producto ADD UsuarioModificacionId INT NULL;
+
+IF COL_LENGTH('dbo.HistoricoCostoProducto', 'UsuarioCreacionId') IS NULL
+    ALTER TABLE dbo.HistoricoCostoProducto ADD UsuarioCreacionId INT NULL;
+IF COL_LENGTH('dbo.HistoricoCostoProducto', 'UsuarioModificacionId') IS NULL
+    ALTER TABLE dbo.HistoricoCostoProducto ADD UsuarioModificacionId INT NULL;
+GO
+
+IF OBJECT_ID('dbo.FK_Categoria_UsuarioCreacion', 'F') IS NULL
+    ALTER TABLE dbo.Categoria ADD CONSTRAINT FK_Categoria_UsuarioCreacion
+        FOREIGN KEY (UsuarioCreacionId) REFERENCES dbo.Usuario (UsuarioId);
+IF OBJECT_ID('dbo.FK_Categoria_UsuarioModificacion', 'F') IS NULL
+    ALTER TABLE dbo.Categoria ADD CONSTRAINT FK_Categoria_UsuarioModificacion
+        FOREIGN KEY (UsuarioModificacionId) REFERENCES dbo.Usuario (UsuarioId);
+
+IF OBJECT_ID('dbo.FK_Marca_UsuarioCreacion', 'F') IS NULL
+    ALTER TABLE dbo.Marca ADD CONSTRAINT FK_Marca_UsuarioCreacion
+        FOREIGN KEY (UsuarioCreacionId) REFERENCES dbo.Usuario (UsuarioId);
+IF OBJECT_ID('dbo.FK_Marca_UsuarioModificacion', 'F') IS NULL
+    ALTER TABLE dbo.Marca ADD CONSTRAINT FK_Marca_UsuarioModificacion
+        FOREIGN KEY (UsuarioModificacionId) REFERENCES dbo.Usuario (UsuarioId);
+
+IF OBJECT_ID('dbo.FK_Producto_UsuarioCreacion', 'F') IS NULL
+    ALTER TABLE dbo.Producto ADD CONSTRAINT FK_Producto_UsuarioCreacion
+        FOREIGN KEY (UsuarioCreacionId) REFERENCES dbo.Usuario (UsuarioId);
+IF OBJECT_ID('dbo.FK_Producto_UsuarioModificacion', 'F') IS NULL
+    ALTER TABLE dbo.Producto ADD CONSTRAINT FK_Producto_UsuarioModificacion
+        FOREIGN KEY (UsuarioModificacionId) REFERENCES dbo.Usuario (UsuarioId);
+
+IF OBJECT_ID('dbo.FK_Historico_UsuarioCreacion', 'F') IS NULL
+    ALTER TABLE dbo.HistoricoCostoProducto ADD CONSTRAINT FK_Historico_UsuarioCreacion
+        FOREIGN KEY (UsuarioCreacionId) REFERENCES dbo.Usuario (UsuarioId);
+IF OBJECT_ID('dbo.FK_Historico_UsuarioModificacion', 'F') IS NULL
+    ALTER TABLE dbo.HistoricoCostoProducto ADD CONSTRAINT FK_Historico_UsuarioModificacion
+        FOREIGN KEY (UsuarioModificacionId) REFERENCES dbo.Usuario (UsuarioId);
+GO

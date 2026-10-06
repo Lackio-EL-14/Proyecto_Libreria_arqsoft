@@ -1,0 +1,28 @@
+@model Libreria.Application.Models.AuditoriaRegistro
+@* US-40: bloque reutilizable de trazabilidad (quién creó / modificó). *@
+
+<section class="auditoria-info" aria-label="Trazabilidad del registro">
+    <span class="auditoria-info__titulo">Trazabilidad</span>
+    <dl class="auditoria-info__datos">
+        <div>
+            <dt>Registrado por</dt>
+            <dd>
+                @(Model.CreadoPor ?? "Sin registro")
+                @if (Model.CreadoPor is not null && Model.FechaCreacion.HasValue)
+                {
+                    <small>@Model.FechaCreacion.Value.ToString("dd/MM/yyyy HH:mm")</small>
+                }
+            </dd>
+        </div>
+        <div>
+            <dt>Última modificación por</dt>
+            <dd>
+                @(Model.ModificadoPor ?? "Sin modificaciones registradas")
+                @if (Model.ModificadoPor is not null && Model.FechaModificacion.HasValue)
+                {
+                    <small>@Model.FechaModificacion.Value.ToString("dd/MM/yyyy HH:mm")</small>
+                }
+            </dd>
+        </div>
+    </dl>
+</section>

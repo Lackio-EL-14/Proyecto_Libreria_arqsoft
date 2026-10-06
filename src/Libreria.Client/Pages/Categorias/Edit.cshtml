@@ -53,3 +53,8 @@
         </div>
     </form>
 </div>
+
+@if (Model.Auditoria is not null)
+{
+    <partial name="_AuditoriaInfo" model="Model.Auditoria" />
+}

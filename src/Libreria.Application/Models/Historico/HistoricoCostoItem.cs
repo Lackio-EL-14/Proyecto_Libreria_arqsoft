@@ -17,6 +17,8 @@ public class HistoricoCostoItem
 
     public string? Motivo { get; set; }
 
+    public string? RegistradoPor { get; set; }
+
     public decimal? VariacionAbsoluta =>
         CostoAnterior.HasValue
             ? CostoNuevo - CostoAnterior.Value

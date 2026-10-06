@@ -1,4 +1,17 @@
+@using Libreria.Client.Seguridad
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
 @{
+    // US-39: el menú consulta las MISMAS políticas que protegen las páginas
+    // en el servidor (Program.cs), así menú y permisos no se desincronizan.
+    var esAdministrador = (await AuthorizationService.AuthorizeAsync(User, PoliticasAcceso.SoloAdministrador)).Succeeded;
+    var puedeVender = (await AuthorizationService.AuthorizeAsync(User, PoliticasAcceso.Ventas)).Succeeded;
+
+    // Las páginas de Ventas las agregan otras historias (US-47 / US-52);
+    // el enlace aparece solo cuando la página exista.
+    var urlRegistrarVenta = Url.Page("/Ventas/Registrar");
+    var urlListadoVentas = Url.Page("/Ventas/Index");
+
     var currentPage = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
     Func<string, string> getActiveClass = (path) =>
     {
@@ -82,26 +95,51 @@
                     </a>
                 </div>
 
-                <!-- Sección Inventario y Catálogos -->
-                <div class="sidebar-section">
-                    <span class="sidebar-section__title">Inventario</span>
-                    <a class="sidebar-link @getActiveClass("/Productos")" asp-page="/Productos/Index" title="Consultar productos">
-                        <span class="sidebar-link__icon" aria-hidden="true">📦</span>
-                        <span class="sidebar-link__text">Productos</span>
-                    </a>
-                    <a class="sidebar-link @getActiveClass("/Categorias")" asp-page="/Categorias/Index" title="Categorías">
-                        <span class="sidebar-link__icon" aria-hidden="true">🏷️</span>
-                        <span class="sidebar-link__text">Categorías</span>
-                    </a>
-                    <a class="sidebar-link @getActiveClass("/Marcas")" asp-page="/Marcas/Index" title="Marcas">
-                        <span class="sidebar-link__icon" aria-hidden="true">🏢</span>
-                        <span class="sidebar-link__text">Marcas</span>
-                    </a>
-                    <a class="sidebar-link @getActiveClass("/Historico")" asp-page="/Historico/Index" title="Histórico de costos">
-                        <span class="sidebar-link__icon" aria-hidden="true">📈</span>
-                        <span class="sidebar-link__text">Histórico de costos</span>
-                    </a>
-                </div>
+                @if (puedeVender && (urlRegistrarVenta is not null || urlListadoVentas is not null))
+                {
+                    @* Sección Ventas (Administrador y Vendedor) *@
+                    <div class="sidebar-section">
+                        <span class="sidebar-section__title">Ventas</span>
+                        @if (urlRegistrarVenta is not null)
+                        {
+                            <a class="sidebar-link @getActiveClass("/Ventas/Registrar")" href="@urlRegistrarVenta" title="Registrar venta">
+                                <span class="sidebar-link__icon" aria-hidden="true">🧾</span>
+                                <span class="sidebar-link__text">Registrar venta</span>
+                            </a>
+                        }
+                        @if (urlListadoVentas is not null)
+                        {
+                            <a class="sidebar-link @getActiveClass("/Ventas/Index")" href="@urlListadoVentas" title="Listado de ventas">
+                                <span class="sidebar-link__icon" aria-hidden="true">💵</span>
+                                <span class="sidebar-link__text">Ventas</span>
+                            </a>
+                        }
+                    </div>
+                }
+
+                @if (esAdministrador)
+                {
+                    @* Sección Inventario y Catálogos (solo Administrador) *@
+                    <div class="sidebar-section">
+                        <span class="sidebar-section__title">Inventario</span>
+                        <a class="sidebar-link @getActiveClass("/Productos")" asp-page="/Productos/Index" title="Consultar productos">
+                            <span class="sidebar-link__icon" aria-hidden="true">📦</span>
+                            <span class="sidebar-link__text">Productos</span>
+                        </a>
+                        <a class="sidebar-link @getActiveClass("/Categorias")" asp-page="/Categorias/Index" title="Categorías">
+                            <span class="sidebar-link__icon" aria-hidden="true">🏷️</span>
+                            <span class="sidebar-link__text">Categorías</span>
+                        </a>
+                        <a class="sidebar-link @getActiveClass("/Marcas")" asp-page="/Marcas/Index" title="Marcas">
+                            <span class="sidebar-link__icon" aria-hidden="true">🏢</span>
+                            <span class="sidebar-link__text">Marcas</span>
+                        </a>
+                        <a class="sidebar-link @getActiveClass("/Historico")" asp-page="/Historico/Index" title="Histórico de costos">
+                            <span class="sidebar-link__icon" aria-hidden="true">📈</span>
+                            <span class="sidebar-link__text">Histórico de costos</span>
+                        </a>
+                    </div>
+                }
             </nav>
         </aside>
 

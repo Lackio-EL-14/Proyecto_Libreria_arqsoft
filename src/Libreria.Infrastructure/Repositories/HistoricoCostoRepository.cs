@@ -52,16 +52,18 @@ public class HistoricoCostoRepository : IHistoricoCostoRepository
             WITH HistorialOrdenado AS
             (
                 SELECT
-                    HistoricoCostoId,
-                    CostoAdquisicion,
-                    FechaVencimiento,
-                    Motivo,
-                    FechaVigencia,
-                    LAG(CostoAdquisicion) OVER (
-                        ORDER BY FechaVigencia, HistoricoCostoId
+                    h.HistoricoCostoId,
+                    h.CostoAdquisicion,
+                    h.FechaVencimiento,
+                    h.Motivo,
+                    h.FechaVigencia,
+                    u.NombreCompleto AS RegistradoPor,
+                    LAG(h.CostoAdquisicion) OVER (
+                        ORDER BY h.FechaVigencia, h.HistoricoCostoId
                     ) AS CostoAnterior
-                FROM HistoricoCostoProducto
-                WHERE ProductoId = @ProductoId
+                FROM HistoricoCostoProducto h
+                LEFT JOIN Usuario u ON u.UsuarioId = h.UsuarioCreacionId
+                WHERE h.ProductoId = @ProductoId
             )
             SELECT
                 HistoricoCostoId,
@@ -69,7 +71,8 @@ public class HistoricoCostoRepository : IHistoricoCostoRepository
                 FechaVencimiento,
                 CostoAnterior,
                 Motivo,
-                FechaVigencia
+                FechaVigencia,
+                RegistradoPor
             FROM HistorialOrdenado
             ORDER BY FechaVigencia DESC, HistoricoCostoId DESC";
 
@@ -103,7 +106,12 @@ public class HistoricoCostoRepository : IHistoricoCostoRepository
                         : Convert.ToString(reader["Motivo"]),
 
                 FechaVigencia =
-                    Convert.ToDateTime(reader["FechaVigencia"])
+                    Convert.ToDateTime(reader["FechaVigencia"]),
+
+                RegistradoPor =
+                    reader["RegistradoPor"] == DBNull.Value
+                        ? null
+                        : Convert.ToString(reader["RegistradoPor"])
             });
         }
 

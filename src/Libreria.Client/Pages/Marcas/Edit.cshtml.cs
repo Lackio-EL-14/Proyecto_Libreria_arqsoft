@@ -3,6 +3,7 @@ using Libreria.Application.Models;
 using Libreria.Application.Ports.Secondary;
 using Libreria.Application.Factories;
 using Libreria.Application.Validators;
+using Libreria.Application.Ports.Primary;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -13,13 +14,16 @@ public class EditModel : PageModel
 {
     private readonly ICrudRepository<Marca> _repository;
     private readonly MarcaValidator _validator;
+    private readonly IAuditoriaService _auditoriaService;
 
     public EditModel(
         CrudRepositoryFactory<Marca> factory,
-        MarcaValidator validator)
+        MarcaValidator validator,
+        IAuditoriaService auditoriaService)
     {
         _repository = factory.CrearRepositorio();
         _validator = validator;
+        _auditoriaService = auditoriaService;
     }
 
     [BindProperty]
@@ -27,6 +31,8 @@ public class EditModel : PageModel
 
     [BindProperty]
     public MarcaInput Input { get; set; } = new();
+
+    public AuditoriaRegistro? Auditoria { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
@@ -48,6 +54,12 @@ public class EditModel : PageModel
             PaisOrigen = marca.PaisOrigen,
             SitioWeb = marca.SitioWeb
         };
+
+        Auditoria = await _auditoriaService.ObtenerAsync(
+            marca.UsuarioCreacionId,
+            null,
+            marca.UsuarioModificacionId,
+            null);
 
         return Page();
     }

@@ -17,5 +17,7 @@ namespace Libreria.Application.Domain
         public bool Estado { get; set; }
         public DateTime FechaCreacion { get; set; }
         public DateTime? FechaModificacion { get; set; }
+        public int? UsuarioCreacionId { get; set; }
+        public int? UsuarioModificacionId { get; set; }
     }
 }

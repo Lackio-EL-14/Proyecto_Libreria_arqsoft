@@ -1,0 +1,19 @@
+@page
+@model Libreria.Client.Pages.Cuenta.AccesoDenegadoModel
+@{
+    ViewData["Title"] = "Acceso denegado";
+}
+
+<div class="page-header">
+    <div>
+        <h1 style="color: var(--color-danger);">Acceso denegado</h1>
+        <p>Su rol no tiene permiso para ingresar a esta sección.</p>
+    </div>
+</div>
+
+<div class="form-card" style="text-align: center;">
+    <p style="margin-bottom: 1.5rem; color: var(--color-secondary);">
+        Si necesita acceder, solicite los permisos al administrador del sistema.
+    </p>
+    <a asp-page="/Index" class="btn btn--primary">Volver al inicio</a>
+</div>
