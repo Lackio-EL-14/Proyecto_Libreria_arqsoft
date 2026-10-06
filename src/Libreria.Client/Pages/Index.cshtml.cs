@@ -6,6 +6,8 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Libreria.Client.Seguridad;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Libreria.Client.Pages;
@@ -15,12 +17,15 @@ public class IndexModel : PageModel
     private readonly ICrudRepository<Producto> _productoRepo;
     private readonly ICrudRepository<Categoria> _categoriaRepo;
     private readonly ICrudRepository<Marca> _marcaRepo;
+    private readonly IAuthorizationService _authorizationService;
 
     public IndexModel(
         CrudRepositoryFactory<Producto> productoFactory,
         CrudRepositoryFactory<Categoria> categoriaFactory,
-        CrudRepositoryFactory<Marca> marcaFactory)
+        CrudRepositoryFactory<Marca> marcaFactory,
+        IAuthorizationService authorizationService)
     {
+        _authorizationService = authorizationService;
         _productoRepo = productoFactory.CrearRepositorio();
         _categoriaRepo = categoriaFactory.CrearRepositorio();
         _marcaRepo = marcaFactory.CrearRepositorio();
@@ -31,9 +36,18 @@ public class IndexModel : PageModel
     public int TotalCategorias { get; private set; }
     public int TotalMarcas { get; private set; }
     public int TotalPerecederos { get; private set; }
+    public bool EsAdministrador { get; private set; }
 
     public async Task OnGetAsync()
     {
+        EsAdministrador = (await _authorizationService
+            .AuthorizeAsync(User, PoliticasAcceso.SoloAdministrador)).Succeeded;
+
+        if (!EsAdministrador)
+        {
+            return;
+        }
+
         try
         {
             var productos = await _productoRepo.ObtenerActivasAsync();

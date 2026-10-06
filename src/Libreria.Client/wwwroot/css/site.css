@@ -891,6 +891,7 @@ textarea:focus {
     padding: 0.35rem 0.75rem;
     font-family: inherit;
     font-size: 0.82rem;
+    white-space: nowrap;
     cursor: pointer;
     transition: background-color 0.2s ease;
 }
