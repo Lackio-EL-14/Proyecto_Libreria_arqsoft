@@ -10,10 +10,14 @@ namespace Libreria.Infrastructure;
 public class MarcaRepository : ICrudRepository<Marca>
 {
     private readonly IDbConnectionFactory _connectionFactory;
+    private readonly IUsuarioActual _usuarioActual;
 
-    public MarcaRepository(IDbConnectionFactory connectionFactory)
+    public MarcaRepository(
+        IDbConnectionFactory connectionFactory,
+        IUsuarioActual usuarioActual)
     {
         _connectionFactory = connectionFactory;
+        _usuarioActual = usuarioActual;
     }
 
     public async Task<IReadOnlyList<Marca>> ObtenerActivasAsync(
@@ -31,7 +35,9 @@ public class MarcaRepository : ICrudRepository<Marca>
                    Descripcion,
                    PaisOrigen,
                    SitioWeb,
-                   Estado
+                   Estado,
+                   UsuarioCreacionId,
+                   UsuarioModificacionId
             FROM Marca
             WHERE Estado = 1
               AND (@Busqueda IS NULL
@@ -71,7 +77,9 @@ public class MarcaRepository : ICrudRepository<Marca>
                    Descripcion,
                    PaisOrigen,
                    SitioWeb,
-                   Estado
+                   Estado,
+                   UsuarioCreacionId,
+                   UsuarioModificacionId
             FROM Marca
             WHERE PublicId = @PublicId
               AND Estado = @Estado";
@@ -102,11 +110,14 @@ public class MarcaRepository : ICrudRepository<Marca>
 
         command.CommandText = @"
             INSERT INTO Marca
-                (Nombre, Descripcion, PaisOrigen, SitioWeb, Estado)
+                (Nombre, Descripcion, PaisOrigen, SitioWeb, Estado,
+                 UsuarioCreacionId)
             VALUES
-                (@Nombre, @Descripcion, @PaisOrigen, @SitioWeb, 1)";
+                (@Nombre, @Descripcion, @PaisOrigen, @SitioWeb, 1,
+                 @UsuarioCreacionId)";
 
         AgregarDatosMarca(command, marca);
+        AgregarParametroUsuario(command, "@UsuarioCreacionId");
 
         await command.ExecuteNonQueryAsync();
     }
@@ -122,11 +133,13 @@ public class MarcaRepository : ICrudRepository<Marca>
                 Descripcion = @Descripcion,
                 PaisOrigen = @PaisOrigen,
                 SitioWeb = @SitioWeb,
-                FechaModificacion = SYSDATETIME()
+                FechaModificacion = SYSDATETIME(),
+                UsuarioModificacionId = @UsuarioModificacionId
             WHERE PublicId = @PublicId
               AND Estado = 1";
 
         AgregarDatosMarca(command, marca);
+        AgregarParametroUsuario(command, "@UsuarioModificacionId");
 
         AgregarParametro(
             command,
@@ -147,8 +160,11 @@ public class MarcaRepository : ICrudRepository<Marca>
         command.CommandText = @"
             UPDATE Marca
             SET Estado = @NuevoEstado,
-                FechaModificacion = SYSDATETIME()
+                FechaModificacion = SYSDATETIME(),
+                UsuarioModificacionId = @UsuarioModificacionId
             WHERE PublicId = @PublicId";
+
+        AgregarParametroUsuario(command, "@UsuarioModificacionId");
 
         AgregarParametro(
             command,
@@ -239,8 +255,19 @@ public class MarcaRepository : ICrudRepository<Marca>
             Descripcion = ObtenerTextoOpcional(reader, 3),
             PaisOrigen = reader.GetString(4),
             SitioWeb = ObtenerTextoOpcional(reader, 5),
-            Estado = reader.GetBoolean(6)
+            Estado = reader.GetBoolean(6),
+            UsuarioCreacionId = reader.IsDBNull(7) ? null : reader.GetInt32(7),
+            UsuarioModificacionId = reader.IsDBNull(8) ? null : reader.GetInt32(8)
         };
+    }
+
+    private void AgregarParametroUsuario(DbCommand command, string nombre)
+    {
+        AgregarParametro(
+            command,
+            nombre,
+            _usuarioActual.UsuarioId ?? (object)DBNull.Value,
+            DbType.Int32);
     }
 
     private static string? ObtenerTextoOpcional(

@@ -13,5 +13,7 @@ public class Marca
     public string PaisOrigen { get; set; } = string.Empty;
     public string? SitioWeb { get; set; }
     public bool Estado { get; set; }
+    public int? UsuarioCreacionId { get; set; }
+    public int? UsuarioModificacionId { get; set; }
     
 }

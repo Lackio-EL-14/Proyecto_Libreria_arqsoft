@@ -14,10 +14,14 @@ namespace Libreria.Infrastructure
     public class CategoriaRepository : ICrudRepository<Categoria>
     {
         private readonly IDbConnectionFactory _connectionFactory;
+        private readonly IUsuarioActual _usuarioActual;
 
-        public CategoriaRepository(IDbConnectionFactory connectionFactory)
+        public CategoriaRepository(
+            IDbConnectionFactory connectionFactory,
+            IUsuarioActual usuarioActual)
         {
             _connectionFactory = connectionFactory;
+            _usuarioActual = usuarioActual;
         }
 
         public async Task<IReadOnlyList<Categoria>> ObtenerActivasAsync(string? busqueda = null)
@@ -28,7 +32,8 @@ namespace Libreria.Infrastructure
             
             command.CommandText = @"
                 SELECT CategoriaId, PublicId, Codigo, Nombre, Descripcion, Ubicacion,
-                       Estado, FechaCreacion, FechaModificacion
+                       Estado, FechaCreacion, FechaModificacion,
+                       UsuarioCreacionId, UsuarioModificacionId
                 FROM Categoria
                 WHERE Estado = 1
                   AND (@Busqueda IS NULL
@@ -56,7 +61,8 @@ namespace Libreria.Infrastructure
             
             command.CommandText = @"
                 SELECT CategoriaId, PublicId, Codigo, Nombre, Descripcion, Ubicacion,
-                       Estado, FechaCreacion, FechaModificacion
+                       Estado, FechaCreacion, FechaModificacion,
+                       UsuarioCreacionId, UsuarioModificacionId
                 FROM Categoria
                 WHERE PublicId = @PublicId
                   AND Estado = @Estado";
@@ -86,12 +92,13 @@ namespace Libreria.Infrastructure
 
                 INSERT INTO Categoria
                     (Codigo, Nombre, Descripcion, Ubicacion, Estado,
-                     FechaCreacion, FechaModificacion)
+                     FechaCreacion, FechaModificacion, UsuarioCreacionId)
                 VALUES
                     (@CodigoGenerado, @Nombre, @Descripcion, @Ubicacion, 1,
-                     SYSDATETIME(), SYSDATETIME())";
+                     SYSDATETIME(), SYSDATETIME(), @UsuarioCreacionId)";
                      
             AgregarDatosCategoria(command, categoria);
+            AgregarParametro(command, "@UsuarioCreacionId", UsuarioActualOrNull());
             await command.ExecuteNonQueryAsync();
         }
 
@@ -106,13 +113,15 @@ namespace Libreria.Infrastructure
                     Nombre = @Nombre,
                     Descripcion = @Descripcion,
                     Ubicacion = @Ubicacion,
-                    FechaModificacion = SYSDATETIME()
+                    FechaModificacion = SYSDATETIME(),
+                    UsuarioModificacionId = @UsuarioModificacionId
                 WHERE PublicId = @PublicId
                   AND Estado = 1";
                   
             AgregarDatosCategoria(command, categoria);
             AgregarParametro(command, "@Codigo", categoria.Codigo);
             AgregarParametro(command, "@PublicId", categoria.PublicId);
+            AgregarParametro(command, "@UsuarioModificacionId", UsuarioActualOrNull());
             
             return await command.ExecuteNonQueryAsync() == 1;
         }
@@ -142,11 +151,13 @@ namespace Libreria.Infrastructure
             command.CommandText = @"
                 UPDATE Categoria
                 SET Estado = @NuevoEstado,
-                    FechaModificacion = SYSDATETIME()
+                    FechaModificacion = SYSDATETIME(),
+                    UsuarioModificacionId = @UsuarioModificacionId
                 WHERE PublicId = @PublicId
                   AND Estado = @EstadoEsperado";
                   
             AgregarParametro(command, "@PublicId", publicId);
+            AgregarParametro(command, "@UsuarioModificacionId", UsuarioActualOrNull());
             AgregarParametro(command, "@NuevoEstado", nuevoEstado);
             AgregarParametro(command, "@EstadoEsperado", estadoEsperado);
             
@@ -180,6 +191,17 @@ namespace Libreria.Infrastructure
             return connection;
         }
 
+        private object UsuarioActualOrNull()
+        {
+            return _usuarioActual.UsuarioId ?? (object)DBNull.Value;
+        }
+
+        private static int? ObtenerEnteroOpcional(DbDataReader reader, string columna)
+        {
+            var indice = reader.GetOrdinal(columna);
+            return reader.IsDBNull(indice) ? null : reader.GetInt32(indice);
+        }
+
         private static Categoria MapearCategoria(DbDataReader reader)
         {
             return new Categoria
@@ -196,7 +218,9 @@ namespace Libreria.Infrastructure
                 FechaCreacion = reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
                 FechaModificacion = reader.IsDBNull(reader.GetOrdinal("FechaModificacion"))
                     ? null
-                    : reader.GetDateTime(reader.GetOrdinal("FechaModificacion"))
+                    : reader.GetDateTime(reader.GetOrdinal("FechaModificacion")),
+                UsuarioCreacionId = ObtenerEnteroOpcional(reader, "UsuarioCreacionId"),
+                UsuarioModificacionId = ObtenerEnteroOpcional(reader, "UsuarioModificacionId")
             };
         }
 

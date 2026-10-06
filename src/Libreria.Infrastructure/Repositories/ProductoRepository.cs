@@ -15,10 +15,14 @@ namespace Libreria.Infrastructure
     {
 
         private readonly IDbConnectionFactory _connectionFactory;
+        private readonly IUsuarioActual _usuarioActual;
 
-        public ProductoRepository(IDbConnectionFactory connectionFactory)
+        public ProductoRepository(
+            IDbConnectionFactory connectionFactory,
+            IUsuarioActual usuarioActual)
         {
             _connectionFactory = connectionFactory;
+            _usuarioActual = usuarioActual;
         }
 
         public async Task<IReadOnlyList<Producto>> ObtenerActivasAsync(string? busqueda = null)
@@ -32,7 +36,8 @@ namespace Libreria.Infrastructure
                 SELECT ProductoId, PublicId, Nombre, DescripcionEspecifica,
                        EsPerecedero, FechaVencimiento, Stock, PrecioVenta,
                        CostoAdquisicionActual, CategoriaId, MarcaId,
-                       Estado, FechaCreacion, FechaModificacion
+                       Estado, FechaCreacion, FechaModificacion,
+                       UsuarioCreacionId, UsuarioModificacionId
                 FROM Producto
                 WHERE Estado = 1
                   AND (@Busqueda IS NULL
@@ -68,7 +73,8 @@ namespace Libreria.Infrastructure
                 SELECT ProductoId, PublicId, Nombre, DescripcionEspecifica,
                        EsPerecedero, FechaVencimiento, Stock, PrecioVenta,
                        CostoAdquisicionActual, CategoriaId, MarcaId,
-                       Estado, FechaCreacion, FechaModificacion
+                       Estado, FechaCreacion, FechaModificacion,
+                       UsuarioCreacionId, UsuarioModificacionId
                 FROM Producto
                 WHERE PublicId = @PublicId
                   AND Estado = @Estado";
@@ -88,6 +94,8 @@ namespace Libreria.Infrastructure
             await using var connection = await CrearConexionAbiertaAsync();
             await using var transaction = await connection.BeginTransactionAsync();
 
+            entidad.UsuarioCreacionId = _usuarioActual.UsuarioId;
+
             try
             {
                 var productoId = await InsertarProductoAsync(connection, transaction, entidad);
@@ -98,7 +106,8 @@ namespace Libreria.Infrastructure
                     productoId,
                     entidad.CostoAdquisicionActual,
                     entidad.FechaVencimiento,
-                    "Registro inicial");
+                    "Registro inicial",
+                    entidad.UsuarioCreacionId);
 
                 await transaction.CommitAsync();
             }
@@ -113,6 +122,8 @@ namespace Libreria.Infrastructure
         {
             await using var connection = await CrearConexionAbiertaAsync();
             await using var transaction = await connection.BeginTransactionAsync();
+
+            entidad.UsuarioModificacionId = _usuarioActual.UsuarioId;
 
             try
             {
@@ -142,12 +153,17 @@ namespace Libreria.Infrastructure
                             CostoAdquisicionActual = @CostoAdquisicionActual,
                             CategoriaId = @CategoriaId,
                             MarcaId = @MarcaId,
-                            FechaModificacion = SYSDATETIME()
+                            FechaModificacion = SYSDATETIME(),
+                            UsuarioModificacionId = @UsuarioModificacionId
                         WHERE PublicId = @PublicId
                           AND Estado = 1";
 
                     AgregarDatosProducto(command, entidad);
                     AgregarParametro(command, "@PublicId", entidad.PublicId);
+                    AgregarParametro(
+                        command,
+                        "@UsuarioModificacionId",
+                        entidad.UsuarioModificacionId ?? (object)DBNull.Value);
 
                     if (await command.ExecuteNonQueryAsync() != 1)
                     {
@@ -164,7 +180,8 @@ namespace Libreria.Infrastructure
                         datosActuales.Value.ProductoId,
                         entidad.CostoAdquisicionActual,
                         entidad.FechaVencimiento,
-                        "Edición manual");
+                        "Edición manual",
+                        entidad.UsuarioModificacionId);
                 }
 
                 await transaction.CommitAsync();
@@ -187,11 +204,16 @@ namespace Libreria.Infrastructure
             command.CommandText = @"
                 UPDATE Producto
                 SET Estado = @NuevoEstado,
-                    FechaModificacion = SYSDATETIME()
+                    FechaModificacion = SYSDATETIME(),
+                    UsuarioModificacionId = @UsuarioModificacionId
                 WHERE PublicId = @PublicId
                   AND Estado = @EstadoEsperado";
 
             AgregarParametro(command, "@PublicId", publicId);
+            AgregarParametro(
+                command,
+                "@UsuarioModificacionId",
+                _usuarioActual.UsuarioId ?? (object)DBNull.Value);
             AgregarParametro(command, "@NuevoEstado", nuevoEstado);
             AgregarParametro(command, "@EstadoEsperado", estadoEsperado);
 
@@ -340,7 +362,17 @@ namespace Libreria.Infrastructure
                 FechaModificacion =
                     reader.IsDBNull(reader.GetOrdinal("FechaModificacion"))
                         ? null
-                        : reader.GetDateTime(reader.GetOrdinal("FechaModificacion"))
+                        : reader.GetDateTime(reader.GetOrdinal("FechaModificacion")),
+
+                UsuarioCreacionId =
+                    reader.IsDBNull(reader.GetOrdinal("UsuarioCreacionId"))
+                        ? null
+                        : reader.GetInt32(reader.GetOrdinal("UsuarioCreacionId")),
+
+                UsuarioModificacionId =
+                    reader.IsDBNull(reader.GetOrdinal("UsuarioModificacionId"))
+                        ? null
+                        : reader.GetInt32(reader.GetOrdinal("UsuarioModificacionId"))
             };
         }
 
@@ -366,14 +398,20 @@ namespace Libreria.Infrastructure
             command.CommandText = @"
                 INSERT INTO Producto
                     (Nombre, DescripcionEspecifica, EsPerecedero, FechaVencimiento, Stock,
-                     PrecioVenta, CostoAdquisicionActual, CategoriaId, MarcaId, Estado)
+                     PrecioVenta, CostoAdquisicionActual, CategoriaId, MarcaId, Estado,
+                     UsuarioCreacionId)
                 VALUES
                     (@Nombre, @DescripcionEspecifica, @EsPerecedero, @FechaVencimiento, @Stock,
-                     @PrecioVenta, @CostoAdquisicionActual, @CategoriaId, @MarcaId, 1);
+                     @PrecioVenta, @CostoAdquisicionActual, @CategoriaId, @MarcaId, 1,
+                     @UsuarioCreacionId);
 
                 SELECT CAST(SCOPE_IDENTITY() AS INT)";
 
             AgregarDatosProducto(command, producto);
+            AgregarParametro(
+                command,
+                "@UsuarioCreacionId",
+                producto.UsuarioCreacionId ?? (object)DBNull.Value);
 
             return Convert.ToInt32(await command.ExecuteScalarAsync());
         }
@@ -384,21 +422,23 @@ namespace Libreria.Infrastructure
             int productoId,
             decimal costo,
             DateTime? fechaVencimiento,
-            string motivo)
+            string motivo,
+            int? usuarioCreacionId)
         {
             await using var command = connection.CreateCommand();
             command.Transaction = transaction;
 
             command.CommandText = @"
                 INSERT INTO HistoricoCostoProducto
-                    (ProductoId, CostoAdquisicion, FechaVencimiento, Motivo)
+                    (ProductoId, CostoAdquisicion, FechaVencimiento, Motivo, UsuarioCreacionId)
                 VALUES
-                    (@ProductoId, @Costo, @FechaVencimiento, @Motivo)";
+                    (@ProductoId, @Costo, @FechaVencimiento, @Motivo, @UsuarioCreacionId)";
 
             AgregarParametro(command, "@ProductoId", productoId);
             AgregarParametro(command, "@Costo", costo);
             AgregarParametro(command, "@FechaVencimiento", fechaVencimiento ?? (object)DBNull.Value);
             AgregarParametro(command, "@Motivo", motivo);
+            AgregarParametro(command, "@UsuarioCreacionId", usuarioCreacionId ?? (object)DBNull.Value);
 
             await command.ExecuteNonQueryAsync();
         }
