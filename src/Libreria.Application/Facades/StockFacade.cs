@@ -41,6 +41,30 @@ namespace Libreria.Application.Facades
                     "No existe stock suficiente para realizar la venta.");
             }
         }
-        public void RestaurarStock() => throw new System.NotImplementedException();
+        public async Task RestaurarStockAsync(
+            int productoId,
+            int cantidad,
+            IDbConnection connection,
+            IDbTransaction transaction)
+        {
+            if (cantidad <= 0)
+            {
+                throw new ArgumentException(
+                    "La cantidad a restaurar debe ser mayor a cero.",
+                    nameof(cantidad));
+            }
+
+            var actualizado = await _productoRepository.RestaurarStockAsync(
+                productoId,
+                cantidad,
+                connection,
+                transaction);
+
+            if (!actualizado)
+            {
+                throw new InvalidOperationException(
+                    "No se pudo restaurar el stock del producto.");
+            }
+        }
     }
 }

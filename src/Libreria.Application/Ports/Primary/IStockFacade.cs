@@ -12,6 +12,10 @@ namespace Libreria.Application.Ports.Primary
             int cantidad,
             IDbConnection connection,
             IDbTransaction transaction);
-        void RestaurarStock();
+        Task RestaurarStockAsync(
+            int productoId,
+            int cantidad,
+            IDbConnection connection,
+            IDbTransaction transaction);
     }
 }

@@ -296,6 +296,41 @@ namespace Libreria.Infrastructure
             return await command.ExecuteNonQueryAsync() == 1;
         }
 
+        public async Task<bool> RestaurarStockAsync(
+            int productoId,
+            int cantidad,
+            IDbConnection connection,
+            IDbTransaction transaction)
+        {
+            if (connection is not DbConnection dbConnection)
+            {
+                throw new ArgumentException(
+                    "La conexión debe ser compatible con DbConnection.",
+                    nameof(connection));
+            }
+
+            if (transaction is not DbTransaction dbTransaction)
+            {
+                throw new ArgumentException(
+                    "La transacción debe ser compatible con DbTransaction.",
+                    nameof(transaction));
+            }
+
+            await using var command = dbConnection.CreateCommand();
+            command.Transaction = dbTransaction;
+
+            command.CommandText = @"
+                UPDATE Producto
+                SET Stock = Stock + @Cantidad,
+                    FechaModificacion = SYSDATETIME()
+                WHERE ProductoId = @ProductoId";
+
+            AgregarParametro(command, "@ProductoId", productoId);
+            AgregarParametro(command, "@Cantidad", cantidad);
+
+            return await command.ExecuteNonQueryAsync() == 1;
+        }
+
         public async Task<decimal?> ObtenerCostoAdquisicionActualAsync(int productoId)
         {
             await using var connection = await CrearConexionAbiertaAsync();
