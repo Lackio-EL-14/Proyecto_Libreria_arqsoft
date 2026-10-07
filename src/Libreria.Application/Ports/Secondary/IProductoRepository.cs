@@ -12,4 +12,9 @@ public interface IProductoRepository : ICrudRepository<Producto>
         IDbTransaction transaction);
 
     Task<decimal?> ObtenerCostoAdquisicionActualAsync(int productoId);
+
+    Task<Producto?> ObtenerParaVentaAsync(
+        Guid publicId,
+        IDbConnection connection,
+        IDbTransaction transaction);
 }

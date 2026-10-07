@@ -6,7 +6,8 @@ namespace Libreria.Application.Ports.Primary
 {
     public interface IVentaFacade
     {
-        void RegistrarVenta();
+        Task<VentaRegistradaResult> RegistrarVentaAsync(
+            RegistrarVentaInput input);
         void AnularVenta();
     }
 }
