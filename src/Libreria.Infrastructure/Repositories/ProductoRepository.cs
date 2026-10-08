@@ -260,10 +260,10 @@ namespace Libreria.Infrastructure
         }
 
         public async Task<bool> ActualizarStockAsync(
-    int productoId,
-    int cantidad,
-    IDbConnection connection,
-    IDbTransaction transaction)
+            int productoId,
+            int cantidad,
+            IDbConnection connection,
+            IDbTransaction transaction)
         {
             if (connection is not DbConnection dbConnection)
             {
@@ -289,6 +289,41 @@ namespace Libreria.Infrastructure
                 WHERE ProductoId = @ProductoId
                   AND Estado = 1
                   AND Stock + @Cantidad >= 0";
+
+            AgregarParametro(command, "@ProductoId", productoId);
+            AgregarParametro(command, "@Cantidad", cantidad);
+
+            return await command.ExecuteNonQueryAsync() == 1;
+        }
+
+        public async Task<bool> RestaurarStockAsync(
+            int productoId,
+            int cantidad,
+            IDbConnection connection,
+            IDbTransaction transaction)
+        {
+            if (connection is not DbConnection dbConnection)
+            {
+                throw new ArgumentException(
+                    "La conexión debe ser compatible con DbConnection.",
+                    nameof(connection));
+            }
+
+            if (transaction is not DbTransaction dbTransaction)
+            {
+                throw new ArgumentException(
+                    "La transacción debe ser compatible con DbTransaction.",
+                    nameof(transaction));
+            }
+
+            await using var command = dbConnection.CreateCommand();
+            command.Transaction = dbTransaction;
+
+            command.CommandText = @"
+                UPDATE Producto
+                SET Stock = Stock + @Cantidad,
+                    FechaModificacion = SYSDATETIME()
+                WHERE ProductoId = @ProductoId";
 
             AgregarParametro(command, "@ProductoId", productoId);
             AgregarParametro(command, "@Cantidad", cantidad);
@@ -496,6 +531,48 @@ namespace Libreria.Infrastructure
                 reader.GetInt32(0),
                 reader.GetDecimal(1)
             );
+        }
+
+        public async Task<Producto?> ObtenerParaVentaAsync(
+            Guid publicId,
+            IDbConnection connection,
+            IDbTransaction transaction)
+        {
+            if (connection is not DbConnection dbConnection)
+            {
+                throw new ArgumentException(
+                    "La conexión debe ser compatible con DbConnection.",
+                    nameof(connection));
+            }
+
+            if (transaction is not DbTransaction dbTransaction)
+            {
+                throw new ArgumentException(
+                    "La transacción debe ser compatible con DbTransaction.",
+                    nameof(transaction));
+            }
+
+            await using var command = dbConnection.CreateCommand();
+            command.Transaction = dbTransaction;
+
+            command.CommandText = @"
+                SELECT ProductoId, PublicId, Nombre, Stock,
+                    PrecioVenta, CostoAdquisicionActual,
+                    CategoriaId, MarcaId, Estado,
+                    FechaCreacion, FechaModificacion,
+                    UsuarioCreacionId, UsuarioModificacionId,
+                    DescripcionEspecifica, EsPerecedero, FechaVencimiento
+                FROM Producto
+                WHERE PublicId = @PublicId
+                AND Estado = 1";
+
+            AgregarParametro(command, "@PublicId", publicId);
+
+            await using var reader = await command.ExecuteReaderAsync();
+
+            return await reader.ReadAsync()
+                ? MapearProducto(reader)
+                : null;
         }
     }
 }

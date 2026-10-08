@@ -10,6 +10,16 @@ public interface IProductoRepository : ICrudRepository<Producto>
         int cantidad,
         IDbConnection connection,
         IDbTransaction transaction);
+    Task<bool> RestaurarStockAsync(
+        int productoId,
+        int cantidad,
+        IDbConnection connection,
+        IDbTransaction transaction);
 
     Task<decimal?> ObtenerCostoAdquisicionActualAsync(int productoId);
+
+    Task<Producto?> ObtenerParaVentaAsync(
+        Guid publicId,
+        IDbConnection connection,
+        IDbTransaction transaction);
 }

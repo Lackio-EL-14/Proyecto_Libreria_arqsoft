@@ -118,4 +118,23 @@ public class ClienteRepository : IClienteRepository
         parametro.Value = valor;
         command.Parameters.Add(parametro);
     }
+
+    public async Task<Cliente?> ObtenerPorCiNitAsync(string ciNit)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = @"
+            SELECT ClienteId, CiNit, RazonSocial, Correo
+            FROM Cliente
+            WHERE CiNit = @CiNit";
+
+        AgregarParametro(command, "@CiNit", ciNit.Trim());
+
+        await using var reader = await command.ExecuteReaderAsync();
+
+        return await reader.ReadAsync()
+            ? MapearCliente(reader)
+            : null;
+    }
 }

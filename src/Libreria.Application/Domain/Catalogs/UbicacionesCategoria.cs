@@ -14,10 +14,10 @@ public static class UbicacionesCategoria
 
     public static IReadOnlyList<string> Todas { get; } =
     [
-        EstantePrincipal,
-        Deposito,
-        Vitrina,
         Bodega,
+        Deposito,
+        EstantePrincipal,
+        Vitrina,
         SinAsignar
     ];
 
