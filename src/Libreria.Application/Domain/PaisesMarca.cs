@@ -10,7 +10,6 @@ public static class PaisesMarca
 
     public static IReadOnlyList<string> Todos { get; } = new[]
     {
-        NoEspecificado,
         "Alemania",
         "Argentina",
         "Bolivia",
@@ -32,7 +31,8 @@ public static class PaisesMarca
         "Perú",
         "Reino Unido",
         "Uruguay",
-        "Venezuela"
+        "Venezuela",
+        NoEspecificado
     };
 
     public static bool EsValido(string? pais)
