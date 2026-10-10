@@ -24,8 +24,20 @@ public interface IVentaRepository
 
     Task<IReadOnlyList<Venta>> ObtenerActivasAsync();
 
+    Task<IReadOnlyList<Venta>> ObtenerTodasAsync();
+
     Task<Venta?> ObtenerPorPublicIdAsync(Guid publicId);
+
+    Task<Venta?> ObtenerPorPublicIdAsync(
+        Guid publicId,
+        IDbConnection connection,
+        IDbTransaction transaction);
 
     Task<IReadOnlyList<DetalleVenta>> ObtenerDetallePorVentaIdAsync(
         int ventaId);
+
+    Task<IReadOnlyList<DetalleVenta>> ObtenerDetallePorVentaIdAsync(
+        int ventaId,
+        IDbConnection connection,
+        IDbTransaction transaction);
 }

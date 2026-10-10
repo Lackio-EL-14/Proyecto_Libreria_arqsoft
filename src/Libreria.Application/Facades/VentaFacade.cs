@@ -3,6 +3,8 @@ using Libreria.Application.Models;
 using Libreria.Application.Ports.Secondary;
 using Libreria.Application.Factories;
 using Libreria.Application.Ports.Primary;
+using System.Data;
+using System.Data.Common;
 
 namespace Libreria.Application.Facades
 {
@@ -85,7 +87,12 @@ namespace Libreria.Application.Facades
             }
 
             await using var connection = _connectionFactory.CreateConnection();
-            await using var transaction = await connection.BeginTransactionAsync();
+            if (connection.State != ConnectionState.Open)
+            {
+                await ((DbConnection)connection).OpenAsync();
+            }
+
+            await using var transaction = await ((DbConnection)connection).BeginTransactionAsync();
 
             try
             {
@@ -161,6 +168,68 @@ namespace Libreria.Application.Facades
                 throw;
             }
         }
-        public void AnularVenta() => throw new System.NotImplementedException();
+
+        public async Task AnularVentaAsync(Guid publicId)
+        {
+            if (publicId == Guid.Empty)
+            {
+                throw new ArgumentException("El identificador de la venta es inválido.", nameof(publicId));
+            }
+
+            var usuarioId = _usuarioActual.UsuarioId
+                ?? throw new InvalidOperationException("No existe un usuario autenticado.");
+
+            await using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != ConnectionState.Open)
+            {
+                await ((DbConnection)connection).OpenAsync();
+            }
+
+            await using var transaction = await ((DbConnection)connection).BeginTransactionAsync();
+
+            try
+            {
+                var venta = await _ventaRepository.ObtenerPorPublicIdAsync(publicId, connection, transaction);
+                if (venta is null)
+                {
+                    throw new KeyNotFoundException("La venta especificada no existe.");
+                }
+
+                if (string.Equals(venta.Estado, "Anulada", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("La venta ya se encuentra anulada.");
+                }
+
+                var lineas = await _ventaRepository.ObtenerDetallePorVentaIdAsync(venta.VentaId, connection, transaction);
+
+                var actualizado = await _ventaRepository.ActualizarEstadoAsync(
+                    venta.VentaId,
+                    "Anulada",
+                    usuarioId,
+                    connection,
+                    transaction);
+
+                if (!actualizado)
+                {
+                    throw new InvalidOperationException("No se pudo actualizar el estado de la venta.");
+                }
+
+                foreach (var detalle in lineas)
+                {
+                    await _stockFacade.RestaurarStockAsync(
+                        detalle.ProductoId,
+                        detalle.Cantidad,
+                        connection,
+                        transaction);
+                }
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
     }
 }

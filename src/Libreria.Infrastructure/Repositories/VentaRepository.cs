@@ -33,11 +33,11 @@ public class VentaRepository : IVentaRepository
         command.CommandText = @"
             INSERT INTO Venta
                 (PublicId, ClienteId, Estado,
-                 UsuarioCreacionId, UsuarioAnulacionId)
+                 FechaCreacion, UsuarioCreacionId, UsuarioAnulacionId)
             OUTPUT INSERTED.VentaId
             VALUES
                 (@PublicId, @ClienteId, @Estado,
-                 @UsuarioCreacionId, @UsuarioAnulacionId)";
+                 SYSDATETIME(), @UsuarioCreacionId, @UsuarioAnulacionId)";
 
         AgregarParametro(command, "@PublicId", venta.PublicId);
         AgregarParametro(command, "@ClienteId", venta.ClienteId);
@@ -111,7 +111,8 @@ public class VentaRepository : IVentaRepository
         command.CommandText = @"
             UPDATE Venta
             SET Estado = @Estado,
-                UsuarioAnulacionId = @UsuarioAnulacionId
+                UsuarioAnulacionId = @UsuarioAnulacionId,
+                FechaAnulacion = CASE WHEN @Estado = N'Anulada' THEN SYSDATETIME() ELSE FechaAnulacion END
             WHERE VentaId = @VentaId";
 
         AgregarParametro(command, "@VentaId", ventaId);
@@ -133,10 +134,35 @@ public class VentaRepository : IVentaRepository
 
         command.CommandText = @"
             SELECT VentaId, PublicId, ClienteId, Estado,
+                   FechaCreacion, FechaAnulacion,
                    UsuarioCreacionId, UsuarioAnulacionId
             FROM Venta
             WHERE Estado = N'Activa'
-            ORDER BY VentaId DESC";
+            ORDER BY FechaCreacion DESC, VentaId DESC";
+
+        await using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            ventas.Add(MapearVenta(reader));
+        }
+
+        return ventas;
+    }
+
+    public async Task<IReadOnlyList<Venta>> ObtenerTodasAsync()
+    {
+        var ventas = new List<Venta>();
+
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = @"
+            SELECT VentaId, PublicId, ClienteId, Estado,
+                   FechaCreacion, FechaAnulacion,
+                   UsuarioCreacionId, UsuarioAnulacionId
+            FROM Venta
+            ORDER BY FechaCreacion DESC, VentaId DESC";
 
         await using var reader = await command.ExecuteReaderAsync();
 
@@ -155,8 +181,36 @@ public class VentaRepository : IVentaRepository
 
         command.CommandText = @"
             SELECT VentaId, PublicId, ClienteId, Estado,
+                   FechaCreacion, FechaAnulacion,
                    UsuarioCreacionId, UsuarioAnulacionId
             FROM Venta
+            WHERE PublicId = @PublicId";
+
+        AgregarParametro(command, "@PublicId", publicId);
+
+        await using var reader = await command.ExecuteReaderAsync();
+
+        return await reader.ReadAsync()
+            ? MapearVenta(reader)
+            : null;
+    }
+
+    public async Task<Venta?> ObtenerPorPublicIdAsync(
+        Guid publicId,
+        IDbConnection connection,
+        IDbTransaction transaction)
+    {
+        var (dbConnection, dbTransaction) =
+            ObtenerConexionYTransaccion(connection, transaction);
+
+        await using var command = dbConnection.CreateCommand();
+        command.Transaction = dbTransaction;
+
+        command.CommandText = @"
+            SELECT VentaId, PublicId, ClienteId, Estado,
+                   FechaCreacion, FechaAnulacion,
+                   UsuarioCreacionId, UsuarioAnulacionId
+            FROM Venta WITH (UPDLOCK, ROWLOCK)
             WHERE PublicId = @PublicId";
 
         AgregarParametro(command, "@PublicId", publicId);
@@ -196,6 +250,39 @@ public class VentaRepository : IVentaRepository
         return detalles;
     }
 
+    public async Task<IReadOnlyList<DetalleVenta>> ObtenerDetallePorVentaIdAsync(
+        int ventaId,
+        IDbConnection connection,
+        IDbTransaction transaction)
+    {
+        var (dbConnection, dbTransaction) =
+            ObtenerConexionYTransaccion(connection, transaction);
+
+        var detalles = new List<DetalleVenta>();
+
+        await using var command = dbConnection.CreateCommand();
+        command.Transaction = dbTransaction;
+
+        command.CommandText = @"
+            SELECT DetalleVentaId, VentaId, ProductoId, Cantidad,
+                   PrecioUnitarioVenta, CostoAdquisicionUnitario,
+                   Importe, Ganancia
+            FROM DetalleVenta
+            WHERE VentaId = @VentaId
+            ORDER BY DetalleVentaId";
+
+        AgregarParametro(command, "@VentaId", ventaId);
+
+        await using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            detalles.Add(MapearDetalle(reader));
+        }
+
+        return detalles;
+    }
+
     private async Task<DbConnection> CrearConexionAbiertaAsync()
     {
         var connection = _connectionFactory.CreateConnection();
@@ -205,7 +292,7 @@ public class VentaRepository : IVentaRepository
             await connection.OpenAsync();
         }
 
-        return connection;
+        return (DbConnection)connection;
     }
 
     private static Venta MapearVenta(DbDataReader reader)
@@ -216,6 +303,12 @@ public class VentaRepository : IVentaRepository
             PublicId = reader.GetGuid(reader.GetOrdinal("PublicId")),
             ClienteId = reader.GetInt32(reader.GetOrdinal("ClienteId")),
             Estado = reader.GetString(reader.GetOrdinal("Estado")),
+            FechaCreacion = reader.IsDBNull(reader.GetOrdinal("FechaCreacion"))
+                ? DateTime.MinValue
+                : reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
+            FechaAnulacion = reader.IsDBNull(reader.GetOrdinal("FechaAnulacion"))
+                ? null
+                : reader.GetDateTime(reader.GetOrdinal("FechaAnulacion")),
             UsuarioCreacionId =
                 reader.GetInt32(reader.GetOrdinal("UsuarioCreacionId")),
             UsuarioAnulacionId =

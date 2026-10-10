@@ -367,6 +367,9 @@ BEGIN
         ClienteId           INT NOT NULL,
         Estado              NVARCHAR(20) NOT NULL
             CONSTRAINT DF_Venta_Estado DEFAULT (N'Activa'),
+        FechaCreacion       DATETIME2 NOT NULL
+            CONSTRAINT DF_Venta_FechaCreacion DEFAULT (SYSDATETIME()),
+        FechaAnulacion      DATETIME2 NULL,
         UsuarioCreacionId   INT NOT NULL,
         UsuarioAnulacionId  INT NULL,
 
@@ -539,4 +542,31 @@ IF OBJECT_ID('dbo.FK_Historico_UsuarioCreacion', 'F') IS NULL
 IF OBJECT_ID('dbo.FK_Historico_UsuarioModificacion', 'F') IS NULL
     ALTER TABLE dbo.HistoricoCostoProducto ADD CONSTRAINT FK_Historico_UsuarioModificacion
         FOREIGN KEY (UsuarioModificacionId) REFERENCES dbo.Usuario (UsuarioId);
+GO
+
+
+-- =========================================================
+-- MIGRACIÓN US-51: Fechas de creación y anulación en Venta
+-- =========================================================
+IF COL_LENGTH('dbo.Venta', 'FechaCreacion') IS NULL
+BEGIN
+    ALTER TABLE dbo.Venta
+    ADD FechaCreacion DATETIME2 NOT NULL
+        CONSTRAINT DF_Venta_FechaCreacion DEFAULT (SYSDATETIME());
+END
+GO
+
+IF COL_LENGTH('dbo.Venta', 'FechaAnulacion') IS NULL
+BEGIN
+    ALTER TABLE dbo.Venta
+    ADD FechaAnulacion DATETIME2 NULL;
+END
+GO
+
+IF OBJECT_ID('dbo.FK_Venta_UsuarioCreacion', 'F') IS NULL
+    ALTER TABLE dbo.Venta ADD CONSTRAINT FK_Venta_UsuarioCreacion
+        FOREIGN KEY (UsuarioCreacionId) REFERENCES dbo.Usuario (UsuarioId);
+IF OBJECT_ID('dbo.FK_Venta_UsuarioAnulacion', 'F') IS NULL
+    ALTER TABLE dbo.Venta ADD CONSTRAINT FK_Venta_UsuarioAnulacion
+        FOREIGN KEY (UsuarioAnulacionId) REFERENCES dbo.Usuario (UsuarioId);
 GO
