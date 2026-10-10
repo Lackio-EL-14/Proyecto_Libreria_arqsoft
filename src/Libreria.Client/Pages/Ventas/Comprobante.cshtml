@@ -1,0 +1,142 @@
+@page
+@model Libreria.Client.Pages.Ventas.ComprobanteModel
+@using System.Globalization
+@{
+    Layout = null;
+    var cultura = CultureInfo.GetCultureInfo("es-BO");
+    string Importe(decimal valor) => $"Bs. {valor.ToString("N2", cultura)}";
+    string Fecha(DateTimeOffset valor) => valor.ToOffset(TimeSpan.FromHours(-4))
+        .ToString("dd/MM/yyyy HH:mm:ss.fff 'UTC'zzz", CultureInfo.InvariantCulture);
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Comprobante de venta - Librería</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/comprobante-venta.css" asp-append-version="true" />
+</head>
+<body class="comprobante-body">
+    <main class="comprobante-contenedor">
+        <div class="comprobante-acciones">
+            <p>Para imprimir o guardar como PDF, use <kbd>Ctrl</kbd> + <kbd>P</kbd> en su navegador.</p>
+        </div>
+
+        <article class="comprobante-documento" aria-labelledby="comprobante-titulo">
+            <header class="comprobante-encabezado">
+                <div class="comprobante-marca">
+                    <img src="~/images/icono.svg" alt="Logo de Librería" width="68" height="68" />
+                    <span>Librería</span>
+                </div>
+                <h1 id="comprobante-titulo">Comprobante de venta</h1>
+            </header>
+
+            @if (Model.Comprobante is { } comprobante)
+            {
+                <section class="comprobante-seccion" aria-labelledby="venta-datos-titulo">
+                    <h2 id="venta-datos-titulo">Datos de la venta</h2>
+                    <dl class="comprobante-datos">
+                        <div class="comprobante-referencia">
+                            <dt>Referencia de la venta</dt>
+                            <dd>@comprobante.PublicId</dd>
+                        </div>
+                        <div>
+                            <dt>Estado</dt>
+                            <dd>@comprobante.Estado</dd>
+                        </div>
+                        <div>
+                            <dt>Fecha de registro de la venta</dt>
+                            <dd>
+                                @if (comprobante.FechaVenta is { } fechaVenta)
+                                {
+                                    <time datetime="@fechaVenta.ToString("O", CultureInfo.InvariantCulture)">@Fecha(fechaVenta)</time>
+                                }
+                                else
+                                {
+                                    <span>No disponible</span>
+                                }
+                            </dd>
+                        </div>
+                    </dl>
+                </section>
+
+                <section class="comprobante-seccion comprobante-cliente" aria-labelledby="cliente-datos-titulo">
+                    <h2 id="cliente-datos-titulo">Cliente</h2>
+                    <dl class="comprobante-datos">
+                        <div>
+                            <dt>Razón social</dt>
+                            <dd>@comprobante.RazonSocialCliente</dd>
+                        </div>
+                        <div>
+                            <dt>CI/NIT</dt>
+                            <dd>@comprobante.CiNitCliente</dd>
+                        </div>
+                    </dl>
+                </section>
+
+                <table class="comprobante-tabla">
+                    <caption>Productos vendidos</caption>
+                    <colgroup>
+                        <col class="comprobante-col-producto" />
+                        <col class="comprobante-col-cantidad" />
+                        <col class="comprobante-col-precio" />
+                        <col class="comprobante-col-importe" />
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th scope="col">Producto</th>
+                            <th scope="col" class="comprobante-numero">Cantidad</th>
+                            <th scope="col" class="comprobante-numero">Precio unitario</th>
+                            <th scope="col" class="comprobante-numero">Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var detalle in comprobante.Detalles)
+                        {
+                            <tr>
+                                <td>@detalle.NombreProducto</td>
+                                <td class="comprobante-numero">@detalle.Cantidad</td>
+                                <td class="comprobante-numero">@Importe(detalle.PrecioUnitario)</td>
+                                <td class="comprobante-numero">@Importe(detalle.Importe)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <section class="comprobante-total" aria-label="Total de la venta">
+                    <span>Total de la venta</span>
+                    <strong>@Importe(comprobante.Total)</strong>
+                </section>
+
+                <footer class="comprobante-generacion" aria-labelledby="generacion-titulo">
+                    <h2 id="generacion-titulo">Generación del comprobante</h2>
+                    <dl class="comprobante-datos">
+                        <div>
+                            <dt>Fecha y hora de generación</dt>
+                            <dd>
+                                <time datetime="@comprobante.GeneradoEl.ToString("O", CultureInfo.InvariantCulture)">@Fecha(comprobante.GeneradoEl)</time>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Generado por</dt>
+                            <dd>@comprobante.GeneradoPor</dd>
+                        </div>
+                    </dl>
+                    <p class="comprobante-zona">Fechas y horas expresadas en la hora de Bolivia (UTC−04:00).</p>
+                </footer>
+            }
+            else
+            {
+                <section class="comprobante-error" role="alert">
+                    <h2>Comprobante no disponible</h2>
+                    <p>@Model.MensajeError</p>
+                    <div class="comprobante-acciones">
+                        <a asp-page="/Ventas/Registrar" class="btn btn--primary">Volver a ventas</a>
+                    </div>
+                </section>
+            }
+        </article>
+    </main>
+</body>
+</html>

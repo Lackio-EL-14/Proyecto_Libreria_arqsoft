@@ -2,6 +2,7 @@
 using Libreria.Application.Ports.Secondary;
 using System.Data;
 using System.Data.Common;
+using Libreria.Application.Models;
 
 namespace Libreria.Infrastructure;
 
@@ -194,6 +195,58 @@ public class VentaRepository : IVentaRepository
         }
 
         return detalles;
+    }
+
+    public async Task<ComprobanteVenta?> ObtenerComprobanteAsync(Guid publicId)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+
+        // Proyección para el cliente: únicamente datos del comprobante, sin costos ni ganancias.
+        command.CommandText = @"
+            SELECT v.PublicId, v.Estado,
+                   c.CiNit AS CiNitCliente, c.RazonSocial AS RazonSocialCliente,
+                   p.Nombre AS NombreProducto,
+                   d.Cantidad, d.PrecioUnitarioVenta, d.Importe
+            FROM Venta v
+            INNER JOIN Cliente c ON c.ClienteId = v.ClienteId
+            INNER JOIN DetalleVenta d ON d.VentaId = v.VentaId
+            INNER JOIN Producto p ON p.ProductoId = d.ProductoId
+            WHERE v.PublicId = @PublicId
+            ORDER BY d.DetalleVentaId";
+
+        AgregarParametro(command, "@PublicId", publicId);
+        await using var reader = await command.ExecuteReaderAsync();
+
+        if (!await reader.ReadAsync())
+        {
+            return null;
+        }
+
+        var referencia = reader.GetGuid(reader.GetOrdinal("PublicId"));
+        var estado = reader.GetString(reader.GetOrdinal("Estado"));
+        var ciNit = reader.GetString(reader.GetOrdinal("CiNitCliente"));
+        var razonSocial = reader.GetString(reader.GetOrdinal("RazonSocialCliente"));
+        var detalles = new List<DetalleComprobanteVenta>();
+
+        do
+        {
+            detalles.Add(new DetalleComprobanteVenta(
+                reader.GetString(reader.GetOrdinal("NombreProducto")),
+                reader.GetInt32(reader.GetOrdinal("Cantidad")),
+                reader.GetDecimal(reader.GetOrdinal("PrecioUnitarioVenta")),
+                reader.GetDecimal(reader.GetOrdinal("Importe"))));
+        }
+        while (await reader.ReadAsync());
+
+        return new ComprobanteVenta
+        {
+            PublicId = referencia,
+            Estado = estado,
+            CiNitCliente = ciNit,
+            RazonSocialCliente = razonSocial,
+            Detalles = detalles.ToArray()
+        };
     }
 
     private async Task<DbConnection> CrearConexionAbiertaAsync()

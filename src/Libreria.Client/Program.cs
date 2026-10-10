@@ -57,6 +57,9 @@ builder.Services.AddScoped<IVentaRepository, VentaRepository>();
 
 builder.Services.AddScoped<IStockFacade, StockFacade>();
 builder.Services.AddScoped<IVentaFacade, VentaFacade>();
+builder.Services.AddScoped<IConsultaVentaService, ConsultaVentaService>();
+builder.Services.AddScoped<IComprobanteVentaService, ComprobanteVentaService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddDataProtection();
 builder.Services.AddScoped<Libreria.Application.Ports.Primary.IUrlProtector, Libreria.Infrastructure.Security.UrlProtector>();
 builder.Services.AddScoped<IContrasenaHasher, Libreria.Infrastructure.Security.ContrasenaHasher>();
