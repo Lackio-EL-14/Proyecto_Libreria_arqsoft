@@ -59,11 +59,16 @@
     </div>
 
     <div style="display: flex; gap: 0.5rem;">
-        <button type="submit" class="btn btn--secondary">Filtrar</button>
+        <button type="submit" class="btn btn--secondary" id="btnFiltrar">Filtrar</button>
         @if (!string.IsNullOrEmpty(Model.Filtro.Estado) && Model.Filtro.Estado != "Todas" || Model.Filtro.FechaDesde.HasValue || Model.Filtro.FechaHasta.HasValue)
         {
             <a asp-page="./Index" class="btn btn--secondary">Limpiar</a>
         }
+    </div>
+
+    <div id="errorRangoFechas" style="display: none; width: 100%; margin-top: 0.5rem; padding: 0.6rem 0.85rem; background-color: var(--color-danger-bg); color: var(--color-danger); border: 1px solid var(--color-danger-border); border-radius: var(--radius-base); font-size: 0.85rem; align-items: center; gap: 0.5rem;">
+        <span>⚠️</span>
+        <span>La <strong>Fecha desde</strong> debe ser menor o igual a la <strong>Fecha hasta</strong>.</span>
     </div>
 </form>
 
@@ -138,57 +143,60 @@ else
     </div>
 }
 
-<dialog id="modalDetalleVenta" class="confirmation-modal" aria-labelledby="modalDetalleTitulo" aria-modal="true" style="max-width: 720px; width: 95%;">
+<dialog id="modalDetalleVenta" class="confirmation-modal" aria-labelledby="modalDetalleTitulo" aria-modal="true" style="width: min(94vw, 760px); max-width: 760px; padding: 0;">
     <div class="confirmation-modal__content" style="max-width: 100%;">
-        <header class="confirmation-modal__header" style="display: flex; justify-content: space-between; align-items: center;">
+        <header class="confirmation-modal__header" style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.75rem;">
             <div>
-                <h2 id="modalDetalleTitulo" style="font-size: 1.2rem; color: var(--color-primary); margin: 0;">Detalle de Venta</h2>
-                <span id="detallePublicId" style="font-size: 0.78rem; color: var(--color-secondary); font-family: monospace;"></span>
+                <h2 id="modalDetalleTitulo" style="font-size: 1.25rem; font-weight: 700; color: var(--color-primary); margin: 0 0 0.25rem 0;">Detalle de Venta</h2>
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-secondary); font-weight: 600;">Comprobante:</span>
+                    <span id="detallePublicId" style="font-size: 0.78rem; color: var(--color-secondary); font-family: monospace;"></span>
+                </div>
             </div>
             <button type="button" class="confirmation-modal__close" onclick="cerrarModalDetalle()" aria-label="Cerrar modal">&times;</button>
         </header>
 
-        <div class="confirmation-modal__body" style="padding: 1.25rem 0;">
-            <div id="detalleLoader" style="text-align: center; padding: 2rem; color: var(--color-secondary);">
-                <p>Cargando información de la venta...</p>
+        <div class="confirmation-modal__body" style="padding: 1.5rem 1.75rem; display: flex; flex-direction: column; gap: 1.25rem;">
+            <div id="detalleLoader" style="text-align: center; padding: 2.5rem 1rem; color: var(--color-secondary);">
+                <p style="margin: 0; font-size: 0.95rem;">Cargando información de la venta...</p>
             </div>
 
-            <div id="detalleError" style="display: none; background-color: var(--color-danger-bg); color: var(--color-danger); padding: 1rem; border-radius: var(--radius-base); margin-bottom: 1rem; border: 1px solid var(--color-danger-border);">
+            <div id="detalleError" style="display: none; background-color: var(--color-danger-bg); color: var(--color-danger); padding: 1rem 1.25rem; border-radius: var(--radius-base); border: 1px solid var(--color-danger-border);">
                 <span id="detalleErrorMensaje"></span>
             </div>
 
             <div id="detalleContenido" style="display: none;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; background: var(--color-bg); padding: 1rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); margin-bottom: 1.25rem; font-size: 0.88rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem 1.25rem; background: var(--color-bg); padding: 1.25rem 1.5rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); margin-bottom: 1.5rem; font-size: 0.88rem;">
                     <div>
-                        <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase;">Cliente</strong>
+                        <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">Cliente</strong>
                         <span id="detalleClienteNombre" style="font-weight: 600; color: var(--color-text);"></span>
                     </div>
                     <div>
-                        <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase;">CI / NIT</strong>
+                        <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">CI / NIT</strong>
                         <span id="detalleClienteCiNit" style="font-family: monospace; color: var(--color-text);"></span>
                     </div>
                     <div>
-                        <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase;">Fecha de Registro</strong>
+                        <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">Fecha de Registro</strong>
                         <span id="detalleFechaCreacion" style="color: var(--color-text);"></span>
                     </div>
                     <div>
-                        <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase;">Estado</strong>
+                        <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">Estado</strong>
                         <span id="detalleEstadoBadge"></span>
                     </div>
                     <div>
-                        <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase;">Registrado por</strong>
+                        <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">Registrado por</strong>
                         <span id="detalleCreadoPor" style="color: var(--color-text);"></span>
                     </div>
                     <div id="detalleAnulacionContainer" style="display: none;">
-                        <strong style="color: var(--color-danger); display: block; font-size: 0.75rem; text-transform: uppercase;">Anulado por</strong>
+                        <strong style="color: var(--color-danger); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">Anulado por</strong>
                         <span id="detalleAnuladoPor" style="color: var(--color-danger); font-weight: 500;"></span>
                         <span id="detalleFechaAnulacion" style="font-size: 0.78rem; color: var(--color-secondary); display: block;"></span>
                     </div>
                 </div>
 
-                <div style="margin-bottom: 1.25rem;">
-                    <h3 style="font-size: 0.95rem; color: var(--color-primary); margin-bottom: 0.5rem;">Líneas de la Venta</h3>
-                    <div class="table-container" style="margin-bottom: 0; max-height: 240px; overflow-y: auto;">
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="font-size: 1rem; font-weight: 600; color: var(--color-primary); margin: 0 0 0.75rem 0;">Líneas de la Venta</h3>
+                    <div class="table-container" style="margin-bottom: 0; max-height: 250px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: var(--radius-base);">
                         <table>
                             <thead>
                                 <tr>
@@ -208,24 +216,24 @@ else
                     </div>
                 </div>
 
-                <div style="display: flex; justify-content: flex-end; gap: 1.5rem; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--color-border);">
+                <div style="display: flex; justify-content: flex-end; gap: 1.25rem; align-items: stretch; padding-top: 1.25rem; border-top: 1px solid var(--color-border); flex-wrap: wrap;">
                     @if (Model.EsAdministrador)
                     {
-                        <div id="detalleGananciaBox" style="text-align: right; background: #E8F0EB; padding: 0.5rem 1rem; border-radius: var(--radius-base); border: 1px solid #A3C2B1;">
-                            <span style="font-size: 0.78rem; color: var(--color-accent); font-weight: 600; display: block; text-transform: uppercase;">Ganancia Total</span>
-                            <span id="detalleGananciaTotal" style="font-size: 1.15rem; font-weight: 700; color: var(--color-accent);"></span>
+                        <div id="detalleGananciaBox" style="min-width: 170px; text-align: right; background: #E8F0EB; padding: 0.75rem 1.25rem; border-radius: var(--radius-base); border: 1px solid #A3C2B1;">
+                            <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 600; display: block; text-transform: uppercase; letter-spacing: 0.04em;">Ganancia Total</span>
+                            <span id="detalleGananciaTotal" style="font-size: 1.2rem; font-weight: 700; color: var(--color-accent); display: block; margin-top: 0.2rem;"></span>
                         </div>
                     }
 
-                    <div style="text-align: right;">
-                        <span style="font-size: 0.78rem; color: var(--color-secondary); font-weight: 600; display: block; text-transform: uppercase;">Total Venta</span>
-                        <span id="detalleTotalVenta" style="font-size: 1.35rem; font-weight: 700; color: var(--color-primary);"></span>
+                    <div style="min-width: 180px; text-align: right; background: var(--color-bg); padding: 0.75rem 1.25rem; border-radius: var(--radius-base); border: 1px solid var(--color-border);">
+                        <span style="font-size: 0.75rem; color: var(--color-secondary); font-weight: 600; display: block; text-transform: uppercase; letter-spacing: 0.04em;">Total Venta</span>
+                        <span id="detalleTotalVenta" style="font-size: 1.35rem; font-weight: 800; color: var(--color-primary); display: block; margin-top: 0.2rem;"></span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <footer class="confirmation-modal__actions" style="justify-content: flex-end;">
+        <footer class="confirmation-modal__actions" style="justify-content: flex-end; padding: 1.25rem 1.75rem;">
             <button type="button" class="btn btn--secondary" onclick="cerrarModalDetalle()">Cerrar</button>
         </footer>
     </div>
@@ -268,6 +276,78 @@ else
         const modalAnular = document.getElementById('modalAnularVenta');
         let temporizadorRefresco = null;
 
+        const formFiltros = document.getElementById('formFiltros');
+        const inputFechaDesde = document.getElementById('Filtro_FechaDesde');
+        const inputFechaHasta = document.getElementById('Filtro_FechaHasta');
+        const errorRangoFechas = document.getElementById('errorRangoFechas');
+        const btnFiltrar = document.getElementById('btnFiltrar');
+
+        function sincronizarLimitesFechas() {
+            if (!inputFechaDesde || !inputFechaHasta) return;
+
+            if (inputFechaDesde.value) {
+                inputFechaHasta.min = inputFechaDesde.value;
+            } else {
+                inputFechaHasta.removeAttribute('min');
+            }
+
+            if (inputFechaHasta.value) {
+                inputFechaDesde.max = inputFechaHasta.value;
+            } else {
+                inputFechaDesde.removeAttribute('max');
+            }
+        }
+
+        function validarFechasFiltro() {
+            if (!inputFechaDesde || !inputFechaHasta) return true;
+
+            sincronizarLimitesFechas();
+
+            const desde = inputFechaDesde.value;
+            const hasta = inputFechaHasta.value;
+
+            if (desde && hasta && desde > hasta) {
+                if (errorRangoFechas) errorRangoFechas.style.display = 'flex';
+                inputFechaDesde.style.borderColor = 'var(--color-danger)';
+                inputFechaHasta.style.borderColor = 'var(--color-danger)';
+                if (btnFiltrar) {
+                    btnFiltrar.disabled = true;
+                    btnFiltrar.style.opacity = '0.6';
+                    btnFiltrar.style.cursor = 'not-allowed';
+                }
+                return false;
+            }
+
+            if (errorRangoFechas) errorRangoFechas.style.display = 'none';
+            inputFechaDesde.style.borderColor = '';
+            inputFechaHasta.style.borderColor = '';
+            if (btnFiltrar) {
+                btnFiltrar.disabled = false;
+                btnFiltrar.style.opacity = '1';
+                btnFiltrar.style.cursor = '';
+            }
+            return true;
+        }
+
+        if (inputFechaDesde && inputFechaHasta) {
+            inputFechaDesde.addEventListener('input', validarFechasFiltro);
+            inputFechaDesde.addEventListener('change', validarFechasFiltro);
+            inputFechaHasta.addEventListener('input', validarFechasFiltro);
+            inputFechaHasta.addEventListener('change', validarFechasFiltro);
+            validarFechasFiltro();
+        }
+
+        if (formFiltros) {
+            formFiltros.addEventListener('submit', (e) => {
+                if (!validarFechasFiltro()) {
+                    e.preventDefault();
+                    if (inputFechaDesde.value > inputFechaHasta.value) {
+                        inputFechaDesde.focus();
+                    }
+                }
+            });
+        }
+
         function formatearMoneda(valor) {
             if (valor === null || valor === undefined) return 'Bs. 0.00';
             return 'Bs. ' + Number(valor).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -287,7 +367,7 @@ else
             document.getElementById('detalleLoader').style.display = 'block';
             document.getElementById('detalleError').style.display = 'none';
             document.getElementById('detalleContenido').style.display = 'none';
-            document.getElementById('detallePublicId').textContent = 'ID: ' + publicId;
+            document.getElementById('detallePublicId').textContent = publicId;
 
             modalDetalle.showModal();
 
@@ -399,41 +479,41 @@ else
             if (lbl) lbl.textContent = texto;
         }
 
-        function iniciarAutoRefresco() {
-            detenerAutoRefresco();
-            actualizarRelojRefresco();
+        function ejecutarRefresco() {
+            if (document.hidden) return;
+            if (modalDetalle && modalDetalle.open) return;
+            if (modalAnular && modalAnular.open) return;
 
-            temporizadorRefresco = setInterval(() => {
-                const chk = document.getElementById('chkAutoRefresco');
-                const algunModalAbierto = (modalDetalle && modalDetalle.open) || (modalAnular && modalAnular.open);
-
-                if (chk && chk.checked && !algunModalAbierto) {
-                    document.getElementById('formFiltros').submit();
-                }
-            }, 30000);
+            window.location.reload();
         }
 
-        function detenerAutoRefresco() {
+        function configurarAutoRefresco() {
+            const chk = document.getElementById('chkAutoRefresco');
+            if (!chk) return;
+
             if (temporizadorRefresco) {
                 clearInterval(temporizadorRefresco);
                 temporizadorRefresco = null;
             }
+
+            if (chk.checked) {
+                temporizadorRefresco = setInterval(ejecutarRefresco, 30000);
+            }
         }
 
-        document.getElementById('chkAutoRefresco')?.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                iniciarAutoRefresco();
-            } else {
-                detenerAutoRefresco();
-            }
-        });
+        const chkAuto = document.getElementById('chkAutoRefresco');
+        if (chkAuto) {
+            chkAuto.addEventListener('change', configurarAutoRefresco);
+        }
 
-        document.getElementById('btnRefrescarManual')?.addEventListener('click', () => {
-            document.getElementById('formFiltros').submit();
-        });
+        const btnManual = document.getElementById('btnRefrescarManual');
+        if (btnManual) {
+            btnManual.addEventListener('click', () => {
+                window.location.reload();
+            });
+        }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            iniciarAutoRefresco();
-        });
+        actualizarRelojRefresco();
+        configurarAutoRefresco();
     </script>
 }

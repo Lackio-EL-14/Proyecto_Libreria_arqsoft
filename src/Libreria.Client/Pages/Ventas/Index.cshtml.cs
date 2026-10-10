@@ -32,6 +32,13 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
+        if (Filtro.FechaDesde.HasValue && Filtro.FechaHasta.HasValue && Filtro.FechaDesde.Value > Filtro.FechaHasta.Value)
+        {
+            MensajeError = "La 'Fecha desde' debe ser anterior o igual a la 'Fecha hasta'.";
+            Ventas = new List<VentaListItemModel>();
+            return;
+        }
+
         Ventas = await _ventaFacade.ObtenerListadoAsync(Filtro);
     }
 
