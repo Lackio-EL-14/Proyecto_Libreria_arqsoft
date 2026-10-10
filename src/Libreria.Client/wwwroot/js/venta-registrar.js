@@ -10,6 +10,15 @@
     let productosEncontrados = [];
     const lineas = document.getElementById('lineas-carrito');
     const mensaje = document.getElementById('mensaje-carrito');
+    const botonAltaCliente = document.getElementById('registrar-cliente');
+    const modalAltaCliente = document.getElementById('cliente-alta-modal');
+    const formularioAltaCliente = modalAltaCliente.querySelector('form');
+    const campoBusquedaCliente = document.getElementById('cliente-ci-nit');
+    const errorAltaCliente = document.getElementById('alta-cliente-error');
+    const estadoAltaCliente = document.getElementById('alta-cliente-estado');
+    const erroresAltaCliente = Array.from(formularioAltaCliente.querySelectorAll('[data-cliente-error]'));
+    let ciNitSinResultados = '';
+    let guardandoCliente = false;
     const moneda = new Intl.NumberFormat('es-BO', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
@@ -168,7 +177,7 @@
         }
     }
 
-    function conectarBuscador(formularioId, campoId, estadoId, resultadosId, url, parametro, renderizar, ayuda, sinResultados) {
+    function conectarBuscador(formularioId, campoId, estadoId, resultadosId, url, parametro, renderizar, ayuda, sinResultados, opciones = {}) {
         const formulario = document.getElementById(formularioId);
         const campo = document.getElementById(campoId);
         const estado = document.getElementById(estadoId);
@@ -177,13 +186,19 @@
         let controlador;
         let version = 0;
 
-        function programarBusqueda(demora) {
+        function cancelarBusqueda() {
             clearTimeout(temporizador);
             controlador?.abort();
-            const versionActual = ++version;
-            const texto = campo.value.trim();
+            ++version;
             renderizar([]);
             resultados.setAttribute('aria-busy', 'false');
+            opciones.alIniciar?.();
+        }
+
+        function programarBusqueda(demora) {
+            cancelarBusqueda();
+            const versionActual = version;
+            const texto = campo.value.trim();
             if (!texto) {
                 estado.textContent = ayuda;
                 return;
@@ -209,6 +224,7 @@
                     estado.textContent = datos.length > 0
                         ? `${datos.length} resultado(s).`
                         : sinResultados;
+                    opciones.alFinalizar?.(datos, texto);
                 } catch (error) {
                     if (versionActual !== version || error.name === 'AbortError') return;
                     estado.textContent = 'No se pudo realizar la búsqueda. Revise su conexión y sesión e intente nuevamente.';
@@ -223,6 +239,7 @@
             programarBusqueda(0);
         });
         campo.addEventListener('input', () => programarBusqueda(250));
+        return cancelarBusqueda;
     }
 
     conectarBuscador('buscar-producto', 'producto-nombre', 'estado-productos', 'resultados-productos',
@@ -230,9 +247,147 @@
             productosEncontrados = productos;
             renderizarProductos();
         }, 'Escriba un nombre para buscar productos.', 'No se encontraron productos con ese nombre.');
-    conectarBuscador('buscar-cliente', 'cliente-ci-nit', 'estado-clientes', 'resultados-clientes',
+    const cancelarBusquedaClientes = conectarBuscador('buscar-cliente', 'cliente-ci-nit', 'estado-clientes', 'resultados-clientes',
         registro.dataset.clientesUrl, 'ciNit', renderizarClientes,
-        'Escriba el CI/NIT para buscar un cliente.', 'No se encontraron clientes con ese CI/NIT.');
+        'Escriba el CI/NIT para buscar un cliente.', 'No se encontraron clientes con ese CI/NIT.', {
+            alIniciar: () => {
+                ciNitSinResultados = '';
+                botonAltaCliente.hidden = true;
+            },
+            alFinalizar: (clientes, ciNit) => {
+                ciNitSinResultados = clientes.length === 0 ? ciNit : '';
+                botonAltaCliente.hidden = clientes.length !== 0;
+            }
+        });
+
+    function limpiarErroresAlta() {
+        errorAltaCliente.textContent = '';
+        errorAltaCliente.hidden = true;
+        for (const error of erroresAltaCliente) {
+            error.textContent = '';
+            formularioAltaCliente.elements.namedItem(error.dataset.clienteError)?.removeAttribute('aria-invalid');
+        }
+    }
+
+    function mostrarErroresAlta(errores) {
+        limpiarErroresAlta();
+        const generales = [];
+        for (const [campo, texto] of Object.entries(errores)) {
+            const destino = erroresAltaCliente.find(error => error.dataset.clienteError === campo);
+            if (destino) {
+                destino.textContent = texto;
+                formularioAltaCliente.elements.namedItem(campo)?.setAttribute('aria-invalid', 'true');
+            } else {
+                generales.push(texto);
+            }
+        }
+        errorAltaCliente.textContent = generales.length > 0
+            ? generales.join(' ')
+            : 'Revise los campos señalados.';
+        errorAltaCliente.hidden = false;
+    }
+
+    function enfocarErrorAlta() {
+        const campo = erroresAltaCliente.find(error => error.textContent !== '');
+        if (campo) {
+            formularioAltaCliente.elements.namedItem(campo.dataset.clienteError).focus();
+        } else {
+            errorAltaCliente.focus();
+        }
+    }
+
+    // Las reglas se comprueban con ClienteValidator en el servidor y se muestran en el modal.
+    formularioAltaCliente.noValidate = true;
+    botonAltaCliente.addEventListener('click', event => {
+        if (guardandoCliente || !ciNitSinResultados) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return;
+        }
+        formularioAltaCliente.reset();
+        limpiarErroresAlta();
+        estadoAltaCliente.textContent = '';
+        formularioAltaCliente.elements.namedItem('Input.CiNit').value = ciNitSinResultados;
+        // El componente compartido abre el diálogo con este mismo botón.
+        requestAnimationFrame(() => {
+            if (modalAltaCliente.open) formularioAltaCliente.elements.namedItem('Input.CiNit').focus();
+        });
+    });
+
+    // Evitar cerrar el modal mientras el servidor procesa el registro.
+    function impedirCierreDuranteGuardado(event) {
+        if (guardandoCliente) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }
+    }
+    modalAltaCliente.addEventListener('click', impedirCierreDuranteGuardado, true);
+    // Un clic activado por teclado no tiene coordenadas de puntero: no es un clic en el fondo.
+    modalAltaCliente.addEventListener('click', event => {
+        if (event.detail === 0 && event.target !== modalAltaCliente) event.stopImmediatePropagation();
+    });
+    modalAltaCliente.addEventListener('cancel', impedirCierreDuranteGuardado);
+    modalAltaCliente.addEventListener('keydown', event => {
+        if (event.key === 'Escape') impedirCierreDuranteGuardado(event);
+    }, true);
+
+    formularioAltaCliente.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (guardandoCliente) return;
+
+        // Tomar los datos y el token antifalsificación antes de deshabilitar los controles.
+        const datos = new FormData(formularioAltaCliente);
+        const controles = Array.from(formularioAltaCliente.querySelectorAll('input:not([type="hidden"]), button'));
+        const estadosPrevios = controles.map(control => control.disabled);
+        guardandoCliente = true;
+        let guardado = false;
+        controles.forEach(control => { control.disabled = true; });
+        formularioAltaCliente.setAttribute('aria-busy', 'true');
+        limpiarErroresAlta();
+        estadoAltaCliente.textContent = 'Guardando cliente…';
+
+        try {
+            const respuesta = await fetch(formularioAltaCliente.action, {
+                method: 'POST',
+                body: datos,
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: { Accept: 'application/json' }
+            });
+            if (respuesta.redirected || respuesta.status === 401 || respuesta.status === 403) {
+                throw new Error('La sesión no está disponible.');
+            }
+            const resultado = await respuesta.json();
+            if (!respuesta.ok || !resultado.exitoso || !resultado.cliente) {
+                mostrarErroresAlta(resultado.errores && Object.keys(resultado.errores).length > 0
+                    ? resultado.errores
+                    : { '': 'No se pudo registrar el cliente. Intente nuevamente.' });
+                return;
+            }
+
+            cancelarBusquedaClientes();
+            clienteSeleccionado = resultado.cliente;
+            campoBusquedaCliente.value = resultado.cliente.ciNit;
+            renderizarClientes([resultado.cliente]);
+            actualizarCliente();
+            document.getElementById('estado-clientes').textContent = 'Cliente registrado y seleccionado.';
+            guardado = true;
+            modalAltaCliente.close();
+        } catch {
+            mostrarErroresAlta({ '': 'No se pudo confirmar el registro. Revise su conexión y sesión, y busque el CI/NIT antes de volver a guardar.' });
+        } finally {
+            guardandoCliente = false;
+            controles.forEach((control, indice) => { control.disabled = estadosPrevios[indice]; });
+            formularioAltaCliente.setAttribute('aria-busy', 'false');
+            estadoAltaCliente.textContent = '';
+            if (guardado) {
+                document.getElementById('cliente-seleccionado').focus();
+            } else {
+                enfocarErrorAlta();
+            }
+        }
+    });
+
     document.getElementById('quitar-cliente').addEventListener('click', () => {
         clienteSeleccionado = null;
         actualizarCliente();

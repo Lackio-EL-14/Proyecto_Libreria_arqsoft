@@ -1,5 +1,6 @@
 @page
 @model Libreria.Client.Pages.Ventas.RegistrarModel
+@using Libreria.Client.Pages.Shared.Models
 @{
     ViewData["Title"] = "Registrar venta";
 }
@@ -31,8 +32,10 @@
             </form>
             <p id="estado-clientes" class="venta-ayuda" role="status">Escriba el CI/NIT para buscar un cliente.</p>
             <ul id="resultados-clientes" class="venta-resultados" aria-label="Clientes encontrados"></ul>
+            <button id="registrar-cliente" class="btn btn--primary" type="button"
+                    data-confirm-trigger data-modal-target="cliente-alta-modal" hidden>Registrar cliente</button>
             <div class="venta-cliente-seleccionado">
-                <p id="cliente-seleccionado" role="status">Ningún cliente seleccionado.</p>
+                <p id="cliente-seleccionado" role="status" tabindex="-1">Ningún cliente seleccionado.</p>
                 <button id="quitar-cliente" class="btn-table" type="button" hidden>Quitar selección</button>
             </div>
         </section>
@@ -78,6 +81,19 @@
         </div>
     </section>
 </div>
+
+@await Html.PartialAsync("_ConfirmModal", new ConfirmModalModel
+{
+    Id = "cliente-alta-modal",
+    Titulo = "Registrar cliente",
+    MensajePrincipal = "Ingrese los datos del nuevo cliente",
+    Handler = "CrearCliente",
+    VistaContenido = "_ClienteAltaRapidaCampos",
+    ModeloContenido = Model.Input,
+    TextoBotonConfirmar = "Guardar cliente",
+    TextoBotonCancelar = "Cancelar",
+    ClaseBotonConfirmar = "btn--primary"
+})
 
 @section Scripts {
     <script src="~/js/venta-registrar.js" asp-append-version="true"></script>

@@ -35,6 +35,11 @@ public class ClienteValidator
             errores["Input.CiNit"] =
                 "El CI/NIT es obligatorio.";
         }
+        else if (input.CiNit.Length > 30)
+        {
+            errores["Input.CiNit"] =
+                "El CI/NIT no puede superar los 30 caracteres.";
+        }
         else if (await _repository.ExisteCiNitAsync(input.CiNit))
         {
             errores["Input.CiNit"] =
@@ -46,8 +51,18 @@ public class ClienteValidator
             errores["Input.RazonSocial"] =
                 "La razón social es obligatoria.";
         }
+        else if (input.RazonSocial.Length > 200)
+        {
+            errores["Input.RazonSocial"] =
+                "La razón social no puede superar los 200 caracteres.";
+        }
 
-        if (input.Correo is not null &&
+        if (input.Correo?.Length > 254)
+        {
+            errores["Input.Correo"] =
+                "El correo no puede superar los 254 caracteres.";
+        }
+        else if (input.Correo is not null &&
             !EsCorreoValido(input.Correo))
         {
             errores["Input.Correo"] =
