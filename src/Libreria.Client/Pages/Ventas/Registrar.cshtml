@@ -1,0 +1,84 @@
+@page
+@model Libreria.Client.Pages.Ventas.RegistrarModel
+@{
+    ViewData["Title"] = "Registrar venta";
+}
+
+<link rel="stylesheet" href="~/css/venta-registrar.css" asp-append-version="true" />
+
+<div class="page-header">
+    <div>
+        <h1>Registrar venta</h1>
+        <p>Seleccione el cliente y agregue productos al carrito.</p>
+    </div>
+</div>
+
+<div id="registro-venta" class="venta-registro"
+     data-productos-url="@Url.Page("/Ventas/Registrar", "BuscarProductos")"
+     data-clientes-url="@Url.Page("/Ventas/Registrar", "BuscarClientes")">
+    <noscript><p class="venta-aviso">Active JavaScript para utilizar los buscadores y el carrito.</p></noscript>
+
+    <div class="venta-buscadores">
+        <section class="venta-panel" aria-labelledby="titulo-cliente">
+            <h2 id="titulo-cliente">Cliente de la venta</h2>
+            <form id="buscar-cliente" class="venta-busqueda" role="search">
+                <div class="form-group">
+                    <label for="cliente-ci-nit">Buscar por CI/NIT</label>
+                    <input id="cliente-ci-nit" class="form-control" type="search"
+                           placeholder="Ingrese el CI/NIT" autocomplete="off" />
+                </div>
+                <button class="btn btn--secondary" type="submit">Buscar</button>
+            </form>
+            <p id="estado-clientes" class="venta-ayuda" role="status">Escriba el CI/NIT para buscar un cliente.</p>
+            <ul id="resultados-clientes" class="venta-resultados" aria-label="Clientes encontrados"></ul>
+            <div class="venta-cliente-seleccionado">
+                <p id="cliente-seleccionado" role="status">Ningún cliente seleccionado.</p>
+                <button id="quitar-cliente" class="btn-table" type="button" hidden>Quitar selección</button>
+            </div>
+        </section>
+
+        <section class="venta-panel" aria-labelledby="titulo-productos">
+            <h2 id="titulo-productos">Productos</h2>
+            <form id="buscar-producto" class="venta-busqueda" role="search">
+                <div class="form-group">
+                    <label for="producto-nombre">Buscar por nombre</label>
+                    <input id="producto-nombre" class="form-control" type="search"
+                           placeholder="Ingrese el nombre del producto" autocomplete="off" />
+                </div>
+                <button class="btn btn--secondary" type="submit">Buscar</button>
+            </form>
+            <p id="estado-productos" class="venta-ayuda" role="status">Escriba un nombre para buscar productos.</p>
+            <ul id="resultados-productos" class="venta-resultados" aria-label="Productos encontrados"></ul>
+        </section>
+    </div>
+
+    <section class="venta-panel" aria-labelledby="titulo-carrito">
+        <h2 id="titulo-carrito">Carrito temporal</h2>
+        <p class="venta-ayuda">Puede editar las cantidades o quitar productos. El carrito se descarta al recargar o salir de esta página.</p>
+        <p id="mensaje-carrito" class="venta-error" role="alert"></p>
+        <p id="carrito-vacio" class="venta-vacio">Todavía no agregó productos al carrito.</p>
+        <div id="tabla-carrito" class="table-container" hidden>
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Producto</th>
+                        <th scope="col">Precio unitario</th>
+                        <th scope="col">Stock disponible</th>
+                        <th scope="col">Cantidad</th>
+                        <th scope="col">Subtotal</th>
+                        <th scope="col">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="lineas-carrito"></tbody>
+            </table>
+        </div>
+        <div class="venta-total" role="status" aria-live="polite" aria-atomic="true">
+            <span>Total</span>
+            <strong id="total-venta">Bs. 0,00</strong>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/venta-registrar.js" asp-append-version="true"></script>
+}
