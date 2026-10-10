@@ -17,7 +17,6 @@ namespace Libreria.Application.Facades
         private readonly IUsuarioActual _usuarioActual;
         private readonly IStockFacade _stockFacade;
 
-        // Inyección de dependencia: La fachada principal orquesta a la secundaria
         public VentaFacade(
             IVentaRepository ventaRepository,
             IProductoRepository productoRepository,

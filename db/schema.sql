@@ -545,9 +545,7 @@ IF OBJECT_ID('dbo.FK_Historico_UsuarioModificacion', 'F') IS NULL
 GO
 
 
--- =========================================================
--- MIGRACIÓN US-51: Fechas de creación y anulación en Venta
--- =========================================================
+
 IF COL_LENGTH('dbo.Venta', 'FechaCreacion') IS NULL
 BEGIN
     ALTER TABLE dbo.Venta

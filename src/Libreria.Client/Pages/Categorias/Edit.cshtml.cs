@@ -81,7 +81,6 @@ public class EditModel : PageModel
             return NotFound();
         }
 
-        // El código es autogenerado e inmutable tras la creación; se preserva el original
         Input.Codigo = categoriaOriginal.Codigo;
 
         _validator.Normalizar(Input);

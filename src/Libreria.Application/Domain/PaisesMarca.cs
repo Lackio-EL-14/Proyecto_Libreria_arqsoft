@@ -27,12 +27,12 @@ public static class PaisesMarca
         "Italia",
         "Japón",
         "México",
+        NoEspecificado,
         "Paraguay",
         "Perú",
         "Reino Unido",
         "Uruguay",
-        "Venezuela",
-        NoEspecificado
+        "Venezuela"
     };
 
     public static bool EsValido(string? pais)

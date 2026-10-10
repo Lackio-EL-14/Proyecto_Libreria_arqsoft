@@ -37,7 +37,6 @@
     </div>
 }
 
-<!-- Filtros de Búsqueda -->
 <form method="get" id="formFiltros" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; background-color: var(--color-surface); padding: 1.25rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
     
     <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 160px;">
@@ -139,7 +138,6 @@ else
     </div>
 }
 
-<!-- Modal de Detalle de Venta -->
 <dialog id="modalDetalleVenta" class="confirmation-modal" aria-labelledby="modalDetalleTitulo" aria-modal="true" style="max-width: 720px; width: 95%;">
     <div class="confirmation-modal__content" style="max-width: 100%;">
         <header class="confirmation-modal__header" style="display: flex; justify-content: space-between; align-items: center;">
@@ -151,19 +149,15 @@ else
         </header>
 
         <div class="confirmation-modal__body" style="padding: 1.25rem 0;">
-            <!-- Loader -->
             <div id="detalleLoader" style="text-align: center; padding: 2rem; color: var(--color-secondary);">
                 <p>Cargando información de la venta...</p>
             </div>
 
-            <!-- Error -->
             <div id="detalleError" style="display: none; background-color: var(--color-danger-bg); color: var(--color-danger); padding: 1rem; border-radius: var(--radius-base); margin-bottom: 1rem; border: 1px solid var(--color-danger-border);">
                 <span id="detalleErrorMensaje"></span>
             </div>
 
-            <!-- Contenido del Detalle -->
             <div id="detalleContenido" style="display: none;">
-                <!-- Grid Informativa -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; background: var(--color-bg); padding: 1rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); margin-bottom: 1.25rem; font-size: 0.88rem;">
                     <div>
                         <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase;">Cliente</strong>
@@ -192,7 +186,6 @@ else
                     </div>
                 </div>
 
-                <!-- Tabla de Productos -->
                 <div style="margin-bottom: 1.25rem;">
                     <h3 style="font-size: 0.95rem; color: var(--color-primary); margin-bottom: 0.5rem;">Líneas de la Venta</h3>
                     <div class="table-container" style="margin-bottom: 0; max-height: 240px; overflow-y: auto;">
@@ -210,13 +203,11 @@ else
                                 </tr>
                             </thead>
                             <tbody id="detalleLineasBody">
-                                <!-- Filas renderizadas con JS -->
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- Resumen Financiero -->
                 <div style="display: flex; justify-content: flex-end; gap: 1.5rem; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--color-border);">
                     @if (Model.EsAdministrador)
                     {
@@ -240,7 +231,6 @@ else
     </div>
 </dialog>
 
-<!-- Modal de Confirmación de Anulación (Solo Administrador) -->
 @if (Model.EsAdministrador)
 {
     <dialog id="modalAnularVenta" class="confirmation-modal" aria-labelledby="modalAnularTitulo" aria-modal="true">
@@ -278,13 +268,11 @@ else
         const modalAnular = document.getElementById('modalAnularVenta');
         let temporizadorRefresco = null;
 
-        // Formateador de moneda
         function formatearMoneda(valor) {
             if (valor === null || valor === undefined) return 'Bs. 0.00';
             return 'Bs. ' + Number(valor).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // Formateador de fecha
         function formatearFecha(cadenaFecha) {
             if (!cadenaFecha) return '-';
             const fecha = new Date(cadenaFecha);
@@ -293,11 +281,9 @@ else
                    fecha.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
         }
 
-        // Abrir Detalle
         async function abrirModalDetalle(publicId) {
             if (!modalDetalle) return;
 
-            // Resetear vistas
             document.getElementById('detalleLoader').style.display = 'block';
             document.getElementById('detalleError').style.display = 'none';
             document.getElementById('detalleContenido').style.display = 'none';
@@ -329,7 +315,6 @@ else
             document.getElementById('detalleFechaCreacion').textContent = formatearFecha(data.fechaCreacion);
             document.getElementById('detalleCreadoPor').textContent = data.creadoPor || '-';
 
-            // Badge de Estado
             const badgeContainer = document.getElementById('detalleEstadoBadge');
             if (data.estado === 'Activa') {
                 badgeContainer.innerHTML = '<span class="badge badge--accent">Activa</span>';
@@ -337,7 +322,6 @@ else
                 badgeContainer.innerHTML = '<span class="badge" style="background-color: var(--color-danger-bg); color: var(--color-danger); border: 1px solid var(--color-danger-border);">Anulada</span>';
             }
 
-            // Anulación info
             const contAnulacion = document.getElementById('detalleAnulacionContainer');
             if (data.estado === 'Anulada') {
                 contAnulacion.style.display = 'block';
@@ -347,7 +331,6 @@ else
                 contAnulacion.style.display = 'none';
             }
 
-            // Líneas de productos
             const tbody = document.getElementById('detalleLineasBody');
             tbody.innerHTML = '';
 
@@ -368,7 +351,6 @@ else
                 });
             }
 
-            // Resumen de Totales
             document.getElementById('detalleTotalVenta').textContent = formatearMoneda(data.total);
 
             if (esAdministrador && data.gananciaTotal !== null && data.gananciaTotal !== undefined) {
@@ -386,7 +368,6 @@ else
             if (modalDetalle) modalDetalle.close();
         }
 
-        // Modal Anulación
         function abrirModalAnular(publicId, clienteNombre, total) {
             if (!modalAnular) return;
             document.getElementById('anularVentaPublicId').value = publicId;
@@ -399,7 +380,6 @@ else
             if (modalAnular) modalAnular.close();
         }
 
-        // Manejo de eventos de clic fuera del diálogo para cerrar
         [modalDetalle, modalAnular].forEach(dialog => {
             if (!dialog) return;
             dialog.addEventListener('click', (e) => {
@@ -412,7 +392,6 @@ else
             });
         });
 
-        // Refresco automático (Polling cada 30 segundos)
         function actualizarRelojRefresco() {
             const ahora = new Date();
             const texto = 'Último: ' + ahora.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -426,13 +405,12 @@ else
 
             temporizadorRefresco = setInterval(() => {
                 const chk = document.getElementById('chkAutoRefresco');
-                // Si el modal de detalle o anulación está abierto, no refrescamos para no interrumpir al usuario
                 const algunModalAbierto = (modalDetalle && modalDetalle.open) || (modalAnular && modalAnular.open);
 
                 if (chk && chk.checked && !algunModalAbierto) {
                     document.getElementById('formFiltros').submit();
                 }
-            }, 30000); // 30 segundos
+            }, 30000);
         }
 
         function detenerAutoRefresco() {
