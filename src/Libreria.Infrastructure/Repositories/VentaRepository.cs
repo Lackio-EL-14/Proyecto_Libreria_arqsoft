@@ -294,7 +294,7 @@ public class VentaRepository : IVentaRepository
 
         var query = @"
             SELECT v.VentaId, v.PublicId, v.Estado, v.FechaCreacion, v.FechaAnulacion,
-                   c.Nombre AS ClienteNombre, c.CiNit AS ClienteCiNit,
+                   c.RazonSocial AS ClienteNombre, c.CiNit AS ClienteCiNit,
                    u.NombreCompleto AS CreadoPor,
                    ua.NombreCompleto AS AnuladoPor,
                    ISNULL(SUM(d.Importe), 0) AS Total
@@ -327,7 +327,7 @@ public class VentaRepository : IVentaRepository
 
         query += @"
             GROUP BY v.VentaId, v.PublicId, v.Estado, v.FechaCreacion, v.FechaAnulacion,
-                     c.Nombre, c.CiNit, u.NombreCompleto, ua.NombreCompleto
+                     c.RazonSocial, c.CiNit, u.NombreCompleto, ua.NombreCompleto
             ORDER BY v.FechaCreacion DESC, v.VentaId DESC";
 
         command.CommandText = query;
@@ -370,7 +370,7 @@ public class VentaRepository : IVentaRepository
         {
             command.CommandText = @"
                 SELECT v.VentaId, v.PublicId, v.Estado, v.FechaCreacion, v.FechaAnulacion,
-                       c.Nombre AS ClienteNombre, c.CiNit AS ClienteCiNit,
+                       c.RazonSocial AS ClienteNombre, c.CiNit AS ClienteCiNit,
                        u.NombreCompleto AS CreadoPor,
                        ua.NombreCompleto AS AnuladoPor
                 FROM Venta v
