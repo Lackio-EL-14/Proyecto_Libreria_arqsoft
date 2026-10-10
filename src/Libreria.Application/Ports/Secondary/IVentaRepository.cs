@@ -1,4 +1,5 @@
 ﻿using Libreria.Application.Domain;
+using Libreria.Application.Models;
 using System.Data;
 
 namespace Libreria.Application.Ports.Secondary;
@@ -40,4 +41,11 @@ public interface IVentaRepository
         int ventaId,
         IDbConnection connection,
         IDbTransaction transaction);
+
+    Task<IReadOnlyList<VentaListItemModel>> ObtenerListadoAsync(
+        FiltroVentasInput filtro);
+
+    Task<VentaDetalleCompletoModel?> ObtenerDetalleCompletoAsync(
+        Guid publicId,
+        bool esAdministrador);
 }

@@ -231,5 +231,24 @@ namespace Libreria.Application.Facades
                 throw;
             }
         }
+
+        public async Task<IReadOnlyList<VentaListItemModel>> ObtenerListadoAsync(
+            FiltroVentasInput filtro)
+        {
+            filtro ??= new FiltroVentasInput();
+            return await _ventaRepository.ObtenerListadoAsync(filtro);
+        }
+
+        public async Task<VentaDetalleCompletoModel?> ObtenerDetalleCompletoAsync(
+            Guid publicId,
+            bool esAdministrador)
+        {
+            if (publicId == Guid.Empty)
+            {
+                return null;
+            }
+
+            return await _ventaRepository.ObtenerDetalleCompletoAsync(publicId, esAdministrador);
+        }
     }
 }

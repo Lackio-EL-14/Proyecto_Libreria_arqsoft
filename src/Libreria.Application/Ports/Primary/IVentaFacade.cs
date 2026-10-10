@@ -1,7 +1,6 @@
 using Libreria.Application.Domain;
 using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
+
 
 namespace Libreria.Application.Ports.Primary;
 
@@ -11,4 +10,11 @@ public interface IVentaFacade
         RegistrarVentaInput input);
 
     Task AnularVentaAsync(Guid publicId);
+
+    Task<IReadOnlyList<VentaListItemModel>> ObtenerListadoAsync(
+        FiltroVentasInput filtro);
+
+    Task<VentaDetalleCompletoModel?> ObtenerDetalleCompletoAsync(
+        Guid publicId,
+        bool esAdministrador);
 }
