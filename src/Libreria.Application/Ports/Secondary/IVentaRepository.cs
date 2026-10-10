@@ -1,5 +1,6 @@
 ﻿using Libreria.Application.Domain;
 using System.Data;
+using Libreria.Application.Models;
 
 namespace Libreria.Application.Ports.Secondary;
 
@@ -28,4 +29,6 @@ public interface IVentaRepository
 
     Task<IReadOnlyList<DetalleVenta>> ObtenerDetallePorVentaIdAsync(
         int ventaId);
+
+    Task<ComprobanteVenta?> ObtenerComprobanteAsync(Guid publicId);
 }

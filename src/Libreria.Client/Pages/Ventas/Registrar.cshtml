@@ -16,7 +16,8 @@
 
 <div id="registro-venta" class="venta-registro"
      data-productos-url="@Url.Page("/Ventas/Registrar", "BuscarProductos")"
-     data-clientes-url="@Url.Page("/Ventas/Registrar", "BuscarClientes")">
+     data-clientes-url="@Url.Page("/Ventas/Registrar", "BuscarClientes")"
+     data-comprobante-url="@Url.Page("/Ventas/Comprobante")">
     <noscript><p class="venta-aviso">Active JavaScript para utilizar los buscadores y el carrito.</p></noscript>
 
     <div class="venta-buscadores">
@@ -83,6 +84,8 @@
         <div id="venta-exito" class="venta-exito" role="status" tabindex="-1" hidden></div>
         <button id="guardar-venta" class="btn btn--primary" type="button"
                 data-confirm-trigger data-modal-target="venta-confirmacion-modal" disabled>Guardar venta</button>
+        <a id="ver-comprobante-venta" class="btn btn--secondary" target="_blank" rel="noopener" hidden>Ver comprobante</a>
+        <p id="aviso-comprobante-venta" class="venta-ayuda" role="status" hidden></p>
     </section>
 </div>
 

@@ -24,6 +24,8 @@
     const formularioVenta = modalVenta.querySelector('form');
     const mensajeVenta = document.getElementById('mensaje-venta');
     const exitoVenta = document.getElementById('venta-exito');
+    const enlaceComprobante = document.getElementById('ver-comprobante-venta');
+    const avisoComprobante = document.getElementById('aviso-comprobante-venta');
     const errorConfirmacionVenta = document.getElementById('confirmar-venta-error');
     const estadoConfirmacionVenta = document.getElementById('confirmar-venta-estado');
     let guardandoVenta = false;
@@ -31,12 +33,56 @@
     let solicitudVenta = null;
     let resumenVenta = null;
     let controlesEdicionVenta = null;
+    let ventanaComprobante = null;
     const moneda = new Intl.NumberFormat('es-BO', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
     const precioEnCentavos = precio => Math.round(precio * 100);
     const mostrarImporte = centavos => `Bs. ${moneda.format(centavos / 100)}`;
+
+    function cerrarReservaComprobante() {
+        const reserva = ventanaComprobante;
+        ventanaComprobante = null;
+        try {
+            if (reserva && !reserva.closed) reserva.close();
+        } catch {
+            // Un fallo del navegador al cerrar la pestaña no cambia el resultado de la venta.
+        }
+    }
+
+    function reservarPestanaComprobante() {
+        cerrarReservaComprobante();
+        try {
+            // Conservar el gesto de confirmación antes del primer await evita el bloqueo habitual de popups.
+            ventanaComprobante = window.open('about:blank', '_blank');
+            if (ventanaComprobante) ventanaComprobante.opener = null;
+        } catch {
+            cerrarReservaComprobante();
+        }
+    }
+
+    registro.addEventListener('venta:registrada', event => {
+        try {
+            const url = new URL(registro.dataset.comprobanteUrl, window.location.href);
+            if (url.origin !== window.location.origin) throw new Error('URL de comprobante inválida.');
+            url.searchParams.set('publicId', event.detail.publicId);
+            enlaceComprobante.href = url.href;
+            enlaceComprobante.hidden = false;
+            avisoComprobante.hidden = true;
+
+            if (ventanaComprobante && !ventanaComprobante.closed) {
+                ventanaComprobante.location.replace(url.href);
+                ventanaComprobante = null;
+                return;
+            }
+        } catch {
+            cerrarReservaComprobante();
+        }
+
+        avisoComprobante.textContent = 'La venta quedó guardada. El navegador no pudo abrir la pestaña del comprobante. Permita las ventanas emergentes de esta aplicación o utilice Ver comprobante.';
+        avisoComprobante.hidden = false;
+    });
 
     function crearElemento(etiqueta, texto, clase) {
         const elemento = document.createElement(etiqueta);
@@ -501,6 +547,8 @@
         }
 
         exitoVenta.hidden = true;
+        enlaceComprobante.hidden = true;
+        avisoComprobante.hidden = true;
         estadoConfirmacionVenta.textContent = '';
         mostrarResumenVenta();
         // El botón solo abre el modal compartido; el POST ocurre al confirmar su formulario.
@@ -543,6 +591,7 @@
         errorConfirmacionVenta.hidden = true;
         mensajeVenta.textContent = '';
         estadoConfirmacionVenta.textContent = 'Guardando venta…';
+        reservarPestanaComprobante();
 
         try {
             const respuesta = await fetch(formularioVenta.action, {
@@ -585,7 +634,7 @@
             exitoVenta.hidden = false;
             modalVenta.close();
 
-            // US-50 podrá escuchar este evento y usar PublicId/Total; aquí no se genera un comprobante.
+            // El comprobante consulta la venta confirmada en el servidor, sin volver a registrarla.
             registro.dispatchEvent(new CustomEvent('venta:registrada', { detail: registrada, bubbles: true }));
         } catch {
             if (!guardada) {
@@ -593,6 +642,7 @@
                 mostrarErrorVenta('No se pudo confirmar el resultado. Se conservó la venta; reintente el guardado sin cambiar sus datos para comprobarla sin duplicarla.');
             }
         } finally {
+            cerrarReservaComprobante();
             guardandoVenta = false;
             bloquearEdicionVenta(resultadoVentaIncierto);
             controlesModal.forEach((control, indice) => { control.disabled = estadosPrevios[indice]; });
