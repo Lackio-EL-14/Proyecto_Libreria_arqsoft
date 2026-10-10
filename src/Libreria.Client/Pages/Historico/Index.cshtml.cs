@@ -26,14 +26,16 @@ public class IndexModel : PageModel
     {
         if (!publicId.HasValue || publicId.Value == Guid.Empty)
         {
-            return NotFound();
+            MensajeError = "Debe seleccionar un producto desde el catálogo de inventario para consultar su histórico de costos.";
+            return Page();
         }
 
         var producto = _repository.ObtenerProducto(publicId.Value);
 
         if (producto is null)
         {
-            return NotFound();
+            MensajeError = "El producto solicitado no fue encontrado o no está disponible.";
+            return Page();
         }
 
         PublicId = publicId.Value;
