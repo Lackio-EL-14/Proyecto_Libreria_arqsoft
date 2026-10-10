@@ -7,7 +7,6 @@ using Libreria.Application.Ports.Primary;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-
 namespace Libreria.Client.Pages.Productos;
 
 public class DetailsModel : PageModel
@@ -48,5 +47,16 @@ public class DetailsModel : PageModel
             producto.UsuarioModificacionId,
             producto.FechaModificacion);
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostDarDeBajaAsync(Guid publicId)
+    {
+        if (!await _service.DarDeBajaAsync(publicId, _repository))
+        {
+            return NotFound();
+        }
+
+        TempData["MensajeExito"] = "Producto dado de baja correctamente.";
+        return RedirectToPage("./Index");
     }
 }

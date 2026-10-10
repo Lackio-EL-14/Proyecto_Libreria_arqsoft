@@ -1,5 +1,6 @@
 @page "{id:guid}"
 @model Libreria.Client.Pages.Productos.DetailsModel
+@using Libreria.Client.Pages.Shared.Models
 
 @{
     ViewData["Title"] = "Detalle del producto";
@@ -80,15 +81,36 @@
         <partial name="_AuditoriaInfo" model="Model.Auditoria" />
     }
 
-    <div style="border-top: 1px solid var(--color-border); padding-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+    <div style="border-top: 1px solid var(--color-border); padding-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
         <a asp-page="Edit" asp-route-id="@Model.PublicId" class="btn btn--primary">Editar producto</a>
 
         <a asp-page="/Historico/Index" asp-route-publicId="@Model.PublicId" class="btn btn--secondary">Ver histórico</a>
 
         <a asp-page="Index" class="btn btn--secondary">Volver al catálogo</a>
 
-        <a asp-page="Deactivate" asp-route-id="@Model.PublicId" class="btn"
-           style="background-color: #FEF2F2; color: #991B1B; border: 1px solid #FCA5A5; margin-left: auto;">
+        <button
+            type="button"
+            class="btn"
+            style="background-color: #FEF2F2; color: #991B1B; border: 1px solid #FCA5A5; margin-left: auto;"
+            data-confirm-trigger
+            data-modal-target="producto-baja-modal"
+            data-entity-id="@Model.PublicId"
+            data-entity-name="@Model.Producto.Nombre">
             Dar de baja
-        </a>
+        </button>
+    </div>
 </div>
+
+@await Html.PartialAsync(
+    "_ConfirmModal",
+    new ConfirmModalModel
+    {
+        Id = "producto-baja-modal",
+        Titulo = "Confirmar baja de producto",
+        MensajePrincipal = "¿Está seguro de dar de baja el producto",
+        Handler = "DarDeBaja",
+        CampoIdentificador = "publicId",
+        TextoBotonConfirmar = "Confirmar baja",
+        TextoBotonCancelar = "Cancelar",
+        MensajeAdvertencia = "El producto no aparecerá en el catálogo activo pero su historial de costos y registros previos se conservarán."
+    })
