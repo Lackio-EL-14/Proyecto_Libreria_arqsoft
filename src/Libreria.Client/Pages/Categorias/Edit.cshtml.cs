@@ -75,6 +75,15 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        var categoriaOriginal = await _repository.ObtenerPorPublicIdAsync(PublicId, true);
+        if (categoriaOriginal is null)
+        {
+            return NotFound();
+        }
+
+        // El código es autogenerado e inmutable tras la creación; se preserva el original
+        Input.Codigo = categoriaOriginal.Codigo;
+
         _validator.Normalizar(Input);
         var errores = await _validator.ValidarEdicionAsync(Input, PublicId);
         AgregarErrores(errores);
@@ -87,7 +96,7 @@ public class EditModel : PageModel
         var actualizada = await _repository.ActualizarAsync(new Categoria
         {
             PublicId = PublicId,
-            Codigo = Input.Codigo,
+            Codigo = categoriaOriginal.Codigo,
             Nombre = Input.Nombre,
             Descripcion = Input.Descripcion,
             Ubicacion = Input.Ubicacion
