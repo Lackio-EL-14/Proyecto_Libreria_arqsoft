@@ -1,0 +1,30 @@
+@model Libreria.Application.Models.ClienteInput
+
+<p>Ingrese los datos del nuevo cliente.</p>
+<div id="alta-cliente-error" class="validation-summary-errors" role="alert" tabindex="-1" hidden></div>
+
+<div class="form-group">
+    <label for="alta-cliente-ci-nit">CI/NIT <span class="text-danger">*</span></label>
+    <input id="alta-cliente-ci-nit" name="Input.CiNit" value="@Model.CiNit"
+           class="form-control" type="text" maxlength="30" required
+           aria-describedby="alta-cliente-ci-nit-error" />
+    <span id="alta-cliente-ci-nit-error" class="field-validation-error" data-cliente-error="Input.CiNit"></span>
+</div>
+
+<div class="form-group">
+    <label for="alta-cliente-razon-social">Razón social <span class="text-danger">*</span></label>
+    <input id="alta-cliente-razon-social" name="Input.RazonSocial" value="@Model.RazonSocial"
+           class="form-control" type="text" maxlength="200" required
+           aria-describedby="alta-cliente-razon-social-error" />
+    <span id="alta-cliente-razon-social-error" class="field-validation-error" data-cliente-error="Input.RazonSocial"></span>
+</div>
+
+<div class="form-group">
+    <label for="alta-cliente-correo">Correo (opcional)</label>
+    <input id="alta-cliente-correo" name="Input.Correo" value="@Model.Correo"
+           class="form-control" type="email" maxlength="254"
+           aria-describedby="alta-cliente-correo-error" />
+    <span id="alta-cliente-correo-error" class="field-validation-error" data-cliente-error="Input.Correo"></span>
+</div>
+
+<p id="alta-cliente-estado" role="status" aria-live="polite"></p>

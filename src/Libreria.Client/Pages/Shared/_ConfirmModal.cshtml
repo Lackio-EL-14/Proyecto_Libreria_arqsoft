@@ -9,23 +9,30 @@
         </header>
 
         <div class="confirmation-modal__body">
-            <p>
-                @Model.MensajePrincipal <strong data-confirm-name></strong>.
-            </p>
-
-            @if (!string.IsNullOrWhiteSpace(Model.MensajeAdvertencia))
+            @if (!string.IsNullOrWhiteSpace(Model.VistaContenido))
             {
-                <div class="confirmation-modal__warning" data-confirm-warning hidden>
-                    <strong>⚠️ Advertencia:</strong> <span data-confirm-warning-text>@Model.MensajeAdvertencia</span>
-                </div>
+                @await Html.PartialAsync(Model.VistaContenido, Model.ModeloContenido)
             }
+            else
+            {
+                <p>
+                    @Model.MensajePrincipal <strong data-confirm-name></strong>.
+                </p>
 
-            <input type="hidden" name="@Model.CampoIdentificador" data-confirm-id />
+                @if (!string.IsNullOrWhiteSpace(Model.MensajeAdvertencia))
+                {
+                    <div class="confirmation-modal__warning" data-confirm-warning hidden>
+                        <strong>⚠️ Advertencia:</strong> <span data-confirm-warning-text>@Model.MensajeAdvertencia</span>
+                    </div>
+                }
+
+                <input type="hidden" name="@Model.CampoIdentificador" data-confirm-id />
+            }
         </div>
 
         <footer class="confirmation-modal__actions">
             <button type="button" class="btn btn--secondary" data-confirm-close>@Model.TextoBotonCancelar</button>
-            <button type="submit" class="btn btn--danger">@Model.TextoBotonConfirmar</button>
+            <button type="submit" class="btn @Model.ClaseBotonConfirmar">@Model.TextoBotonConfirmar</button>
         </footer>
     </form>
 </dialog>

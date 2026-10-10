@@ -1,6 +1,6 @@
-﻿using Libreria.Application.Domain;
+﻿using System.Data;
+using Libreria.Application.Domain;
 using Libreria.Application.Models;
-using System.Data;
 
 namespace Libreria.Application.Ports.Secondary;
 
@@ -48,4 +48,6 @@ public interface IVentaRepository
     Task<VentaDetalleCompletoModel?> ObtenerDetalleCompletoAsync(
         Guid publicId,
         bool esAdministrador);
+
+    Task<ComprobanteVenta?> ObtenerComprobanteAsync(Guid publicId);
 }

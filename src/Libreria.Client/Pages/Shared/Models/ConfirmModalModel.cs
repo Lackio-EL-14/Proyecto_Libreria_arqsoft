@@ -15,6 +15,9 @@ public sealed class ConfirmModalModel
     public string Handler { get; init; } = "DarDeBaja";
     public string CampoIdentificador { get; init; } = "publicId";
     public string? UrlAccion { get; init; }
+    public string? VistaContenido { get; init; }
+    public object? ModeloContenido { get; init; }
+    public string ClaseBotonConfirmar { get; init; } = "btn--danger";
 
     // Compatibilidad con nombres de propiedad alternativos
     public string Mensaje => MensajePrincipal;
