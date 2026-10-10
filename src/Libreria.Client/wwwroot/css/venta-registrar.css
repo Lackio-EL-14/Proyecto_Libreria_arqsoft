@@ -113,6 +113,29 @@
     color: var(--color-primary);
 }
 
+.venta-confirmacion-resumen {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+    gap: 0.75rem 1rem;
+}
+
+.venta-confirmacion-resumen dt {
+    font-weight: 600;
+}
+
+.venta-confirmacion-resumen dd {
+    overflow-wrap: anywhere;
+}
+
+.venta-exito {
+    padding: 0.85rem 1rem;
+    margin-bottom: 1rem;
+    color: var(--color-accent);
+    background: #E8F0EB;
+    border: 1px solid #A3C2B1;
+    border-radius: var(--radius-base);
+}
+
 .venta-registro button:disabled {
     opacity: 0.55;
     cursor: not-allowed;

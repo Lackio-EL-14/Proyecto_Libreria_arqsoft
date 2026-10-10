@@ -19,6 +19,18 @@
     const erroresAltaCliente = Array.from(formularioAltaCliente.querySelectorAll('[data-cliente-error]'));
     let ciNitSinResultados = '';
     let guardandoCliente = false;
+    const botonGuardarVenta = document.getElementById('guardar-venta');
+    const modalVenta = document.getElementById('venta-confirmacion-modal');
+    const formularioVenta = modalVenta.querySelector('form');
+    const mensajeVenta = document.getElementById('mensaje-venta');
+    const exitoVenta = document.getElementById('venta-exito');
+    const errorConfirmacionVenta = document.getElementById('confirmar-venta-error');
+    const estadoConfirmacionVenta = document.getElementById('confirmar-venta-estado');
+    let guardandoVenta = false;
+    let resultadoVentaIncierto = false;
+    let solicitudVenta = null;
+    let resumenVenta = null;
+    let controlesEdicionVenta = null;
     const moneda = new Intl.NumberFormat('es-BO', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
@@ -40,14 +52,28 @@
         return boton;
     }
 
-    function actualizarTotal() {
+    function calcularTotalCentavos() {
         let total = 0;
         for (const linea of carrito.values()) {
             total += linea.cantidad * precioEnCentavos(linea.precioVenta);
         }
-        document.getElementById('total-venta').textContent = mostrarImporte(total);
+        return total;
+    }
+
+    function actualizarEstadoGuardar() {
+        botonGuardarVenta.disabled = guardandoVenta || guardandoCliente || carrito.size === 0 || clienteSeleccionado === null;
+        botonGuardarVenta.textContent = resultadoVentaIncierto ? 'Reintentar guardado' : 'Guardar venta';
+    }
+
+    function ventaBloqueada() {
+        return guardandoVenta || resultadoVentaIncierto;
+    }
+
+    function actualizarTotal() {
+        document.getElementById('total-venta').textContent = mostrarImporte(calcularTotalCentavos());
         document.getElementById('carrito-vacio').hidden = carrito.size > 0;
         document.getElementById('tabla-carrito').hidden = carrito.size === 0;
+        actualizarEstadoGuardar();
     }
 
     function renderizarCarrito() {
@@ -73,6 +99,10 @@
                 mostrarImporte(linea.cantidad * precioEnCentavos(linea.precioVenta)), 'venta-subtotal');
 
             function actualizarCantidad(restaurarSiInvalida) {
+                if (ventaBloqueada()) {
+                    cantidad.value = String(linea.cantidad);
+                    return;
+                }
                 const valor = Number(cantidad.value);
                 if (cantidad.value.trim() === '' || !Number.isInteger(valor) || valor < 1 || valor > linea.stock) {
                     const error = `La cantidad de ${linea.nombre} debe ser un entero entre 1 y ${linea.stock}.`;
@@ -102,6 +132,7 @@
 
             const acciones = crearElemento('td');
             const quitar = crearBoton('Quitar', 'btn-table btn-table--danger', () => {
+                if (ventaBloqueada()) return;
                 carrito.delete(publicId);
                 mensaje.textContent = '';
                 renderizarCarrito();
@@ -116,6 +147,7 @@
     }
 
     function agregarProducto(producto) {
+        if (ventaBloqueada()) return;
         const existente = carrito.get(producto.publicId);
         const cantidad = (existente?.cantidad ?? 0) + 1;
         if (cantidad > producto.stock) {
@@ -155,6 +187,7 @@
             ? `${clienteSeleccionado.razonSocial} · CI/NIT: ${clienteSeleccionado.ciNit}`
             : 'Ningún cliente seleccionado.';
         document.getElementById('quitar-cliente').hidden = clienteSeleccionado === null;
+        actualizarEstadoGuardar();
     }
 
     function renderizarClientes(clientes) {
@@ -168,6 +201,7 @@
                 crearElemento('small', `CI/NIT: ${cliente.ciNit}`)
             );
             const seleccionar = crearBoton('Seleccionar', 'btn btn--secondary', () => {
+                if (ventaBloqueada()) return;
                 clienteSeleccionado = cliente;
                 actualizarCliente();
             });
@@ -196,6 +230,7 @@
         }
 
         function programarBusqueda(demora) {
+            if (ventaBloqueada()) return;
             cancelarBusqueda();
             const versionActual = version;
             const texto = campo.value.trim();
@@ -242,7 +277,7 @@
         return cancelarBusqueda;
     }
 
-    conectarBuscador('buscar-producto', 'producto-nombre', 'estado-productos', 'resultados-productos',
+    const cancelarBusquedaProductos = conectarBuscador('buscar-producto', 'producto-nombre', 'estado-productos', 'resultados-productos',
         registro.dataset.productosUrl, 'nombre', productos => {
             productosEncontrados = productos;
             renderizarProductos();
@@ -299,7 +334,7 @@
     // Las reglas se comprueban con ClienteValidator en el servidor y se muestran en el modal.
     formularioAltaCliente.noValidate = true;
     botonAltaCliente.addEventListener('click', event => {
-        if (guardandoCliente || !ciNitSinResultados) {
+        if (guardandoCliente || ventaBloqueada() || !ciNitSinResultados) {
             event.preventDefault();
             event.stopImmediatePropagation();
             return;
@@ -333,13 +368,14 @@
 
     formularioAltaCliente.addEventListener('submit', async event => {
         event.preventDefault();
-        if (guardandoCliente) return;
+        if (guardandoCliente || ventaBloqueada()) return;
 
         // Tomar los datos y el token antifalsificación antes de deshabilitar los controles.
         const datos = new FormData(formularioAltaCliente);
         const controles = Array.from(formularioAltaCliente.querySelectorAll('input:not([type="hidden"]), button'));
         const estadosPrevios = controles.map(control => control.disabled);
         guardandoCliente = true;
+        actualizarEstadoGuardar();
         let guardado = false;
         controles.forEach(control => { control.disabled = true; });
         formularioAltaCliente.setAttribute('aria-busy', 'true');
@@ -377,6 +413,7 @@
             mostrarErroresAlta({ '': 'No se pudo confirmar el registro. Revise su conexión y sesión, y busque el CI/NIT antes de volver a guardar.' });
         } finally {
             guardandoCliente = false;
+            actualizarEstadoGuardar();
             controles.forEach((control, indice) => { control.disabled = estadosPrevios[indice]; });
             formularioAltaCliente.setAttribute('aria-busy', 'false');
             estadoAltaCliente.textContent = '';
@@ -389,9 +426,193 @@
     });
 
     document.getElementById('quitar-cliente').addEventListener('click', () => {
+        if (ventaBloqueada()) return;
         clienteSeleccionado = null;
         actualizarCliente();
     });
+
+    function nuevaSolicitudId() {
+        if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+        const bytes = crypto.getRandomValues(new Uint8Array(16));
+        bytes[6] = (bytes[6] & 15) | 64;
+        bytes[8] = (bytes[8] & 63) | 128;
+        const hex = Array.from(bytes, valor => valor.toString(16).padStart(2, '0')).join('');
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+    }
+
+    function mostrarErrorVenta(texto) {
+        mensajeVenta.textContent = texto;
+        errorConfirmacionVenta.textContent = texto;
+        errorConfirmacionVenta.hidden = false;
+    }
+
+    function mostrarResumenVenta() {
+        document.getElementById('confirmar-venta-cliente').textContent = resumenVenta.cliente;
+        document.getElementById('confirmar-venta-items').textContent = String(resumenVenta.items);
+        document.getElementById('confirmar-venta-unidades').textContent = String(resumenVenta.unidades);
+        document.getElementById('confirmar-venta-total').textContent = mostrarImporte(resumenVenta.totalCentavos);
+    }
+
+    function bloquearEdicionVenta(bloquear) {
+        if (bloquear && controlesEdicionVenta === null) {
+            controlesEdicionVenta = Array.from(registro.querySelectorAll('button, input'))
+                .filter(control => control !== botonGuardarVenta)
+                .map(control => ({ control, deshabilitado: control.disabled }));
+            controlesEdicionVenta.forEach(({ control }) => { control.disabled = true; });
+        } else if (!bloquear && controlesEdicionVenta !== null) {
+            controlesEdicionVenta.forEach(({ control, deshabilitado }) => { control.disabled = deshabilitado; });
+            controlesEdicionVenta = null;
+        }
+        actualizarEstadoGuardar();
+    }
+
+    botonGuardarVenta.addEventListener('click', event => {
+        if (guardandoVenta || guardandoCliente || carrito.size === 0 || clienteSeleccionado === null) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            mensajeVenta.textContent = 'Seleccione un cliente y agregue productos antes de guardar la venta.';
+            return;
+        }
+
+        if (!resultadoVentaIncierto) {
+            for (const cantidad of lineas.querySelectorAll('input')) {
+                if (!cantidad.reportValidity()) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    mensajeVenta.textContent = 'Revise las cantidades del carrito antes de guardar.';
+                    return;
+                }
+            }
+
+            solicitudVenta = {
+                solicitudId: nuevaSolicitudId(),
+                ciNitCliente: clienteSeleccionado.ciNit,
+                detalles: Array.from(carrito, ([productoPublicId, linea]) => ({ productoPublicId, cantidad: linea.cantidad }))
+            };
+            resumenVenta = {
+                cliente: `${clienteSeleccionado.razonSocial} · CI/NIT: ${clienteSeleccionado.ciNit}`,
+                items: carrito.size,
+                unidades: Array.from(carrito.values()).reduce((total, linea) => total + linea.cantidad, 0),
+                totalCentavos: calcularTotalCentavos()
+            };
+            mensajeVenta.textContent = '';
+            errorConfirmacionVenta.hidden = true;
+            errorConfirmacionVenta.textContent = '';
+        }
+
+        exitoVenta.hidden = true;
+        estadoConfirmacionVenta.textContent = '';
+        mostrarResumenVenta();
+        // El botón solo abre el modal compartido; el POST ocurre al confirmar su formulario.
+    });
+
+    function impedirCierreVenta(event) {
+        if (guardandoVenta) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }
+    }
+    modalVenta.addEventListener('click', impedirCierreVenta, true);
+    modalVenta.addEventListener('cancel', impedirCierreVenta);
+    modalVenta.addEventListener('keydown', event => {
+        if (event.key === 'Escape') impedirCierreVenta(event);
+    }, true);
+    modalVenta.addEventListener('click', event => {
+        if (event.detail === 0 && event.target !== modalVenta) event.stopImmediatePropagation();
+    });
+
+    formularioVenta.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (guardandoVenta || !solicitudVenta || !modalVenta.open) return;
+
+        const token = formularioVenta.elements.namedItem('__RequestVerificationToken')?.value;
+        if (!token) {
+            mostrarErrorVenta('No se pudo validar el formulario. Actualice la página antes de registrar una venta.');
+            return;
+        }
+
+        const controlesModal = Array.from(formularioVenta.querySelectorAll('button'));
+        const estadosPrevios = controlesModal.map(control => control.disabled);
+        guardandoVenta = true;
+        let guardada = false;
+        cancelarBusquedaProductos();
+        cancelarBusquedaClientes();
+        bloquearEdicionVenta(true);
+        controlesModal.forEach(control => { control.disabled = true; });
+        formularioVenta.setAttribute('aria-busy', 'true');
+        errorConfirmacionVenta.hidden = true;
+        mensajeVenta.textContent = '';
+        estadoConfirmacionVenta.textContent = 'Guardando venta…';
+
+        try {
+            const respuesta = await fetch(formularioVenta.action, {
+                method: 'POST',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    RequestVerificationToken: token
+                },
+                body: JSON.stringify(solicitudVenta)
+            });
+            if (respuesta.redirected || respuesta.status === 401 || respuesta.status === 403) {
+                throw new Error('La sesión no está disponible.');
+            }
+            const resultado = await respuesta.json();
+            if (!respuesta.ok || !resultado.exitoso) {
+                resultadoVentaIncierto = resultado.reintentarMismaSolicitud !== false;
+                mostrarErrorVenta(resultado.mensaje || 'No se pudo guardar la venta. Reintente para comprobar su resultado.');
+                return;
+            }
+            const registrada = resultado.venta;
+            if (!registrada || registrada.publicId !== solicitudVenta.solicitudId ||
+                !Number.isFinite(registrada.total) || registrada.total < 0) {
+                throw new Error('Respuesta de venta incompleta.');
+            }
+
+            // Desde este punto el servidor ya confirmó la venta: un fallo de UI no debe reenviarla.
+            guardada = true;
+            resultadoVentaIncierto = false;
+            solicitudVenta = null;
+            resumenVenta = null;
+            carrito.clear();
+            renderizarCarrito();
+            document.getElementById('estado-productos').textContent = 'Busque nuevamente para consultar el stock actualizado.';
+            document.getElementById('estado-clientes').textContent = 'Cliente seleccionado para una nueva venta.';
+            exitoVenta.textContent = `Venta registrada correctamente. Total: ${mostrarImporte(precioEnCentavos(registrada.total))}`;
+            exitoVenta.dataset.ventaPublicId = registrada.publicId;
+            exitoVenta.hidden = false;
+            modalVenta.close();
+
+            // US-50 podrá escuchar este evento y usar PublicId/Total; aquí no se genera un comprobante.
+            registro.dispatchEvent(new CustomEvent('venta:registrada', { detail: registrada, bubbles: true }));
+        } catch {
+            if (!guardada) {
+                resultadoVentaIncierto = true;
+                mostrarErrorVenta('No se pudo confirmar el resultado. Se conservó la venta; reintente el guardado sin cambiar sus datos para comprobarla sin duplicarla.');
+            }
+        } finally {
+            guardandoVenta = false;
+            bloquearEdicionVenta(resultadoVentaIncierto);
+            controlesModal.forEach((control, indice) => { control.disabled = estadosPrevios[indice]; });
+            formularioVenta.setAttribute('aria-busy', 'false');
+            estadoConfirmacionVenta.textContent = '';
+            if (guardada) {
+                exitoVenta.focus();
+            } else {
+                errorConfirmacionVenta.focus();
+            }
+        }
+    });
+
+    window.addEventListener('beforeunload', event => {
+        if (guardandoVenta || resultadoVentaIncierto) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
+    });
+
     actualizarCliente();
     renderizarCarrito();
 })();

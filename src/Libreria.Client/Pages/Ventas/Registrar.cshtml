@@ -79,6 +79,10 @@
             <span>Total</span>
             <strong id="total-venta">Bs. 0,00</strong>
         </div>
+        <p id="mensaje-venta" class="venta-error" role="alert"></p>
+        <div id="venta-exito" class="venta-exito" role="status" tabindex="-1" hidden></div>
+        <button id="guardar-venta" class="btn btn--primary" type="button"
+                data-confirm-trigger data-modal-target="venta-confirmacion-modal" disabled>Guardar venta</button>
     </section>
 </div>
 
@@ -91,6 +95,18 @@
     VistaContenido = "_ClienteAltaRapidaCampos",
     ModeloContenido = Model.Input,
     TextoBotonConfirmar = "Guardar cliente",
+    TextoBotonCancelar = "Cancelar",
+    ClaseBotonConfirmar = "btn--primary"
+})
+
+@await Html.PartialAsync("_ConfirmModal", new ConfirmModalModel
+{
+    Id = "venta-confirmacion-modal",
+    Titulo = "Confirmar venta",
+    MensajePrincipal = "Revise los datos de la venta",
+    Handler = "GuardarVenta",
+    VistaContenido = "_VentaConfirmacionResumen",
+    TextoBotonConfirmar = "Confirmar y guardar",
     TextoBotonCancelar = "Cancelar",
     ClaseBotonConfirmar = "btn--primary"
 })
