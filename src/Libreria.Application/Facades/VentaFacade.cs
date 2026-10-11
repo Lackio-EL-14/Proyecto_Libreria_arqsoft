@@ -1,9 +1,10 @@
-using Libreria.Application.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-using Libreria.Application.Ports.Primary;
+using System.Data;
 using System.Data.Common;
+using Libreria.Application.Domain;
+using Libreria.Application.Factories;
+using Libreria.Application.Models;
+using Libreria.Application.Ports.Primary;
+using Libreria.Application.Ports.Secondary;
 
 namespace Libreria.Application.Facades
 {
@@ -16,7 +17,6 @@ namespace Libreria.Application.Facades
         private readonly IUsuarioActual _usuarioActual;
         private readonly IStockFacade _stockFacade;
 
-        // Inyección de dependencia: La fachada principal orquesta a la secundaria
         public VentaFacade(
             IVentaRepository ventaRepository,
             IProductoRepository productoRepository,
@@ -95,6 +95,11 @@ namespace Libreria.Application.Facades
             }
 
             await using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+            }
+
             await using var transaction = await connection.BeginTransactionAsync();
 
             try
@@ -193,7 +198,6 @@ namespace Libreria.Application.Facades
                 }
                 catch (Exception errorRollback)
                 {
-                    // Conservar ambos errores si se pierde la conexión durante el rollback.
                     errorOriginal = new AggregateException(error, errorRollback);
                 }
 
@@ -201,7 +205,6 @@ namespace Libreria.Application.Facades
                 {
                     try
                     {
-                        // Otra conexión permite recuperar una venta ya confirmada aunque se perdiera su respuesta.
                         var registrada = await RecuperarVentaAsync(input, cliente.ClienteId, usuarioId);
                         if (registrada is not null)
                         {
@@ -261,7 +264,6 @@ namespace Libreria.Application.Facades
 
             foreach (var grupo in solicitados)
             {
-                // Un reintento también debe recuperar productos que se hayan dado de baja después de la venta.
                 var producto = await _productoRepository.ObtenerPorPublicIdAsync(grupo.Key, true)
                     ?? await _productoRepository.ObtenerPorPublicIdAsync(grupo.Key, false);
                 if (producto is null ||
@@ -278,6 +280,89 @@ namespace Libreria.Application.Facades
                 Total = detalles.Sum(d => d.Importe)
             };
         }
-        public void AnularVenta() => throw new System.NotImplementedException();
+
+        public async Task AnularVentaAsync(Guid publicId)
+        {
+            if (publicId == Guid.Empty)
+            {
+                throw new ArgumentException("El identificador de la venta es inválido.", nameof(publicId));
+            }
+
+            var usuarioId = _usuarioActual.UsuarioId
+                ?? throw new InvalidOperationException("No existe un usuario autenticado.");
+
+            await using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+            }
+
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
+            {
+                var venta = await _ventaRepository.ObtenerPorPublicIdAsync(publicId, connection, transaction);
+                if (venta is null)
+                {
+                    throw new KeyNotFoundException("La venta especificada no existe.");
+                }
+
+                if (string.Equals(venta.Estado, "Anulada", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("La venta ya se encuentra anulada.");
+                }
+
+                var lineas = await _ventaRepository.ObtenerDetallePorVentaIdAsync(venta.VentaId, connection, transaction);
+
+                var actualizado = await _ventaRepository.ActualizarEstadoAsync(
+                    venta.VentaId,
+                    "Anulada",
+                    usuarioId,
+                    connection,
+                    transaction);
+
+                if (!actualizado)
+                {
+                    throw new InvalidOperationException("No se pudo actualizar el estado de la venta.");
+                }
+
+                foreach (var detalle in lineas)
+                {
+                    await _stockFacade.RestaurarStockAsync(
+                        detalle.ProductoId,
+                        detalle.Cantidad,
+                        connection,
+                        transaction);
+                }
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<IReadOnlyList<VentaListItemModel>> ObtenerListadoAsync(
+            FiltroVentasInput filtro)
+        {
+            filtro ??= new FiltroVentasInput();
+            return await _ventaRepository.ObtenerListadoAsync(filtro);
+        }
+
+        public async Task<VentaDetalleCompletoModel?> ObtenerDetalleCompletoAsync(
+            Guid publicId,
+            bool esAdministrador)
+        {
+            if (publicId == Guid.Empty)
+            {
+                return null;
+            }
+
+            return await _ventaRepository.ObtenerDetalleCompletoAsync(publicId, esAdministrador);
+        }
+
+        public void AnularVenta() => throw new NotSupportedException("Utilice AnularVentaAsync.");
     }
 }

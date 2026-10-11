@@ -18,8 +18,22 @@
         <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
 
         <div class="form-group">
-            <label asp-for="Input.Codigo">Código <span class="text-danger">*</span></label>
-            <input asp-for="Input.Codigo" class="form-control" maxlength="20" readonly />
+            <label asp-for="Input.Codigo">
+                Código de la Categoría
+                <span class="badge" style="font-size: 0.75rem; font-weight: normal; margin-left: 0.5rem; background-color: var(--color-secondary-light); color: var(--color-secondary);">
+                    Autogenerado - Solo lectura
+                </span>
+            </label>
+            <input asp-for="Input.Codigo"
+                   class="form-control"
+                   maxlength="20"
+                   readonly
+                   tabindex="-1"
+                   aria-readonly="true"
+                   style="background-color: var(--color-secondary-light); cursor: not-allowed; color: var(--color-secondary); font-family: monospace; font-weight: 600; border-color: var(--color-border);" />
+            <small style="display: block; margin-top: 0.25rem; font-size: 0.8rem; color: var(--color-secondary);">
+                El código es generado automáticamente por el sistema al registrar la categoría y no puede ser modificado.
+            </small>
             <span asp-validation-for="Input.Codigo" class="text-danger"></span>
         </div>
 

@@ -17,8 +17,8 @@ public static class UbicacionesCategoria
         Bodega,
         Deposito,
         EstantePrincipal,
-        Vitrina,
-        SinAsignar
+        SinAsignar,
+        Vitrina
     ];
 
     public static bool EsValida(string? ubicacion)
