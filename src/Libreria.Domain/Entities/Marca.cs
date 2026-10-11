@@ -1,8 +1,4 @@
-using Libreria.Application.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-namespace Libreria.Application.Domain;
+namespace Libreria.Domain;
 
 public class Marca
 {

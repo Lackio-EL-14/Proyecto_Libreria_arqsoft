@@ -1,10 +1,6 @@
-using Libreria.Application.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
 using System;
 
-namespace Libreria.Application.Domain
+namespace Libreria.Domain
 {
     public class Categoria
     {

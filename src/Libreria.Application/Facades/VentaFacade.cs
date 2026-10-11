@@ -1,6 +1,6 @@
 using System.Data;
 using System.Data.Common;
-using Libreria.Application.Domain;
+using Libreria.Domain;
 using Libreria.Application.Factories;
 using Libreria.Application.Models;
 using Libreria.Application.Ports.Primary;

@@ -1,4 +1,4 @@
-namespace Libreria.Application.Domain;
+namespace Libreria.Domain;
 
 public static class RolesSistema
 {

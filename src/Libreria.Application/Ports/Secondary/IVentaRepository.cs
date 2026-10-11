@@ -1,5 +1,5 @@
 ﻿using System.Data;
-using Libreria.Application.Domain;
+using Libreria.Domain;
 using Libreria.Application.Models;
 
 namespace Libreria.Application.Ports.Secondary;
