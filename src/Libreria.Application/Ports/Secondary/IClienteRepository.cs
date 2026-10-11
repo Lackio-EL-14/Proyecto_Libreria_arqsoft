@@ -1,4 +1,4 @@
-using Libreria.Application.Domain;
+using Libreria.Domain;
 
 namespace Libreria.Application.Ports.Secondary;
 
