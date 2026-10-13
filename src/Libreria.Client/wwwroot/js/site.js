@@ -8,6 +8,33 @@ document.addEventListener("DOMContentLoaded", function () {
     const sidebarCollapseBtn = document.getElementById("sidebarCollapseBtn");
     const sidebar = document.getElementById("sidebar");
     const sidebarOverlay = document.getElementById("sidebarOverlay");
+    const sectionToggles = document.querySelectorAll("[data-sidebar-section-toggle]");
+
+    // Cada rol recibe solo las secciones autorizadas por el servidor. Las que
+    // existen se pueden desplegar y recuerdan su estado entre navegaciones.
+    sectionToggles.forEach(function (toggle) {
+        const sectionId = toggle.getAttribute("aria-controls");
+        const sectionItems = sectionId ? document.getElementById(sectionId) : null;
+        if (!sectionItems) return;
+
+        const sectionStorageKey = `libreria_sidebar_section_${sectionId}`;
+        const savedState = localStorage.getItem(sectionStorageKey);
+        const containsActivePage = sectionItems.querySelector(".sidebar-link.is-active") !== null;
+        const startsExpanded = containsActivePage || savedState !== "false";
+
+        function setExpanded(expanded) {
+            toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+            sectionItems.hidden = !expanded;
+        }
+
+        setExpanded(startsExpanded);
+
+        toggle.addEventListener("click", function () {
+            const expanded = toggle.getAttribute("aria-expanded") !== "true";
+            setExpanded(expanded);
+            localStorage.setItem(sectionStorageKey, expanded ? "true" : "false");
+        });
+    });
 
     // 1. Restaurar preferencia de mini-sidebar colapsado en desktop
     const STORAGE_KEY = "libreria_sidebar_collapsed";
