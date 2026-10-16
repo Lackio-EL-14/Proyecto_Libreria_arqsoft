@@ -1,191 +1,190 @@
-# Sistema de inventario y ventas — Librería
+```markdown
+# Sistema de inventario y ventas — Librería (Escalado Horizontalmente)
 
-Proyecto académico: Razor Pages + C# + ADO.NET sobre .NET 10, con SQL Server
-en Docker. Aplica Clean Code y principios SOLID.
+Proyecto académico: Razor Pages + C# + ADO.NET sobre .NET 10, escalado horizontalmente con Nginx, Redis y SQL Server usando Docker Compose. Aplica Arquitectura Hexagonal (Puertos y Adaptadores), Clean Code y principios SOLID.
 
 ## Estructura del repo
 
-```
+```text
 Proyecto_Libreria_arqsoft/
-├── docker-compose.yml       # Contenedor de SQL Server
+├── docker-compose.yml       # Orquestador del clúster (Nginx, 4x Apps, Redis, BD)
+├── nginx.conf               # Configuración del proxy inverso y balanceador
+├── .env.example             # Plantilla de variables de entorno seguras
 ├── db/
-│   └── schema.sql            # Las 4 tablas + datos semilla opcionales
+│   └── init/                # Scripts SQL de inicialización numerados (ej. 00_schema.sql)
 └── src/
-    └── Libreria.Web/         # Proyecto Razor Pages
-        ├── Data/              # Capa ADO.NET (IDbConnectionFactory)
-        ├── Pages/
-        │   ├── Categorias/    # Gestión de Categorías
-        │   ├── Marcas/        # Gestión de Marcas
-        │   ├── Productos/     # Catálogo e Inventario
-        │   ├── Historico/     # Auditoría de Costos
-        │   └── Shared/        # Componentes reutilizables (_ConfirmModal, _Layout)
-        └── wwwroot/
-            ├── css/           # Estilos y variables de diseño
-            └── js/            # Scripts (confirm-modal, sidebar)
+    ├── Libreria.Client/         # Adaptador Primario (UI - Razor Pages)
+    ├── Libreria.Application/    # Núcleo: Casos de uso, Puertos, Fachadas, Validadores
+    ├── Libreria.Infrastructure/ # Adaptador Secundario: ADO.NET, Redis, DataProtection
+    └── Libreria.Domain/         # Núcleo Puro: Entidades y reglas de dominio
+
 ```
 
 ## 1. Requisitos previos (instalar una sola vez)
 
-- [.NET SDK 10](https://dotnet.microsoft.com/download) — verificar con `dotnet --version`
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — verificar con `docker --version`
-- Git
-- Editor: Visual Studio, VS Code (con la extensión C# Dev Kit) o Rider — cualquiera sirve
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/) — verificar con `docker --version`
+* [Docker Compose](https://docs.docker.com/compose/) — verificar con `docker compose version`
+* Git
+* Editor: Visual Studio, VS Code (con la extensión C# Dev Kit) o Rider.
 
-## 2. Clonar el repositorio y entrar a `develop`
+## 2. Clonar el repositorio y configuración inicial
 
 ```bash
-git clone https://github.com/Lackio-EL-14/Proyecto_Libreria_arqsoft.git
+git clone [https://github.com/Lackio-EL-14/Proyecto_Libreria_arqsoft.git](https://github.com/Lackio-EL-14/Proyecto_Libreria_arqsoft.git)
 cd Proyecto_Libreria_arqsoft
 git switch develop
 git pull origin develop
+
 ```
 
-Todos los comandos de Docker deben ejecutarse desde esta carpeta raíz, donde
-se encuentran `README.md`, `docker-compose.yml`, `db/` y `src/`.
-
-## 3. Levantar la base de datos con Docker
-
-Abre **Docker Desktop manualmente** y espera hasta que indique que el motor
-está en ejecución. La primera vez, descarga la imagen de SQL Server:
+Antes de compilar, debes configurar las variables de entorno para que los contenedores puedan comunicarse:
 
 ```bash
-docker compose pull db
+cp .env.example .env
+
 ```
+
+*(Opcional: Edita el archivo `.env` si necesitas cambiar la contraseña de SQL Server o configurar las credenciales SMTP para la activación de usuarios).*
+
+## 3. Levantar la Aplicación (El Clúster)
+
+Abre **Docker Desktop manualmente** y espera hasta que indique que el motor está en ejecución. Construye la imagen optimizada y levanta los 6 contenedores en segundo plano:
 
 ```bash
-docker compose up -d
+docker compose up -d --build
+
 ```
 
-Espera unos 15-20 segundos y confirma que `libreria-db` aparezca como
-`healthy`:
+El clúster incluye:
+
+* 1 Proxy Inverso (Nginx) balanceando en Round-Robin.
+* 3 Réplicas de la aplicación web (`app1`, `app2`, `app3`).
+* 1 Base de datos SQL Server.
+* 1 Servidor Redis para caché distribuida.
+
+Verifica que todos estén saludables (`Up` o `Healthy`):
 
 ```bash
 docker compose ps
+
 ```
 
-Si el contenedor existe pero no refleja los cambios, recréalo conservando el
-volumen de datos:
+## 4. Inicializar la Base de Datos
+
+En la primera ejecución (o si destruyes los volúmenes), la base de datos nace vacía. Inyecta el esquema y los datos semilla ejecutando este comando, el cual leerá todos los scripts de la carpeta `db/init/` en orden:
 
 ```bash
-docker compose up -d --force-recreate
+docker exec -it libreria-db bash -c 'for f in /scripts/*.sql; do echo "Ejecutando $f..."; /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Libreria2026!" -C -i "$f"; done'
+
 ```
 
-## 4. Aplicar el esquema (las 4 tablas)
+*(Asegúrate de que la contraseña coincida con la que pusiste en tu archivo `.env`).*
+
+## 5. Acceso y Uso
+
+* **Aplicación Web:** Navega a [http://localhost:3000](http://localhost:3000). Nginx recibirá tu petición y la enviará a una de las réplicas disponibles.
+* **Sesiones Compartidas:** Puedes recargar la página y verás que el ID del servidor cambia (en el banner superior), pero tu sesión y el cifrado de URLs se mantienen gracias al volumen compartido de Data Protection.
+
+### Usuarios de prueba
+
+| Usuario | Contraseña | Rol |
+| --- | --- | --- |
+| `admin` | `Admin2026!` | Administrador |
+| `vendedor` | `Vendedor2026!` | Vendedor |
+
+## 6. Comandos Útiles de Mantenimiento
+
+**Ver logs en tiempo real (de todo el clúster):**
 
 ```bash
-docker exec libreria-db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Libreria2026!" -C -i /scripts/schema.sql
+docker compose logs -f
+
 ```
-> Si no les crea las columnas intenten con comillas simples 'Libreria2026!' en esta parte
 
-> Si da error de que no existe `/opt/mssql-tools18`, corre
-> `docker exec libreria-db ls /opt` para ver el nombre exacto de la carpeta
-> en tu versión de imagen (puede ser `mssql-tools` sin el 18) y ajusta la ruta.
+**Reiniciar sistema con Base de Datos limpia (Destructivo):**
 
-Ejecuta este paso al preparar el proyecto y después de traer cambios que
-modifiquen `db/schema.sql`. El script es seguro de re-ejecutar: actualiza el
-esquema sin duplicar tablas ni datos semilla.
+```bash
+docker compose down -v
+docker compose up -d
+# (Requiere volver a ejecutar el comando del paso 4)
 
-### Usuarios de prueba (US-37 / US-38)
+```
 
-Todas las páginas exigen sesión; al abrir la app se redirige a `/Cuenta/Login`.
-El script `schema.sql` crea los roles y estos usuarios semilla:
+**Prueba de Alta Disponibilidad (Failover):**
 
-| Usuario    | Contraseña      | Rol           |
-|------------|-----------------|---------------|
-| `admin`    | `Admin2026!`    | Administrador |
-| `vendedor` | `Vendedor2026!` | Vendedor      |
+```bash
+docker compose stop app2  # Detiene un nodo; Nginx redireccionará el tráfico
+docker compose start app2 # Recupera el nodo
 
-Las contraseñas se guardan solo como hash (PBKDF2 con `PasswordHasher` de ASP.NET Core).
+```
 
-## 5. Componente Compartido: Modal de Confirmación (US-28)
+## 7. Componente Compartido: Modal de Confirmación (US-28)
 
 Para realizar bajas lógicas o acciones críticas sin redirigir a páginas completas, se utiliza el componente compartido `_ConfirmModal.cshtml`.
 
 ### Cómo invocar el Modal desde cualquier vista Razor
 
 1. **Importar el namespace de modelos:**
-   ```cshtml
-   @using Libreria.Web.Pages.Shared.Models
-   ```
+```cshtml
+@using Libreria.Client.Pages.Shared.Models
+
+```
+
 
 2. **Crear el botón disparador en la tabla o interfaz:**
-   ```cshtml
-   <button
-       type="button"
-       class="btn-table btn-table--danger"
-       data-confirm-trigger
-       data-modal-target="mi-modal-id"
-       data-entity-id="@item.PublicId"
-       data-entity-name="@item.Nombre"
-       data-has-warning="false">
-       Dar de baja
-   </button>
-   ```
+```cshtml
+<button
+    type="button"
+    class="btn-table btn-table--danger"
+    data-confirm-trigger
+    data-modal-target="mi-modal-id"
+    data-entity-id="@item.PublicId"
+    data-entity-name="@item.Nombre"
+    data-has-warning="false">
+    Dar de baja
+</button>
+
+```
+
 
 3. **Renderizar la vista parcial al final del archivo `.cshtml`:**
-   ```cshtml
-   @await Html.PartialAsync(
-       "_ConfirmModal",
-       new ConfirmModalModel
-       {
-           Id = "mi-modal-id",
-           Titulo = "Confirmar baja de registro",
-           MensajePrincipal = "¿Está seguro de dar de baja el registro",
-           Handler = "DarDeBaja",
-           CampoIdentificador = "publicId",
-           TextoBotonConfirmar = "Confirmar baja",
-           TextoBotonCancelar = "Cancelar",
-           MensajeAdvertencia = "Esta acción desactivará el elemento del catálogo activo."
-       })
-   ```
+```cshtml
+@await Html.PartialAsync(
+    "_ConfirmModal",
+    new ConfirmModalModel
+    {
+        Id = "mi-modal-id",
+        Titulo = "Confirmar baja de registro",
+        MensajePrincipal = "¿Está seguro de dar de baja el registro",
+        Handler = "DarDeBaja",
+        CampoIdentificador = "publicId",
+        TextoBotonConfirmar = "Confirmar baja",
+        TextoBotonCancelar = "Cancelar",
+        MensajeAdvertencia = "Esta acción desactivará el elemento del catálogo activo."
+    })
+
+```
+
 
 4. **Recibir la petición en el `PageModel` (`.cshtml.cs`):**
-   ```csharp
-   public async Task<IActionResult> OnPostDarDeBajaAsync(Guid publicId)
-   {
-       await _repository.CambiarEstadoAsync(publicId, false);
-       TempData["MensajeExito"] = "Registro dado de baja correctamente.";
-       return RedirectToPage("./Index");
-   }
-   ```
+```csharp
+public async Task<IActionResult> OnPostDarDeBajaAsync(string publicId)
+{
+    // Lógica de descifrado US-36 y baja...
+    TempData["MensajeExito"] = "Registro dado de baja correctamente.";
+    return RedirectToPage("./Index");
+}
 
-### Características del Modal
-- **Accesibilidad y Focus Trap:** Navegación por teclado dentro del modal con <kbd>Tab</kbd> y cierre con <kbd>Escape</kbd>.
-- **Cierre por Overlay:** Clic en el fondo oscuro para cancelar la operación.
-- **Advertencias Condicionales:** Muestra advertencias visuales en ámbar/rojo si la entidad posee registros vinculados activos.
-
-## 6. Ejecutar el proyecto con Visual Studio / Terminal
-
-```bash
-cd src/Libreria.Web
-dotnet restore
-dotnet run
 ```
 
-Abre la URL que muestra la consola (`http://localhost:5000`).
 
-#### Para ingresar al contenedor de la base de datos
 
-```bash
-docker exec -it libreria-db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Libreria2026!' -C
+## 8. Notas de diseño y Arquitectura
+
+* **Escalamiento Horizontal:** El estado de la aplicación no reside en la memoria del contenedor. Las sesiones, tokens Antiforgery y criptografía están centralizados, permitiendo balanceo dinámico sin pérdida de datos.
+* **Inversión de Dependencias (SOLID):** El núcleo de la aplicación (`Libreria.Application` y `Libreria.Domain`) no contiene referencias a Entity Framework, SQL Server, Redis o Nginx.
+* **Patrón Facade:** Operaciones complejas transaccionales como la Venta se orquestan a través de interfaces (`IVentaFacade`), ocultando la complejidad a la capa de UI.
+
 ```
 
-## 7. Cómo trabajar en equipo sin bloquearse
-
-- **No trabajes directo sobre `develop`.** Cada persona actualiza `develop` y crea su rama:
-  ```bash
-  git switch develop
-  git pull origin develop
-  git checkout -b feature/mi-funcionalidad
-  ```
-- Haz commits pequeños y frecuentes, y sube tu rama:
-  ```bash
-  git push origin feature/mi-funcionalidad
-  ```
-- Abre un Pull Request a `develop` cuando tu historia de usuario esté lista.
-
-## 8. Notas de diseño
-
-- El acceso a datos usa `IDbConnectionFactory` (interfaz) en vez de crear `SqlConnection` directamente en cada página — Inversión de Dependencias (SOLID).
-- Las páginas Razor dependen de contratos específicos y delegan el acceso ADO.NET a repositorios. Las validaciones de negocio viven en clases separadas de las entidades.
-- **Navegación Escalable (US-29):** Mini-Sidebar colapsable con memoria de estado y Dashboard con métricas de KPI en tiempo real.
+```

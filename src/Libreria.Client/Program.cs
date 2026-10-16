@@ -9,13 +9,14 @@ using Libreria.Application.Ports.Primary;
 using Libreria.Application.Facades;
 using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
     .AddRazorPages(options =>
     {
-        // US-38: equivale a [Authorize] en todas las páginas; solo el login
         // (y la página de error) quedan públicas con [AllowAnonymous].
         options.Conventions.AuthorizeFolder("/");
 
@@ -31,6 +32,10 @@ builder.Services
     })
     .AddMvcOptions(options =>
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
+
+
+builder.Services.AddRedisCaching();
+builder.Services.AddUsuariosModule();
 
 // Fábricas base del Factory Method
 builder.Services.AddScoped<CrudRepositoryFactory<Categoria>, CategoriaRepositoryFactory>();
@@ -94,16 +99,35 @@ builder.Services.AddAuthorization(options =>
         politica.RequireRole(RolesSistema.Administrador, RolesSistema.Vendedor));
 });
 
-var connectionString = builder.Configuration.GetConnectionString("LibreriaDb")
-    ?? throw new InvalidOperationException(
-        "Falta la cadena de conexión 'LibreriaDb' en appsettings.json");
+var connectionString = builder.Configuration["DB_CONNECTION_STRING"] 
+    ?? builder.Configuration.GetConnectionString("LibreriaDb")
+    ?? throw new InvalidOperationException("Falta la cadena de conexión");
+
 var connectionStringSingleton = ConnectionStringSingleton.Instancia;
 connectionStringSingleton.Configurar(connectionString);
 
 builder.Services.AddSingleton(connectionStringSingleton);
 builder.Services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
 
+
+builder.Services.AddDataProtection()
+.PersistKeysToFileSystem(new DirectoryInfo(@"/keys"))
+.SetApplicationName("LibreriaCompartida");
+
+
 var app = builder.Build();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+});
+
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+});
+
 
 if (!app.Environment.IsDevelopment())
 {
@@ -119,3 +143,9 @@ app.UseAuthorization();
 app.MapRazorPages();
 
 app.Run();
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddRedisCaching(this IServiceCollection services) => services;
+    public static IServiceCollection AddUsuariosModule(this IServiceCollection services) => services;
+}
