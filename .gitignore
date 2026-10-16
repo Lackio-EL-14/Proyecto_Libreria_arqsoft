@@ -5,3 +5,5 @@ obj/
 [Dd]ebug/
 [Rr]elease/
 .DS_Store
+.env
+
