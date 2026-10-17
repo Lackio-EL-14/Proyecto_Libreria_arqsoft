@@ -40,7 +40,6 @@ public class ComprobanteVentaService : IComprobanteVentaService
 
         return comprobante with
         {
-            Total = comprobante.Detalles.Sum(detalle => detalle.Importe),
             // La fecha de generación no sustituye una fecha de venta que no fue persistida.
             FechaVenta = null,
             GeneradoEl = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(-4)),
