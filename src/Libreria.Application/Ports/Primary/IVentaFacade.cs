@@ -9,7 +9,7 @@ public interface IVentaFacade
     Task<VentaRegistradaResult> RegistrarVentaAsync(
         RegistrarVentaInput input);
 
-    Task AnularVentaAsync(Guid publicId);
+    Task AnularVentaAsync(Guid publicId, string motivoAnulacion);
 
     Task<IReadOnlyList<VentaListItemModel>> ObtenerListadoAsync(
         FiltroVentasInput filtro);

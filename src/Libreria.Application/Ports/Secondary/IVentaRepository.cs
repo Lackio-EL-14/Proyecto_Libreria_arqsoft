@@ -20,6 +20,7 @@ public interface IVentaRepository
         int ventaId,
         string estado,
         int? usuarioAnulacionId,
+        string? motivoAnulacion,
         IDbConnection connection,
         IDbTransaction transaction);
 

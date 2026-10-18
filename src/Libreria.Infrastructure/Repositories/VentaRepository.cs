@@ -101,6 +101,7 @@ public class VentaRepository : IVentaRepository
         int ventaId,
         string estado,
         int? usuarioAnulacionId,
+        string? motivoAnulacion,
         IDbConnection connection,
         IDbTransaction transaction)
     {
@@ -114,6 +115,7 @@ public class VentaRepository : IVentaRepository
             UPDATE Venta
             SET Estado = @Estado,
                 UsuarioAnulacionId = @UsuarioAnulacionId,
+                MotivoAnulacion = @MotivoAnulacion,
                 FechaAnulacion = CASE WHEN @Estado = N'Anulada' THEN SYSDATETIME() ELSE FechaAnulacion END
             WHERE VentaId = @VentaId";
 
@@ -123,6 +125,10 @@ public class VentaRepository : IVentaRepository
             command,
             "@UsuarioAnulacionId",
             usuarioAnulacionId ?? (object)DBNull.Value);
+        AgregarParametro(
+            command,
+            "@MotivoAnulacion",
+            motivoAnulacion ?? (object)DBNull.Value);
 
         return await command.ExecuteNonQueryAsync() == 1;
     }
@@ -136,7 +142,7 @@ public class VentaRepository : IVentaRepository
 
         command.CommandText = @"
             SELECT VentaId, PublicId, ClienteId, Total, Estado,
-                   FechaCreacion, FechaAnulacion,
+                   FechaCreacion, FechaAnulacion, MotivoAnulacion,
                    UsuarioCreacionId, UsuarioAnulacionId
             FROM Venta
             WHERE Estado = N'Activa'
@@ -161,7 +167,7 @@ public class VentaRepository : IVentaRepository
 
         command.CommandText = @"
             SELECT VentaId, PublicId, ClienteId, Total, Estado,
-                   FechaCreacion, FechaAnulacion,
+                   FechaCreacion, FechaAnulacion, MotivoAnulacion,
                    UsuarioCreacionId, UsuarioAnulacionId
             FROM Venta
             ORDER BY FechaCreacion DESC, VentaId DESC";
@@ -183,7 +189,7 @@ public class VentaRepository : IVentaRepository
 
         command.CommandText = @"
             SELECT VentaId, PublicId, ClienteId, Total, Estado,
-                   FechaCreacion, FechaAnulacion,
+                   FechaCreacion, FechaAnulacion, MotivoAnulacion,
                    UsuarioCreacionId, UsuarioAnulacionId
             FROM Venta
             WHERE PublicId = @PublicId";
@@ -210,7 +216,7 @@ public class VentaRepository : IVentaRepository
 
         command.CommandText = @"
             SELECT VentaId, PublicId, ClienteId, Total, Estado,
-                   FechaCreacion, FechaAnulacion,
+                   FechaCreacion, FechaAnulacion, MotivoAnulacion,
                    UsuarioCreacionId, UsuarioAnulacionId
             FROM Venta WITH (UPDLOCK, ROWLOCK)
             WHERE PublicId = @PublicId";
@@ -367,7 +373,7 @@ public class VentaRepository : IVentaRepository
         await using (var command = connection.CreateCommand())
         {
             command.CommandText = @"
-                SELECT v.VentaId, v.PublicId, v.Total, v.Estado, v.FechaCreacion, v.FechaAnulacion,
+                SELECT v.VentaId, v.PublicId, v.Total, v.Estado, v.FechaCreacion, v.FechaAnulacion, v.MotivoAnulacion,
                        c.RazonSocial AS ClienteNombre, c.CiNit AS ClienteCiNit,
                        u.NombreCompleto AS CreadoPor,
                        ua.NombreCompleto AS AnuladoPor
@@ -394,6 +400,9 @@ public class VentaRepository : IVentaRepository
                 FechaAnulacion = reader.IsDBNull(reader.GetOrdinal("FechaAnulacion"))
                     ? null
                     : reader.GetDateTime(reader.GetOrdinal("FechaAnulacion")),
+                MotivoAnulacion = reader.IsDBNull(reader.GetOrdinal("MotivoAnulacion"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("MotivoAnulacion")),
                 Total = reader.GetDecimal(reader.GetOrdinal("Total")),
                 Estado = reader.GetString(reader.GetOrdinal("Estado")),
                 ClienteNombre = reader.GetString(reader.GetOrdinal("ClienteNombre")),
@@ -527,6 +536,9 @@ public class VentaRepository : IVentaRepository
             FechaAnulacion = reader.IsDBNull(reader.GetOrdinal("FechaAnulacion"))
                 ? null
                 : reader.GetDateTime(reader.GetOrdinal("FechaAnulacion")),
+            MotivoAnulacion = reader.IsDBNull(reader.GetOrdinal("MotivoAnulacion"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("MotivoAnulacion")),
             UsuarioCreacionId =
                 reader.GetInt32(reader.GetOrdinal("UsuarioCreacionId")),
             UsuarioAnulacionId =

@@ -288,11 +288,26 @@ namespace Libreria.Application.Facades
             };
         }
 
-        public async Task AnularVentaAsync(Guid publicId)
+        public async Task AnularVentaAsync(Guid publicId, string motivoAnulacion)
         {
             if (publicId == Guid.Empty)
             {
                 throw new ArgumentException("El identificador de la venta es inválido.", nameof(publicId));
+            }
+            if (string.IsNullOrWhiteSpace(motivoAnulacion))
+            {
+                throw new ArgumentException(
+                    "Debe ingresar el motivo de la anulación.",
+                    nameof(motivoAnulacion));
+            }
+
+            motivoAnulacion = motivoAnulacion.Trim();
+
+            if (motivoAnulacion.Length < 10 || motivoAnulacion.Length > 250)
+            {
+                throw new ArgumentException(
+                    "El motivo de la anulación debe tener entre 10 y 250 caracteres.",
+                    nameof(motivoAnulacion));
             }
 
             var usuarioId = _usuarioActual.UsuarioId
@@ -325,6 +340,7 @@ namespace Libreria.Application.Facades
                     venta.VentaId,
                     "Anulada",
                     usuarioId,
+                    motivoAnulacion,
                     connection,
                     transaction);
 
