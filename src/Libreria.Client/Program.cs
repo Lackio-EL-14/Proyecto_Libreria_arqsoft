@@ -36,7 +36,7 @@ builder.Services
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 
 
-builder.Services.AddRedisCaching();
+builder.Services.AddRedisCaching(builder.Configuration);
 builder.Services.AddUsuariosModule();
 
 // Fábricas base del Factory Method
@@ -148,8 +148,6 @@ app.Run();
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddRedisCaching(this IServiceCollection services) => services;
-
     public static IServiceCollection AddUsuariosModule(this IServiceCollection services)
     {
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
