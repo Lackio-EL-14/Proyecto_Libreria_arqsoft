@@ -61,6 +61,8 @@ public class GeneradorNombreUsuarioTests
 
     private sealed class UsuarioRepositoryFake : IUsuarioRepository
     {
+        public Task<string?> ObtenerHashActivoAsync(int usuarioId) => throw new NotSupportedException();
+        public Task<bool> ActualizarContrasenaAsync(int usuarioId, string hashAnterior, string nuevoHash) => throw new NotSupportedException();
         private readonly HashSet<string> _usuarios;
 
         public UsuarioRepositoryFake(params string[] usuarios)

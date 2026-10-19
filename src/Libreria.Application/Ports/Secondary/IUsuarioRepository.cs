@@ -6,6 +6,9 @@ namespace Libreria.Application.Ports.Secondary;
 
 public interface IUsuarioRepository
 {
+    Task<string?> ObtenerHashActivoAsync(int usuarioId);
+    Task<bool> ActualizarContrasenaAsync(int usuarioId, string hashAnterior, string nuevoHash);
+
     Task<IReadOnlyList<UsuarioListItemModel>> ObtenerListadoAsync(string? estado = null);
 
     Task<Usuario?> ObtenerActivoPorNombreUsuarioAsync(string nombreUsuario);

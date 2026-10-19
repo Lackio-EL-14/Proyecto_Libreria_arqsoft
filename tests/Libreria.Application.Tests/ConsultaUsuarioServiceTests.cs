@@ -127,6 +127,22 @@ public class ConsultaUsuarioServiceTests
 
 internal sealed class UsuarioListadoRepositoryFake(params UsuarioListItemModel[] usuarios) : IUsuarioRepository
 {
+    public string? HashActivo { get; set; }
+    public int? UsuarioContrasenaId { get; private set; }
+    public string? NuevoHash { get; private set; }
+    public int CambiosContrasena { get; private set; }
+    public Task<string?> ObtenerHashActivoAsync(int usuarioId)
+    {
+        UsuarioContrasenaId = usuarioId;
+        return Task.FromResult(HashActivo);
+    }
+    public Task<bool> ActualizarContrasenaAsync(int usuarioId, string hashAnterior, string nuevoHash)
+    {
+        UsuarioContrasenaId = usuarioId;
+        NuevoHash = nuevoHash;
+        CambiosContrasena++;
+        return Task.FromResult(hashAnterior == HashActivo);
+    }
     public string? UltimoEstado { get; private set; }
     public int Consultas { get; private set; }
 

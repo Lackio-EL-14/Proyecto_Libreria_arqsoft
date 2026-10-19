@@ -5,6 +5,7 @@ using Libreria.Application.Models;
 using Libreria.Application.Ports.Primary;
 using Libreria.Application.Ports.Secondary;
 using Libreria.Domain;
+using Libreria.Application.Validators;
 
 namespace Libreria.Application.Services;
 
@@ -16,6 +17,8 @@ public class UsuarioService : IUsuarioService
     private readonly IConfiguracionAplicacion _configuracion;
     private readonly IDbConnectionFactory _connectionFactory;
     private readonly IUsuarioActual _usuarioActual;
+    private readonly IContrasenaHasher _hasher;
+    private readonly PasswordPolicyValidator _passwordPolicy;
 
     public UsuarioService(
         IUsuarioRepository usuarioRepository,
@@ -23,7 +26,9 @@ public class UsuarioService : IUsuarioService
         IEmailSender emailSender,
         IConfiguracionAplicacion configuracion,
         IDbConnectionFactory connectionFactory,
-        IUsuarioActual usuarioActual)
+        IUsuarioActual usuarioActual,
+        IContrasenaHasher hasher,
+        PasswordPolicyValidator passwordPolicy)
     {
         _usuarioRepository = usuarioRepository;
         _generadorNombreUsuario = generadorNombreUsuario;
@@ -31,6 +36,49 @@ public class UsuarioService : IUsuarioService
         _configuracion = configuracion;
         _connectionFactory = connectionFactory;
         _usuarioActual = usuarioActual;
+        _hasher = hasher;
+        _passwordPolicy = passwordPolicy;
+    }
+
+    public async Task<ResultadoOperacion> CambiarContrasenaAsync(CambioContrasenaInput input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        var usuarioId = _usuarioActual.UsuarioId;
+        var errores = new Dictionary<string, string>();
+
+        if (usuarioId is not > 0)
+            return ResultadoOperacion.Invalido(new Dictionary<string, string>
+                { [string.Empty] = "Debe iniciar sesión para cambiar su contraseña." });
+
+        if (string.IsNullOrEmpty(input.ContrasenaActual))
+            errores["Input.ContrasenaActual"] = "Ingrese su contraseña actual.";
+        if (!string.Equals(input.NuevaContrasena, input.Confirmacion, StringComparison.Ordinal))
+            errores["Input.Confirmacion"] = "La confirmación no coincide con la nueva contraseña.";
+
+        var politica = _passwordPolicy.Validar(input.NuevaContrasena);
+        if (politica.Count > 0)
+            errores["Input.NuevaContrasena"] = string.Join(" ", politica);
+        else if (input.NuevaContrasena.Length > 128)
+            errores["Input.NuevaContrasena"] = "La contraseña no puede superar los 128 caracteres.";
+
+        if (errores.Count > 0)
+            return ResultadoOperacion.Invalido(errores);
+
+        var hashActual = await _usuarioRepository.ObtenerHashActivoAsync(usuarioId.Value);
+        if (hashActual is null || !_hasher.Verificar(hashActual, input.ContrasenaActual))
+            return ResultadoOperacion.Invalido(new Dictionary<string, string>
+                { ["Input.ContrasenaActual"] = "La contraseña actual es incorrecta." });
+
+        if (string.Equals(input.NuevaContrasena, input.ContrasenaActual, StringComparison.Ordinal))
+            return ResultadoOperacion.Invalido(new Dictionary<string, string>
+                { ["Input.NuevaContrasena"] = "La nueva contraseña debe ser distinta de la actual." });
+
+        var actualizado = await _usuarioRepository.ActualizarContrasenaAsync(
+            usuarioId.Value, hashActual, _hasher.Hashear(input.NuevaContrasena));
+        return actualizado
+            ? ResultadoOperacion.Correcto()
+            : ResultadoOperacion.Invalido(new Dictionary<string, string>
+                { [string.Empty] = "No fue posible cambiar la contraseña. Intente nuevamente." });
     }
 
     public async Task<string> CrearPendienteAsync(UsuarioAltaInput input)

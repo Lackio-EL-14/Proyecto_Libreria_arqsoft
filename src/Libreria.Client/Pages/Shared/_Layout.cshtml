@@ -59,6 +59,7 @@
                     <span class="user-chip__name">@(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity.Name)</span>
                     <span class="user-chip__role">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
                 </div>
+                <a asp-page="/Cuenta/CambiarContrasena" class="btn btn--secondary">Cambiar contraseña</a>
                 <form method="post" asp-page="/Cuenta/Logout" class="logout-form">
                     <button type="submit" class="btn-logout" title="Cerrar sesión">Cerrar sesión</button>
                 </form>

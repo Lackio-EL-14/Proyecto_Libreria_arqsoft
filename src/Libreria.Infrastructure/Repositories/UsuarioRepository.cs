@@ -15,6 +15,38 @@ public class UsuarioRepository : IUsuarioRepository, IUsuarioSeguridadRepository
         _connectionFactory = connectionFactory;
     }
 
+    public async Task<string?> ObtenerHashActivoAsync(int usuarioId)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT u.PasswordHash FROM dbo.Usuario u
+            INNER JOIN dbo.Rol r ON r.RolId = u.RolId
+            WHERE u.UsuarioId = @UsuarioId AND u.Estado = @Activo AND r.Estado = 1";
+        AgregarParametro(command, "@UsuarioId", usuarioId, DbType.Int32);
+        AgregarParametro(command, "@Activo", EstadosUsuario.Activo, DbType.String, 20);
+        var resultado = await command.ExecuteScalarAsync();
+        return resultado is null || resultado == DBNull.Value ? null : Convert.ToString(resultado);
+    }
+
+    public async Task<bool> ActualizarContrasenaAsync(int usuarioId, string hashAnterior, string nuevoHash)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+        // Comparar el hash anterior evita sobrescribir otro cambio concurrente.
+        command.CommandText = @"
+            UPDATE dbo.Usuario SET PasswordHash = @NuevoHash,
+                UsuarioModificacionId = @UsuarioId, FechaModificacion = SYSDATETIME()
+            WHERE UsuarioId = @UsuarioId AND Estado = @Activo
+                AND PasswordHash COLLATE Latin1_General_100_BIN2 = @HashAnterior
+                AND EXISTS (SELECT 1 FROM dbo.Rol r WHERE r.RolId = dbo.Usuario.RolId AND r.Estado = 1)";
+        AgregarParametro(command, "@UsuarioId", usuarioId, DbType.Int32);
+        AgregarParametro(command, "@Activo", EstadosUsuario.Activo, DbType.String, 20);
+        AgregarParametro(command, "@HashAnterior", hashAnterior, DbType.String, 500);
+        AgregarParametro(command, "@NuevoHash", nuevoHash, DbType.String, 500);
+        return await command.ExecuteNonQueryAsync() == 1;
+    }
+
     public async Task<bool> TieneAccesoActivoAsync(int usuarioId)
     {
         await using var connection = await CrearConexionAbiertaAsync();

@@ -27,6 +27,97 @@ public sealed class SqlUs71FactAttribute : FactAttribute
 public class UsuarioSeguridadSqlTests
 {
     [SqlUs71Fact]
+    public async Task CambioContrasenaPropio_ValidaFormularioProtegeOtrosDatosYRegistraAuditoria()
+    {
+        await using var fixture = await SqlFixture.CrearAsync();
+        var url = fixture.IniciarReplica();
+        await EsperarAsync(url);
+        using var anonimo = Cliente();
+        using (var respuesta = await anonimo.Http.GetAsync(url + "/Cuenta/CambiarContrasena"))
+        {
+            Assert.Equal(HttpStatusCode.Redirect, respuesta.StatusCode);
+            Assert.Contains("/Cuenta/Login", respuesta.Headers.Location!.OriginalString);
+        }
+
+        using var vendedor = Cliente();
+        await LoginAsync(vendedor, url, "vendedor", "Vendedor2026!");
+        var antes = await fixture.FilaUsuarioAsync("vendedor");
+        var otroAntes = await fixture.FilaUsuarioAsync("admin");
+        var propio = await fixture.UsuarioAsync("vendedor");
+        var otro = await fixture.UsuarioAsync("admin");
+        var pagina = url + "/Cuenta/CambiarContrasena";
+
+        foreach (var caso in new[]
+        {
+            ("Incorrecta1!", "NuevaClave2!", "NuevaClave2!", "La contraseña actual es incorrecta."),
+            ("Vendedor2026!", "NuevaClave2!", "OtraClave3!", "La confirmación no coincide"),
+            ("Vendedor2026!", "abc", "abc", "La contraseña debe tener al menos 8 caracteres."),
+            ("Vendedor2026!", "Vendedor2026!", "Vendedor2026!", "La nueva contraseña debe ser distinta")
+        })
+        {
+            var formulario = await vendedor.Http.GetStringAsync(pagina);
+            using var respuesta = await vendedor.Http.PostAsync(pagina, new FormUrlEncodedContent(
+                new Dictionary<string, string>
+                {
+                    ["__RequestVerificationToken"] = Csrf(formulario),
+                    ["Input.ContrasenaActual"] = caso.Item1,
+                    ["Input.NuevaContrasena"] = caso.Item2, ["Input.Confirmacion"] = caso.Item3
+                }));
+            var html = WebUtility.HtmlDecode(await respuesta.Content.ReadAsStringAsync());
+            Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+            Assert.Contains(caso.Item4, html);
+            var reflejaCredenciales = html.Contains(caso.Item1) || html.Contains(caso.Item2) || html.Contains(caso.Item3);
+            Assert.False(reflejaCredenciales, "La respuesta no debe devolver valores de contraseñas.");
+        }
+        var trasErrores = await fixture.FilaUsuarioAsync("vendedor");
+        Assert.True(antes.All(p => Equals(p.Value, trasErrores[p.Key])), "Una validación fallida modificó el usuario.");
+
+        var datos = new Dictionary<string, string>
+        {
+            ["Input.ContrasenaActual"] = "Vendedor2026!",
+            ["Input.NuevaContrasena"] = "NuevaClave2!", ["Input.Confirmacion"] = "NuevaClave2!",
+            ["UsuarioId"] = otro.Id.ToString(), ["Input.UsuarioId"] = otro.Id.ToString(),
+            ["PublicId"] = otro.PublicId.ToString(), ["Nombre"] = "Manipulado",
+            ["Apellido"] = "Manipulado", ["Correo"] = "otro@example.test", ["RolId"] = "1"
+        };
+        using (var sinCsrf = await vendedor.Http.PostAsync(pagina, new FormUrlEncodedContent(datos)))
+            Assert.Equal(HttpStatusCode.BadRequest, sinCsrf.StatusCode);
+
+        var original = await vendedor.Http.GetStringAsync(pagina);
+        datos["__RequestVerificationToken"] = Csrf(original);
+        using (var cambio = await vendedor.Http.PostAsync(pagina, new FormUrlEncodedContent(datos)))
+            Assert.Equal(HttpStatusCode.Redirect, cambio.StatusCode);
+        var exito = await vendedor.Http.GetStringAsync(pagina);
+        Assert.Contains("Contraseña actualizada correctamente.", WebUtility.HtmlDecode(exito));
+        var reflejaNueva = exito.Contains("NuevaClave2!");
+        Assert.False(reflejaNueva, "La respuesta no debe devolver la nueva contraseña.");
+
+        var despues = await fixture.FilaUsuarioAsync("vendedor");
+        foreach (var campo in antes.Keys.Except(new[] { "PasswordHash", "UsuarioModificacionId", "FechaModificacion" }))
+            Assert.True(Equals(antes[campo], despues[campo]), "Se modificó un campo ajeno: " + campo);
+        Assert.Equal(propio.Id, Convert.ToInt32(despues["UsuarioModificacionId"]));
+        Assert.IsType<DateTime>(despues["FechaModificacion"]);
+        var hasher = new Libreria.Infrastructure.Security.ContrasenaHasher();
+        Assert.True(hasher.Verificar((string)despues["PasswordHash"], "NuevaClave2!"));
+        Assert.False(hasher.Verificar((string)despues["PasswordHash"], "Vendedor2026!"));
+        var otroDespues = await fixture.FilaUsuarioAsync("admin");
+        Assert.True(otroAntes.All(p => Equals(p.Value, otroDespues[p.Key])), "La solicitud modificó otro usuario.");
+
+        using var conNueva = Cliente();
+        await LoginAsync(conNueva, url, "vendedor", "NuevaClave2!");
+        using var conAnterior = Cliente();
+        var login = await conAnterior.Http.GetStringAsync(url + "/Cuenta/Login");
+        using var fallo = await conAnterior.Http.PostAsync(url + "/Cuenta/Login", new FormUrlEncodedContent(
+            new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = Csrf(login),
+                ["Input.NombreUsuario"] = "vendedor", ["Input.Contrasena"] = "Vendedor2026!"
+            }));
+        Assert.Equal(HttpStatusCode.OK, fallo.StatusCode);
+        Assert.Contains("Usuario o contraseña incorrectos.", WebUtility.HtmlDecode(await fallo.Content.ReadAsStringAsync()));
+    }
+
+    [SqlUs71Fact]
     public async Task CrearUsuario_Development_ConservaPendienteGeneraCorreoLocalYPermiteBaja()
     {
         await using var fixture = await SqlFixture.CrearAsync();
@@ -84,7 +175,8 @@ public class UsuarioSeguridadSqlTests
         var actor = await fixture.UsuarioAsync("admin");
         var servicio = new UsuarioService(repository, new GeneradorNombreUsuario(repository),
             new SmtpEmailSender(config, new CorreoTestEnvironment()), new ConfiguracionAplicacion(config), fixture,
-            new UsuarioActualFake(actor.Id));
+            new UsuarioActualFake(actor.Id), new Libreria.Infrastructure.Security.ContrasenaHasher(),
+            new Libreria.Application.Validators.PasswordPolicyValidator());
 
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() => servicio.CrearPendienteAsync(
             new Libreria.Application.Models.UsuarioAltaInput
@@ -299,6 +391,16 @@ public class UsuarioSeguridadSqlTests
         }
 
         public DbConnection CreateConnection() => new SqlConnection(ConnectionString);
+        public async Task<Dictionary<string, object>> FilaUsuarioAsync(string nombre)
+        {
+            await using var connection = new SqlConnection(ConnectionString);
+            await connection.OpenAsync();
+            await using var command = new SqlCommand("SELECT * FROM dbo.Usuario WHERE NombreUsuario=@Nombre", connection);
+            command.Parameters.AddWithValue("@Nombre", nombre);
+            await using var reader = await command.ExecuteReaderAsync();
+            Assert.True(await reader.ReadAsync());
+            return Enumerable.Range(0, reader.FieldCount).ToDictionary(reader.GetName, reader.GetValue);
+        }
         public async Task SqlAsync(string sql, string? estado = null)
         {
             await using var connection = new SqlConnection(ConnectionString);

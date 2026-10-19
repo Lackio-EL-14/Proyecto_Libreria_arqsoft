@@ -47,6 +47,8 @@ public class AutenticacionEstadoTests
     }
     private sealed class LoginRepositoryFake(string estado) : IUsuarioRepository
     {
+        public Task<string?> ObtenerHashActivoAsync(int usuarioId) => throw new NotSupportedException();
+        public Task<bool> ActualizarContrasenaAsync(int usuarioId, string hashAnterior, string nuevoHash) => throw new NotSupportedException();
         public Task<Usuario?> ObtenerActivoPorNombreUsuarioAsync(string nombreUsuario) => Task.FromResult(
             estado == "Inexistente" ? null : new Usuario
             {
