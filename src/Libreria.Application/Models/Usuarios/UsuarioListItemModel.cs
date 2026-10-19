@@ -8,4 +8,6 @@ public record UsuarioListItemModel(
     string Rol,
     string Estado,
     DateTime FechaCreacion,
-    string? CreadoPor);
+    string? CreadoPor,
+    string? ModificadoPor = null,
+    DateTime? FechaModificacion = null);

@@ -60,6 +60,8 @@
                         <th>Estado</th>
                         <th>Fecha de creación</th>
                         <th>Creado por</th>
+                        <th>Modificado por</th>
+                        <th>Fecha de modificación</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -75,6 +77,8 @@
                             <td>@usuario.Estado</td>
                             <td>@usuario.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
                             <td>@(usuario.CreadoPor ?? "—")</td>
+                            <td>@(usuario.ModificadoPor ?? "Sin modificaciones registradas")</td>
+                            <td>@(usuario.FechaModificacion?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
                             <td>
                                 @if (usuario.Estado != EstadosUsuario.Inactivo)
                                 {

@@ -194,9 +194,17 @@ public class UsuarioService : IUsuarioService
                 nameof(input));
         }
 
+        if (!input.Nombre.Trim().All(char.IsLetter))
+            throw new ArgumentException("El nombre solo permite letras, incluyendo acentos y ñ.", nameof(input));
+
+        if (!input.Apellido.Trim().All(char.IsLetter))
+            throw new ArgumentException("El apellido solo permite letras, incluyendo acentos y ñ.", nameof(input));
+
         try
         {
-            _ = new MailAddress(input.Correo.Trim());
+            var direccion = new MailAddress(input.Correo.Trim());
+            if (!string.Equals(direccion.Address, input.Correo.Trim(), StringComparison.OrdinalIgnoreCase))
+                throw new FormatException();
         }
         catch (FormatException)
         {

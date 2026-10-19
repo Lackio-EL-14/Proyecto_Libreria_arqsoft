@@ -27,6 +27,81 @@ public sealed class SqlUs71FactAttribute : FactAttribute
 public class UsuarioSeguridadSqlTests
 {
     [SqlUs71Fact]
+    public async Task Usuarios_AltaValidadaAuditoriaVisibleYPermisosEnSolicitudesDirectas()
+    {
+        await using var fixture = await SqlFixture.CrearAsync();
+        var url = fixture.IniciarReplica(desarrollo: true);
+        await EsperarAsync(url);
+        using var admin = Cliente();
+        using var vendedor = Cliente();
+        await LoginAsync(admin, url, "admin", "Admin2026!");
+        await LoginAsync(vendedor, url, "vendedor", "Vendedor2026!");
+
+        foreach (var ruta in new[] { "/Usuarios", "/Usuarios/Create" })
+        {
+            using var respuesta = await vendedor.Http.GetAsync(url + ruta);
+            Assert.Equal(HttpStatusCode.Redirect, respuesta.StatusCode);
+            Assert.Contains("/Cuenta/AccesoDenegado", respuesta.Headers.Location!.OriginalString);
+        }
+        var formularioVendedor = await vendedor.Http.GetStringAsync(url + "/Cuenta/CambiarContrasena");
+        foreach (var ruta in new[] { "/Usuarios/Create?handler=Crear", "/Usuarios/Create?handler=Generar", "/Usuarios?handler=DarDeBaja" })
+        {
+            using var respuesta = await vendedor.Http.PostAsync(url + ruta, new FormUrlEncodedContent(
+                new Dictionary<string, string> { ["__RequestVerificationToken"] = Csrf(formularioVendedor) }));
+            Assert.Equal(HttpStatusCode.Redirect, respuesta.StatusCode);
+            Assert.Contains("/Cuenta/AccesoDenegado", respuesta.Headers.Location!.OriginalString);
+        }
+
+        var pagina = url + "/Usuarios/Create?handler=Crear";
+        var formulario = await admin.Http.GetStringAsync(url + "/Usuarios/Create");
+        var datos = new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = Csrf(formulario),
+            ["Nombre"] = "José", ["Apellido"] = "Peña", ["Correo"] = "jose@example.test", ["RolId"] = "2"
+        };
+        foreach (var caso in new[]
+        {
+            ("Nombre", "", "nombre"), ("Apellido", "", "apellido"),
+            ("Nombre", "José1", "solo permite letras"), ("Apellido", "Peña!", "solo permite letras"),
+            ("Correo", "incorrecto", "formato válido"), ("RolId", "", "RolId"),
+            ("RolId", "99999", "seleccionar un rol válido")
+        })
+        {
+            var original = datos[caso.Item1];
+            datos[caso.Item1] = caso.Item2;
+            using var respuesta = await admin.Http.PostAsync(pagina, new FormUrlEncodedContent(datos));
+            Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+            var html = WebUtility.HtmlDecode(await respuesta.Content.ReadAsStringAsync());
+            Assert.Contains(caso.Item3, html);
+            Assert.DoesNotContain("creado correctamente", html);
+            Assert.Equal(2, await fixture.EscalarAsync("SELECT COUNT(*) FROM dbo.Usuario"));
+            datos[caso.Item1] = original;
+        }
+        using (var respuesta = await admin.Http.PostAsync(pagina, new FormUrlEncodedContent(datos)))
+            Assert.Contains("Usuario jpena creado correctamente.", WebUtility.HtmlDecode(await respuesta.Content.ReadAsStringAsync()));
+        var creado = await fixture.UsuarioAsync("jpena");
+        var repositorio = new UsuarioRepository(fixture);
+        var registro = Assert.Single(await repositorio.ObtenerListadoAsync(), u => u.PublicId == creado.PublicId);
+        var filaActor = await fixture.FilaUsuarioAsync("admin");
+        var nombreActor = (string)filaActor["NombreCompleto"];
+        Assert.Equal(nombreActor, registro.CreadoPor);
+        Assert.Null(registro.ModificadoPor);
+        Assert.Null(registro.FechaModificacion);
+        var listado = await admin.Http.GetStringAsync(url + "/Usuarios");
+        using (var baja = await BajaAsync(admin, url, listado, IdProtegido(listado, creado.PublicId)))
+            Assert.Equal(HttpStatusCode.Redirect, baja.StatusCode);
+        registro = Assert.Single(await repositorio.ObtenerListadoAsync(), u => u.PublicId == creado.PublicId);
+        Assert.Equal(nombreActor, registro.ModificadoPor);
+        Assert.NotNull(registro.FechaModificacion);
+        listado = WebUtility.HtmlDecode(await admin.Http.GetStringAsync(url + "/Usuarios"));
+        var fila = Regex.Match(listado, @"<tr>\s*<td>" + creado.PublicId + @"</td>[\s\S]*?</tr>").Value;
+        Assert.Contains(nombreActor, fila);
+        Assert.Contains(registro.FechaCreacion.ToString("dd/MM/yyyy HH:mm"), fila);
+        Assert.Contains(registro.FechaModificacion.Value.ToString("dd/MM/yyyy HH:mm"), fila);
+        Assert.Contains("Inactivo", fila);
+    }
+
+    [SqlUs71Fact]
     public async Task CambioContrasenaPropio_ValidaFormularioProtegeOtrosDatosYRegistraAuditoria()
     {
         await using var fixture = await SqlFixture.CrearAsync();

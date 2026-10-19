@@ -96,7 +96,7 @@ public class ConsultaUsuarioServiceTests
         var permitidos = new[]
         {
             "PublicId", "NombreCompleto", "NombreUsuario", "Correo",
-            "Rol", "Estado", "FechaCreacion", "CreadoPor"
+            "Rol", "Estado", "FechaCreacion", "CreadoPor", "ModificadoPor", "FechaModificacion"
         };
 
         Assert.Equal(permitidos.OrderBy(p => p),
@@ -109,6 +109,8 @@ public class ConsultaUsuarioServiceTests
         Assert.Equal(esperado.Estado, usuario.GetProperty("Estado").GetString());
         Assert.Equal(esperado.FechaCreacion, usuario.GetProperty("FechaCreacion").GetDateTime());
         Assert.Equal(esperado.CreadoPor, usuario.GetProperty("CreadoPor").GetString());
+        Assert.Equal(esperado.ModificadoPor, usuario.GetProperty("ModificadoPor").GetString());
+        Assert.Equal(esperado.FechaModificacion, usuario.GetProperty("FechaModificacion").GetDateTime());
     }
 
     [Fact]
@@ -122,7 +124,8 @@ public class ConsultaUsuarioServiceTests
 
     internal static UsuarioListItemModel CrearUsuario(string estado) => new(
         Guid.NewGuid(), "Ana Pérez", "aperez", "ana@example.test",
-        RolesSistema.Vendedor, estado, new DateTime(2026, 10, 19, 10, 30, 0), "Administrador");
+        RolesSistema.Vendedor, estado, new DateTime(2026, 10, 19, 10, 30, 0), "Administrador",
+        "Ana Pérez", new DateTime(2026, 10, 19, 11, 0, 0));
 }
 
 internal sealed class UsuarioListadoRepositoryFake(params UsuarioListItemModel[] usuarios) : IUsuarioRepository

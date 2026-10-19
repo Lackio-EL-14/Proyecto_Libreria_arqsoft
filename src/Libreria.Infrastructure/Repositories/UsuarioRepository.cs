@@ -107,10 +107,11 @@ public class UsuarioRepository : IUsuarioRepository, IUsuarioSeguridadRepository
         command.CommandText = @"
             SELECT u.PublicId, u.NombreCompleto, u.NombreUsuario, u.Correo,
                    r.Nombre AS Rol, u.Estado, u.FechaCreacion,
-                   creador.NombreCompleto AS CreadoPor
+                   creador.NombreCompleto AS CreadoPor, u.FechaModificacion, modificador.NombreCompleto AS ModificadoPor
             FROM dbo.Usuario u
             INNER JOIN dbo.Rol r ON r.RolId = u.RolId
             LEFT JOIN dbo.Usuario creador ON creador.UsuarioId = u.UsuarioCreacionId
+            LEFT JOIN dbo.Usuario modificador ON modificador.UsuarioId = u.UsuarioModificacionId
             WHERE (@Estado IS NULL OR u.Estado = @Estado)
             ORDER BY u.FechaCreacion DESC, u.NombreUsuario ASC";
 
@@ -131,7 +132,9 @@ public class UsuarioRepository : IUsuarioRepository, IUsuarioSeguridadRepository
                 reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
                 reader.IsDBNull(reader.GetOrdinal("CreadoPor"))
                     ? null
-                    : reader.GetString(reader.GetOrdinal("CreadoPor"))));
+                    : reader.GetString(reader.GetOrdinal("CreadoPor")),
+                reader.IsDBNull(reader.GetOrdinal("ModificadoPor")) ? null : reader.GetString(reader.GetOrdinal("ModificadoPor")),
+                reader.IsDBNull(reader.GetOrdinal("FechaModificacion")) ? null : reader.GetDateTime(reader.GetOrdinal("FechaModificacion"))));
         }
 
         return usuarios;

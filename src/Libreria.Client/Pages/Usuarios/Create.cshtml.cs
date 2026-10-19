@@ -78,6 +78,12 @@ public class CreateModel : PageModel
     {
         await CargarRolesAsync();
 
+        if (!Roles.Any(rol => rol.Value == RolId.ToString()))
+            ModelState.AddModelError(nameof(RolId), "Debe seleccionar un rol válido.");
+
+        if (!ModelState.IsValid)
+            return Page();
+
         try
         {
             var input = new UsuarioAltaInput
@@ -125,6 +131,12 @@ public class CreateModel : PageModel
             ModelState.AddModelError(
                 nameof(Apellido),
                 "El apellido es obligatorio.");
+
+        if (!string.IsNullOrWhiteSpace(Nombre) && !Nombre.Trim().All(char.IsLetter))
+            ModelState.AddModelError(nameof(Nombre), "El nombre solo permite letras, incluyendo acentos y ñ.");
+
+        if (!string.IsNullOrWhiteSpace(Apellido) && !Apellido.Trim().All(char.IsLetter))
+            ModelState.AddModelError(nameof(Apellido), "El apellido solo permite letras, incluyendo acentos y ñ.");
     }
 
     private async Task CargarRolesAsync()
