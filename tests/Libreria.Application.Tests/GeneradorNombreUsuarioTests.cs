@@ -75,6 +75,9 @@ public class GeneradorNombreUsuarioTests
             return Task.FromResult(_usuarios.Contains(nombreUsuario));
         }
 
+        public Task<IReadOnlyList<Libreria.Application.Models.UsuarioListItemModel>> ObtenerListadoAsync(string? estado = null)
+            => throw new NotImplementedException();
+
         public Task<Usuario?> ObtenerActivoPorNombreUsuarioAsync(string nombreUsuario)
             => throw new NotImplementedException();
 

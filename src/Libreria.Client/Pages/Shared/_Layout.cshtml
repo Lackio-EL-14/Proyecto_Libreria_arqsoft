@@ -156,6 +156,16 @@
                         </div>
                     </div>
                 }
+                @if (esAdministrador)
+                {
+                    <div class="sidebar-section">
+                        <span class="sidebar-section__title">Administración</span>
+                        <a class="sidebar-link @getActiveClass("/Usuarios")" asp-page="/Usuarios/Index" title="Consultar usuarios">
+                            <span class="sidebar-link__icon" aria-hidden="true">👤</span>
+                            <span class="sidebar-link__text">Usuarios</span>
+                        </a>
+                    </div>
+                }
             </nav>
         </aside>
 

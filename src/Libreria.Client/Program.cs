@@ -158,6 +158,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<IConfiguracionAplicacion, ConfiguracionAplicacion>();
         services.AddScoped<IUsuarioService, UsuarioService>();
+        services.AddScoped<IConsultaUsuarioService, ConsultaUsuarioService>();
         services.AddScoped<IRolRepository, RolRepository>();
 
         return services;

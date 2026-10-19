@@ -1,4 +1,5 @@
 using Libreria.Domain;
+using Libreria.Application.Models;
 using Libreria.Application.Ports.Secondary;
 using System.Data;
 using System.Data.Common;
@@ -12,6 +13,45 @@ public class UsuarioRepository : IUsuarioRepository
     public UsuarioRepository(IDbConnectionFactory connectionFactory)
     {
         _connectionFactory = connectionFactory;
+    }
+
+    public async Task<IReadOnlyList<UsuarioListItemModel>> ObtenerListadoAsync(string? estado = null)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+
+        // Proyeccion de lectura: no cargar credenciales ni tokens para el listado.
+        command.CommandText = @"
+            SELECT u.PublicId, u.NombreCompleto, u.NombreUsuario, u.Correo,
+                   r.Nombre AS Rol, u.Estado, u.FechaCreacion,
+                   creador.NombreCompleto AS CreadoPor
+            FROM dbo.Usuario u
+            INNER JOIN dbo.Rol r ON r.RolId = u.RolId
+            LEFT JOIN dbo.Usuario creador ON creador.UsuarioId = u.UsuarioCreacionId
+            WHERE (@Estado IS NULL OR u.Estado = @Estado)
+            ORDER BY u.FechaCreacion DESC, u.NombreUsuario ASC";
+
+        AgregarParametro(command, "@Estado", estado is null ? DBNull.Value : estado, DbType.String, 20);
+
+        var usuarios = new List<UsuarioListItemModel>();
+        await using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            usuarios.Add(new UsuarioListItemModel(
+                reader.GetGuid(reader.GetOrdinal("PublicId")),
+                reader.GetString(reader.GetOrdinal("NombreCompleto")),
+                reader.GetString(reader.GetOrdinal("NombreUsuario")),
+                reader.GetString(reader.GetOrdinal("Correo")),
+                reader.GetString(reader.GetOrdinal("Rol")),
+                reader.GetString(reader.GetOrdinal("Estado")),
+                reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
+                reader.IsDBNull(reader.GetOrdinal("CreadoPor"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("CreadoPor"))));
+        }
+
+        return usuarios;
     }
 
     public async Task<Usuario?> ObtenerActivoPorNombreUsuarioAsync(string nombreUsuario)
