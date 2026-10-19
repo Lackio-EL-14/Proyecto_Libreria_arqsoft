@@ -147,5 +147,12 @@ app.Run();
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddRedisCaching(this IServiceCollection services) => services;
-    public static IServiceCollection AddUsuariosModule(this IServiceCollection services) => services;
+
+    public static IServiceCollection AddUsuariosModule(this IServiceCollection services)
+    {
+        services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+        services.AddScoped<IGeneradorNombreUsuario, GeneradorNombreUsuario>();
+
+        return services;
+    }
 }

@@ -1,0 +1,43 @@
+@page
+@model Libreria.Client.Pages.Usuarios.CreateModel
+@{
+    ViewData["Title"] = "Crear usuario";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 mb-4">Crear usuario</h1>
+
+            <form method="post" asp-page-handler="Generar">
+                <div class="mb-3">
+                    <label asp-for="Nombre" class="form-label"></label>
+                    <input asp-for="Nombre" class="form-control" />
+                    <span asp-validation-for="Nombre" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Apellido" class="form-label"></label>
+                    <input asp-for="Apellido" class="form-control" />
+                    <span asp-validation-for="Apellido" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Generar nombre de usuario
+                </button>
+            </form>
+
+            @if (!string.IsNullOrWhiteSpace(Model.NombreUsuario))
+            {
+                <hr />
+
+                <div class="mb-3">
+                    <label class="form-label">Nombre de usuario generado</label>
+                    <input class="form-control"
+                           value="@Model.NombreUsuario"
+                           readonly />
+                </div>
+            }
+        </div>
+    </div>
+</div>
