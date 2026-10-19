@@ -20,18 +20,26 @@ public class UsuarioRepository : IUsuarioRepository
         await using var command = connection.CreateCommand();
 
         command.CommandText = @"
-            SELECT u.UsuarioId, u.PublicId, u.NombreUsuario, u.NombreCompleto,
-                   u.PasswordHash, u.RolId, u.Estado, u.FechaCreacion,
-                   u.FechaModificacion,
-                   r.Nombre AS RolNombre, r.Descripcion AS RolDescripcion,
+            SELECT u.UsuarioId, u.PublicId,
+                   u.Nombre, u.Apellido, u.Correo,
+                   u.NombreUsuario, u.NombreCompleto,
+                   u.PasswordHash, u.RolId, u.Estado,
+                   u.TokenActivacionHash,
+                   u.TokenActivacionExpiracion,
+                   u.TokenActivacionFechaUso,
+                   u.FechaCreacion, u.FechaModificacion,
+                   u.UsuarioCreacionId, u.UsuarioModificacionId,
+                   r.Nombre AS RolNombre,
+                   r.Descripcion AS RolDescripcion,
                    r.Estado AS RolEstado
             FROM Usuario u
             INNER JOIN Rol r ON u.RolId = r.RolId
             WHERE u.NombreUsuario = @NombreUsuario
-              AND u.Estado = 1
+              AND u.Estado = @EstadoActivo
               AND r.Estado = 1";
 
         AgregarParametro(command, "@NombreUsuario", nombreUsuario.Trim(), DbType.String, 50);
+        AgregarParametro(command, "@EstadoActivo", EstadosUsuario.Activo, DbType.String, 20);
 
         await using var reader = await command.ExecuteReaderAsync();
 
@@ -59,6 +67,157 @@ public class UsuarioRepository : IUsuarioRepository
             : Convert.ToString(resultado);
     }
 
+    public async Task<bool> ExisteNombreUsuarioAsync(string nombreUsuario)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = @"
+        SELECT COUNT(1)
+        FROM Usuario
+        WHERE NombreUsuario = @NombreUsuario";
+
+        AgregarParametro(
+            command,
+            "@NombreUsuario",
+            nombreUsuario.Trim(),
+            DbType.String,
+            50);
+
+        var resultado = await command.ExecuteScalarAsync();
+
+        return Convert.ToInt32(resultado) > 0;
+    }
+
+    public async Task<bool> ExisteCorreoAsync(string correo)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = @"
+        SELECT COUNT(1)
+        FROM Usuario
+        WHERE Correo = @Correo";
+
+        AgregarParametro(
+            command,
+            "@Correo",
+            correo.Trim(),
+            DbType.String,
+            254);
+
+        var resultado = await command.ExecuteScalarAsync();
+
+        return Convert.ToInt32(resultado) > 0;
+    }
+
+    public async Task<int> InsertarAsync(Usuario usuario)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = @"
+        INSERT INTO dbo.Usuario
+        (
+            Nombre,
+            Apellido,
+            Correo,
+            NombreUsuario,
+            NombreCompleto,
+            PasswordHash,
+            RolId,
+            Estado,
+            TokenActivacionHash,
+            TokenActivacionExpiracion,
+            TokenActivacionFechaUso,
+            UsuarioCreacionId,
+            UsuarioModificacionId
+        )
+        OUTPUT INSERTED.UsuarioId
+        VALUES
+        (
+            @Nombre,
+            @Apellido,
+            @Correo,
+            @NombreUsuario,
+            @NombreCompleto,
+            @PasswordHash,
+            @RolId,
+            @Estado,
+            @TokenActivacionHash,
+            @TokenActivacionExpiracion,
+            @TokenActivacionFechaUso,
+            @UsuarioCreacionId,
+            @UsuarioModificacionId
+        );";
+
+        var nombreCompleto =
+            $"{usuario.Nombre.Trim()} {usuario.Apellido.Trim()}".Trim();
+
+        AgregarParametro(command, "@Nombre", usuario.Nombre.Trim(), DbType.String, 100);
+        AgregarParametro(command, "@Apellido", usuario.Apellido.Trim(), DbType.String, 100);
+        AgregarParametro(command, "@Correo", usuario.Correo.Trim(), DbType.String, 254);
+        AgregarParametro(command, "@NombreUsuario", usuario.NombreUsuario.Trim(), DbType.String, 50);
+        AgregarParametro(command, "@NombreCompleto", nombreCompleto, DbType.String, 150);
+
+        AgregarParametro(
+            command,
+            "@PasswordHash",
+            string.IsNullOrWhiteSpace(usuario.PasswordHash)
+                ? DBNull.Value
+                : usuario.PasswordHash,
+            DbType.String,
+            500);
+
+        AgregarParametro(command, "@RolId", usuario.RolId, DbType.Int32);
+        AgregarParametro(command, "@Estado", usuario.Estado, DbType.String, 20);
+
+        AgregarParametro(
+            command,
+            "@TokenActivacionHash",
+            usuario.TokenActivacionHash is null
+                ? DBNull.Value
+                : usuario.TokenActivacionHash,
+            DbType.String,
+            200);
+
+        AgregarParametro(
+            command,
+            "@TokenActivacionExpiracion",
+            usuario.TokenActivacionExpiracion.HasValue
+                ? usuario.TokenActivacionExpiracion.Value
+                : DBNull.Value,
+            DbType.DateTime2);
+
+        AgregarParametro(
+            command,
+            "@TokenActivacionFechaUso",
+            usuario.TokenActivacionFechaUso.HasValue
+                ? usuario.TokenActivacionFechaUso.Value
+                : DBNull.Value,
+            DbType.DateTime2);
+
+        AgregarParametro(
+            command,
+            "@UsuarioCreacionId",
+            usuario.UsuarioCreacionId.HasValue
+                ? usuario.UsuarioCreacionId.Value
+                : DBNull.Value,
+            DbType.Int32);
+
+        AgregarParametro(
+            command,
+            "@UsuarioModificacionId",
+            usuario.UsuarioModificacionId.HasValue
+                ? usuario.UsuarioModificacionId.Value
+                : DBNull.Value,
+            DbType.Int32);
+
+        var resultado = await command.ExecuteScalarAsync();
+
+        return Convert.ToInt32(resultado);
+    }
+
     private async Task<DbConnection> CrearConexionAbiertaAsync()
     {
         var connection = _connectionFactory.CreateConnection();
@@ -79,22 +238,61 @@ public class UsuarioRepository : IUsuarioRepository
         {
             UsuarioId = reader.GetInt32(reader.GetOrdinal("UsuarioId")),
             PublicId = reader.GetGuid(reader.GetOrdinal("PublicId")),
+
+            Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
+            Apellido = reader.GetString(reader.GetOrdinal("Apellido")),
+            Correo = reader.GetString(reader.GetOrdinal("Correo")),
+
             NombreUsuario = reader.GetString(reader.GetOrdinal("NombreUsuario")),
             NombreCompleto = reader.GetString(reader.GetOrdinal("NombreCompleto")),
-            PasswordHash = reader.GetString(reader.GetOrdinal("PasswordHash")),
+
+            PasswordHash = reader.IsDBNull(reader.GetOrdinal("PasswordHash"))
+                ? string.Empty
+                : reader.GetString(reader.GetOrdinal("PasswordHash")),
+
             RolId = rolId,
-            Estado = reader.GetBoolean(reader.GetOrdinal("Estado")),
+            Estado = reader.GetString(reader.GetOrdinal("Estado")),
+
+            TokenActivacionHash =
+                reader.IsDBNull(reader.GetOrdinal("TokenActivacionHash"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("TokenActivacionHash")),
+
+            TokenActivacionExpiracion =
+                reader.IsDBNull(reader.GetOrdinal("TokenActivacionExpiracion"))
+                    ? null
+                    : reader.GetDateTime(reader.GetOrdinal("TokenActivacionExpiracion")),
+
+            TokenActivacionFechaUso =
+                reader.IsDBNull(reader.GetOrdinal("TokenActivacionFechaUso"))
+                    ? null
+                    : reader.GetDateTime(reader.GetOrdinal("TokenActivacionFechaUso")),
+
             FechaCreacion = reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
-            FechaModificacion = reader.IsDBNull(reader.GetOrdinal("FechaModificacion"))
-                ? null
-                : reader.GetDateTime(reader.GetOrdinal("FechaModificacion")),
+
+            FechaModificacion =
+                reader.IsDBNull(reader.GetOrdinal("FechaModificacion"))
+                    ? null
+                    : reader.GetDateTime(reader.GetOrdinal("FechaModificacion")),
+
+            UsuarioCreacionId =
+                reader.IsDBNull(reader.GetOrdinal("UsuarioCreacionId"))
+                    ? null
+                    : reader.GetInt32(reader.GetOrdinal("UsuarioCreacionId")),
+
+            UsuarioModificacionId =
+                reader.IsDBNull(reader.GetOrdinal("UsuarioModificacionId"))
+                    ? null
+                    : reader.GetInt32(reader.GetOrdinal("UsuarioModificacionId")),
+
             Rol = new Rol
             {
                 RolId = rolId,
                 Nombre = reader.GetString(reader.GetOrdinal("RolNombre")),
-                Descripcion = reader.IsDBNull(reader.GetOrdinal("RolDescripcion"))
-                    ? null
-                    : reader.GetString(reader.GetOrdinal("RolDescripcion")),
+                Descripcion =
+                    reader.IsDBNull(reader.GetOrdinal("RolDescripcion"))
+                        ? null
+                        : reader.GetString(reader.GetOrdinal("RolDescripcion")),
                 Estado = reader.GetBoolean(reader.GetOrdinal("RolEstado"))
             }
         };
