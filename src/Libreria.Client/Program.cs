@@ -52,6 +52,7 @@ builder.Services.AddScoped<MarcaValidator>();
 builder.Services.AddScoped<ProductoValidator>();
 builder.Services.AddScoped<ClienteValidator>();
 builder.Services.AddScoped<LoginValidator>();
+builder.Services.AddScoped<PasswordPolicyValidator>();
 
 // Servicios y Repositorios adicionales (Catálogo, Histórico)
 builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoRepository>();
