@@ -36,7 +36,7 @@ builder.Services
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 
 
-builder.Services.AddRedisCaching();
+builder.Services.AddRedisCaching(builder.Configuration);
 builder.Services.AddUsuariosModule();
 
 // Fábricas base del Factory Method
@@ -56,6 +56,7 @@ builder.Services.AddScoped<PasswordPolicyValidator>();
 
 // Servicios y Repositorios adicionales (Catálogo, Histórico)
 builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoRepository>();
+builder.Services.AddScoped<ProductosActivosService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
 builder.Services.AddScoped<IHistoricoCostoRepository, HistoricoCostoRepository>();
@@ -152,8 +153,6 @@ app.Run();
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddRedisCaching(this IServiceCollection services) => services;
-
     public static IServiceCollection AddUsuariosModule(this IServiceCollection services)
     {
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
