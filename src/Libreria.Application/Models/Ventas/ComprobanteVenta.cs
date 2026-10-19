@@ -14,11 +14,11 @@ public sealed record ComprobanteVenta
         = Array.Empty<DetalleComprobanteVenta>();
 
     public decimal Total { get; init; }
+    public string TotalEnLetras { get; init; } = string.Empty;
 
     // El esquema actual de Venta no almacena la fecha de registro.
     public DateTimeOffset? FechaVenta { get; init; }
 
     public DateTimeOffset GeneradoEl { get; init; }
 
-    public string GeneradoPor { get; init; } = string.Empty;
 }

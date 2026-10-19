@@ -59,7 +59,7 @@ public class IndexModel : PageModel
         return new JsonResult(detalle);
     }
 
-    public async Task<IActionResult> OnPostAnularAsync(Guid publicId)
+    public async Task<IActionResult> OnPostAnularAsync(Guid publicId, string motivoAnulacion)
     {
         if (!EsAdministrador)
         {
@@ -74,8 +74,12 @@ public class IndexModel : PageModel
 
         try
         {
-            await _ventaFacade.AnularVentaAsync(publicId);
+            await _ventaFacade.AnularVentaAsync(publicId, motivoAnulacion);
             MensajeExito = "La venta fue anulada exitosamente y el stock ha sido restaurado.";
+        }
+        catch (ArgumentException ex)
+        {
+            MensajeError = ex.Message;
         }
         catch (InvalidOperationException ex)
         {

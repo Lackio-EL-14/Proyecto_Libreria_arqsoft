@@ -191,6 +191,12 @@ else
                         <strong style="color: var(--color-danger); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">Anulado por</strong>
                         <span id="detalleAnuladoPor" style="color: var(--color-danger); font-weight: 500;"></span>
                         <span id="detalleFechaAnulacion" style="font-size: 0.78rem; color: var(--color-secondary); display: block;"></span>
+                        <div style="margin-top: 0.5rem;">
+                            <strong style="color: var(--color-danger); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">
+                                Motivo de anulación
+                            </strong>
+                            <span id="detalleMotivoAnulacion" style="color: var(--color-text);"></span>
+                        </div>
                     </div>
                 </div>
 
@@ -253,11 +259,38 @@ else
 
             <div class="confirmation-modal__body">
                 <p>
-                    ¿Está seguro de que desea anular la venta del cliente <strong id="anularClienteNombre"></strong> por un monto de <strong id="anularTotalVenta"></strong>?
+                    ¿Está seguro de que desea anular la venta del cliente
+                    <strong id="anularClienteNombre"></strong>
+                    por un monto de
+                    <strong id="anularTotalVenta"></strong>?
                 </p>
 
-                <div class="confirmation-modal__warning" style="margin-top: 1rem; background-color: var(--color-warning-bg); border: 1px solid var(--color-warning-border); padding: 0.75rem; border-radius: var(--radius-base); font-size: 0.85rem;">
-                    <strong>⚠️ Importante:</strong> Esta acción cambiará el estado de la venta a <em>Anulada</em> y restaurará inmediatamente en el inventario el stock consumido de todos los productos de esta venta. Esta operación no se puede revertir.
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="motivoAnulacion">
+                        Motivo de anulación
+                    </label>
+
+                    <textarea
+                        id="motivoAnulacion"
+                        name="motivoAnulacion"
+                        class="form-control"
+                        rows="4"
+                        minlength="10"
+                        maxlength="250"
+                        required
+                        placeholder="Ingrese el motivo de la anulación"></textarea>
+
+                    <small style="color: var(--color-secondary);">
+                        Debe ingresar entre 10 y 250 caracteres.
+                    </small>
+                </div>
+
+                <div class="confirmation-modal__warning"
+                    style="margin-top: 1rem; background-color: var(--color-warning-bg); border: 1px solid var(--color-warning-border); padding: 0.75rem; border-radius: var(--radius-base); font-size: 0.85rem;">
+                    <strong>⚠️ Importante:</strong>
+                    Esta acción es irreversible. La anulación quedará registrada con
+                    el usuario que la realiza, la fecha y el motivo indicado.
+                    También se restaurará el stock de los productos de la venta.
                 </div>
             </div>
 
@@ -407,6 +440,8 @@ else
                 contAnulacion.style.display = 'block';
                 document.getElementById('detalleAnuladoPor').textContent = data.anuladoPor || 'Usuario';
                 document.getElementById('detalleFechaAnulacion').textContent = formatearFecha(data.fechaAnulacion);
+                document.getElementById('detalleMotivoAnulacion').textContent =
+                    data.motivoAnulacion || 'Sin motivo registrado';
             } else {
                 contAnulacion.style.display = 'none';
             }
@@ -453,6 +488,7 @@ else
             document.getElementById('anularVentaPublicId').value = publicId;
             document.getElementById('anularClienteNombre').textContent = clienteNombre;
             document.getElementById('anularTotalVenta').textContent = 'Bs. ' + total;
+            document.getElementById('motivoAnulacion').value = '';
             modalAnular.showModal();
         }
 

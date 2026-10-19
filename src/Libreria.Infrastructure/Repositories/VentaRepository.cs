@@ -33,15 +33,16 @@ public class VentaRepository : IVentaRepository
 
         command.CommandText = @"
             INSERT INTO Venta
-                (PublicId, ClienteId, Estado,
-                 FechaCreacion, UsuarioCreacionId, UsuarioAnulacionId)
+                (PublicId, ClienteId, Total, Estado,
+                FechaCreacion, UsuarioCreacionId, UsuarioAnulacionId)
             OUTPUT INSERTED.VentaId
             VALUES
-                (@PublicId, @ClienteId, @Estado,
-                 SYSDATETIME(), @UsuarioCreacionId, @UsuarioAnulacionId)";
+                (@PublicId, @ClienteId, @Total, @Estado,
+                SYSDATETIME(), @UsuarioCreacionId, @UsuarioAnulacionId)";
 
         AgregarParametro(command, "@PublicId", venta.PublicId);
         AgregarParametro(command, "@ClienteId", venta.ClienteId);
+        AgregarParametro(command, "@Total", venta.Total);
         AgregarParametro(command, "@Estado", venta.Estado);
         AgregarParametro(
             command,
@@ -100,6 +101,7 @@ public class VentaRepository : IVentaRepository
         int ventaId,
         string estado,
         int? usuarioAnulacionId,
+        string? motivoAnulacion,
         IDbConnection connection,
         IDbTransaction transaction)
     {
@@ -113,6 +115,7 @@ public class VentaRepository : IVentaRepository
             UPDATE Venta
             SET Estado = @Estado,
                 UsuarioAnulacionId = @UsuarioAnulacionId,
+                MotivoAnulacion = @MotivoAnulacion,
                 FechaAnulacion = CASE WHEN @Estado = N'Anulada' THEN SYSDATETIME() ELSE FechaAnulacion END
             WHERE VentaId = @VentaId";
 
@@ -122,6 +125,10 @@ public class VentaRepository : IVentaRepository
             command,
             "@UsuarioAnulacionId",
             usuarioAnulacionId ?? (object)DBNull.Value);
+        AgregarParametro(
+            command,
+            "@MotivoAnulacion",
+            motivoAnulacion ?? (object)DBNull.Value);
 
         return await command.ExecuteNonQueryAsync() == 1;
     }
@@ -134,8 +141,8 @@ public class VentaRepository : IVentaRepository
         await using var command = connection.CreateCommand();
 
         command.CommandText = @"
-            SELECT VentaId, PublicId, ClienteId, Estado,
-                   FechaCreacion, FechaAnulacion,
+            SELECT VentaId, PublicId, ClienteId, Total, Estado,
+                   FechaCreacion, FechaAnulacion, MotivoAnulacion,
                    UsuarioCreacionId, UsuarioAnulacionId
             FROM Venta
             WHERE Estado = N'Activa'
@@ -159,8 +166,8 @@ public class VentaRepository : IVentaRepository
         await using var command = connection.CreateCommand();
 
         command.CommandText = @"
-            SELECT VentaId, PublicId, ClienteId, Estado,
-                   FechaCreacion, FechaAnulacion,
+            SELECT VentaId, PublicId, ClienteId, Total, Estado,
+                   FechaCreacion, FechaAnulacion, MotivoAnulacion,
                    UsuarioCreacionId, UsuarioAnulacionId
             FROM Venta
             ORDER BY FechaCreacion DESC, VentaId DESC";
@@ -181,8 +188,8 @@ public class VentaRepository : IVentaRepository
         await using var command = connection.CreateCommand();
 
         command.CommandText = @"
-            SELECT VentaId, PublicId, ClienteId, Estado,
-                   FechaCreacion, FechaAnulacion,
+            SELECT VentaId, PublicId, ClienteId, Total, Estado,
+                   FechaCreacion, FechaAnulacion, MotivoAnulacion,
                    UsuarioCreacionId, UsuarioAnulacionId
             FROM Venta
             WHERE PublicId = @PublicId";
@@ -208,8 +215,8 @@ public class VentaRepository : IVentaRepository
         command.Transaction = dbTransaction;
 
         command.CommandText = @"
-            SELECT VentaId, PublicId, ClienteId, Estado,
-                   FechaCreacion, FechaAnulacion,
+            SELECT VentaId, PublicId, ClienteId, Total, Estado,
+                   FechaCreacion, FechaAnulacion, MotivoAnulacion,
                    UsuarioCreacionId, UsuarioAnulacionId
             FROM Venta WITH (UPDLOCK, ROWLOCK)
             WHERE PublicId = @PublicId";
@@ -294,15 +301,14 @@ public class VentaRepository : IVentaRepository
 
         var query = @"
             SELECT v.VentaId, v.PublicId, v.Estado, v.FechaCreacion, v.FechaAnulacion,
-                   c.RazonSocial AS ClienteNombre, c.CiNit AS ClienteCiNit,
-                   u.NombreCompleto AS CreadoPor,
-                   ua.NombreCompleto AS AnuladoPor,
-                   ISNULL(SUM(d.Importe), 0) AS Total
+                c.RazonSocial AS ClienteNombre, c.CiNit AS ClienteCiNit,
+                u.NombreCompleto AS CreadoPor,
+                ua.NombreCompleto AS AnuladoPor,
+                v.Total AS Total
             FROM Venta v
             INNER JOIN Cliente c ON v.ClienteId = c.ClienteId
             INNER JOIN Usuario u ON v.UsuarioCreacionId = u.UsuarioId
             LEFT JOIN Usuario ua ON v.UsuarioAnulacionId = ua.UsuarioId
-            LEFT JOIN DetalleVenta d ON v.VentaId = d.VentaId
             WHERE 1 = 1";
 
         if (!string.IsNullOrWhiteSpace(filtro.Estado) && !filtro.Estado.Equals("Todas", StringComparison.OrdinalIgnoreCase))
@@ -326,8 +332,6 @@ public class VentaRepository : IVentaRepository
         }
 
         query += @"
-            GROUP BY v.VentaId, v.PublicId, v.Estado, v.FechaCreacion, v.FechaAnulacion,
-                     c.RazonSocial, c.CiNit, u.NombreCompleto, ua.NombreCompleto
             ORDER BY v.FechaCreacion DESC, v.VentaId DESC";
 
         command.CommandText = query;
@@ -369,7 +373,7 @@ public class VentaRepository : IVentaRepository
         await using (var command = connection.CreateCommand())
         {
             command.CommandText = @"
-                SELECT v.VentaId, v.PublicId, v.Estado, v.FechaCreacion, v.FechaAnulacion,
+                SELECT v.VentaId, v.PublicId, v.Total, v.Estado, v.FechaCreacion, v.FechaAnulacion, v.MotivoAnulacion,
                        c.RazonSocial AS ClienteNombre, c.CiNit AS ClienteCiNit,
                        u.NombreCompleto AS CreadoPor,
                        ua.NombreCompleto AS AnuladoPor
@@ -396,6 +400,10 @@ public class VentaRepository : IVentaRepository
                 FechaAnulacion = reader.IsDBNull(reader.GetOrdinal("FechaAnulacion"))
                     ? null
                     : reader.GetDateTime(reader.GetOrdinal("FechaAnulacion")),
+                MotivoAnulacion = reader.IsDBNull(reader.GetOrdinal("MotivoAnulacion"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("MotivoAnulacion")),
+                Total = reader.GetDecimal(reader.GetOrdinal("Total")),
                 Estado = reader.GetString(reader.GetOrdinal("Estado")),
                 ClienteNombre = reader.GetString(reader.GetOrdinal("ClienteNombre")),
                 ClienteCiNit = reader.GetString(reader.GetOrdinal("ClienteCiNit")),
@@ -420,7 +428,6 @@ public class VentaRepository : IVentaRepository
 
             await using var readerDetalle = await commandDetalle.ExecuteReaderAsync();
 
-            decimal totalVenta = 0m;
             decimal totalGanancia = 0m;
 
             while (await readerDetalle.ReadAsync())
@@ -431,7 +438,6 @@ public class VentaRepository : IVentaRepository
                 var ganancia = readerDetalle.GetDecimal(readerDetalle.GetOrdinal("Ganancia"));
                 var productoNombre = readerDetalle.GetString(readerDetalle.GetOrdinal("ProductoNombre"));
 
-                totalVenta += importe;
                 totalGanancia += ganancia;
 
                 detalleModel.Lineas.Add(new VentaLineaDetalleModel
@@ -444,7 +450,6 @@ public class VentaRepository : IVentaRepository
                 });
             }
 
-            detalleModel.Total = totalVenta;
             detalleModel.GananciaTotal = esAdministrador ? totalGanancia : null;
         }
 
@@ -457,7 +462,7 @@ public class VentaRepository : IVentaRepository
         await using var command = connection.CreateCommand();
 
         command.CommandText = @"
-            SELECT v.PublicId, v.Estado,
+            SELECT v.PublicId, v.Estado, v.Total,
                    c.CiNit AS CiNitCliente, c.RazonSocial AS RazonSocialCliente,
                    p.Nombre AS NombreProducto,
                    d.Cantidad, d.PrecioUnitarioVenta, d.Importe
@@ -478,6 +483,7 @@ public class VentaRepository : IVentaRepository
 
         var referencia = reader.GetGuid(reader.GetOrdinal("PublicId"));
         var estado = reader.GetString(reader.GetOrdinal("Estado"));
+        var total = reader.GetDecimal(reader.GetOrdinal("Total"));
         var ciNit = reader.GetString(reader.GetOrdinal("CiNitCliente"));
         var razonSocial = reader.GetString(reader.GetOrdinal("RazonSocialCliente"));
         var detalles = new List<DetalleComprobanteVenta>();
@@ -498,7 +504,8 @@ public class VentaRepository : IVentaRepository
             Estado = estado,
             CiNitCliente = ciNit,
             RazonSocialCliente = razonSocial,
-            Detalles = detalles.ToArray()
+            Detalles = detalles.ToArray(),
+            Total = total
         };
     }
 
@@ -522,12 +529,16 @@ public class VentaRepository : IVentaRepository
             PublicId = reader.GetGuid(reader.GetOrdinal("PublicId")),
             ClienteId = reader.GetInt32(reader.GetOrdinal("ClienteId")),
             Estado = reader.GetString(reader.GetOrdinal("Estado")),
+            Total = reader.GetDecimal(reader.GetOrdinal("Total")),
             FechaCreacion = reader.IsDBNull(reader.GetOrdinal("FechaCreacion"))
                 ? DateTime.MinValue
                 : reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
             FechaAnulacion = reader.IsDBNull(reader.GetOrdinal("FechaAnulacion"))
                 ? null
                 : reader.GetDateTime(reader.GetOrdinal("FechaAnulacion")),
+            MotivoAnulacion = reader.IsDBNull(reader.GetOrdinal("MotivoAnulacion"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("MotivoAnulacion")),
             UsuarioCreacionId =
                 reader.GetInt32(reader.GetOrdinal("UsuarioCreacionId")),
             UsuarioAnulacionId =

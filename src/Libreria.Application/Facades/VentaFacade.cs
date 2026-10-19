@@ -104,20 +104,7 @@ namespace Libreria.Application.Facades
 
             try
             {
-                var venta = new Venta
-                {
-                    PublicId = input.SolicitudId == Guid.Empty
-                        ? Guid.NewGuid()
-                        : input.SolicitudId,
-                    ClienteId = cliente.ClienteId,
-                    Estado = "Activa",
-                    UsuarioCreacionId = usuarioId
-                };
-
-                var ventaId = await _ventaRepository.InsertarAsync(
-                    venta,
-                    connection,
-                    transaction);
+                var detallesPreparados = new List<DetalleVenta>();
                 decimal total = 0m;
 
                 foreach (var detalleInput in input.Detalles)
@@ -142,43 +129,63 @@ namespace Libreria.Application.Facades
                     var importe =
                         detalleInput.Cantidad * producto.PrecioVenta;
 
-                    total += importe;
-
                     var ganancia =
                         detalleInput.Cantidad *
                         (producto.PrecioVenta - producto.CostoAdquisicionActual);
 
-                    var detalleVenta = new DetalleVenta
+                    total += importe;
+
+                    detallesPreparados.Add(new DetalleVenta
                     {
-                        VentaId = ventaId,
                         ProductoId = producto.ProductoId,
                         Cantidad = detalleInput.Cantidad,
                         PrecioUnitarioVenta = producto.PrecioVenta,
                         CostoAdquisicionUnitario = producto.CostoAdquisicionActual,
                         Importe = importe,
                         Ganancia = ganancia
-                    };
+                    });
+                }
+
+                var venta = new Venta
+                {
+                    PublicId = input.SolicitudId == Guid.Empty
+                        ? Guid.NewGuid()
+                        : input.SolicitudId,
+                    ClienteId = cliente.ClienteId,
+                    Total = total,
+                    Estado = "Activa",
+                    UsuarioCreacionId = usuarioId
+                };
+
+                var ventaId = await _ventaRepository.InsertarAsync(
+                    venta,
+                    connection,
+                    transaction);
+
+                foreach (var detalleVenta in detallesPreparados)
+                {
+                    detalleVenta.VentaId = ventaId;
 
                     await _ventaRepository.InsertarDetalleAsync(
                         detalleVenta,
                         connection,
                         transaction);
+
                     try
                     {
                         await _stockFacade.DescontarStockAsync(
-                            producto.ProductoId,
-                            detalleInput.Cantidad,
+                            detalleVenta.ProductoId,
+                            detalleVenta.Cantidad,
                             connection,
                             transaction);
                     }
                     catch (InvalidOperationException errorStock)
                     {
                         throw new VentaRegistroException(
-                            $"No existe stock suficiente de {producto.Nombre} para realizar la venta.",
+                            "No existe stock suficiente para realizar la venta.",
                             innerException: errorStock);
                     }
                 }
-
                 await transaction.CommitAsync();
 
                 return new VentaRegistradaResult
@@ -281,11 +288,26 @@ namespace Libreria.Application.Facades
             };
         }
 
-        public async Task AnularVentaAsync(Guid publicId)
+        public async Task AnularVentaAsync(Guid publicId, string motivoAnulacion)
         {
             if (publicId == Guid.Empty)
             {
                 throw new ArgumentException("El identificador de la venta es inválido.", nameof(publicId));
+            }
+            if (string.IsNullOrWhiteSpace(motivoAnulacion))
+            {
+                throw new ArgumentException(
+                    "Debe ingresar el motivo de la anulación.",
+                    nameof(motivoAnulacion));
+            }
+
+            motivoAnulacion = motivoAnulacion.Trim();
+
+            if (motivoAnulacion.Length < 10 || motivoAnulacion.Length > 250)
+            {
+                throw new ArgumentException(
+                    "El motivo de la anulación debe tener entre 10 y 250 caracteres.",
+                    nameof(motivoAnulacion));
             }
 
             var usuarioId = _usuarioActual.UsuarioId
@@ -318,6 +340,7 @@ namespace Libreria.Application.Facades
                     venta.VentaId,
                     "Anulada",
                     usuarioId,
+                    motivoAnulacion,
                     connection,
                     transaction);
 

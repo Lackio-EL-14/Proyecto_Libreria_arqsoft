@@ -5,6 +5,7 @@ public class VentaDetalleCompletoModel
     public Guid PublicId { get; set; }
     public DateTime FechaCreacion { get; set; }
     public DateTime? FechaAnulacion { get; set; }
+    public string? MotivoAnulacion { get; set; }
     public string Estado { get; set; } = string.Empty;
     public string ClienteNombre { get; set; } = string.Empty;
     public string ClienteCiNit { get; set; } = string.Empty;

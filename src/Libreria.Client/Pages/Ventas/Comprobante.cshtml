@@ -107,6 +107,7 @@
                 <section class="comprobante-total" aria-label="Total de la venta">
                     <span>Total de la venta</span>
                     <strong>@Importe(comprobante.Total)</strong>
+                    <span>@comprobante.TotalEnLetras</span>
                 </section>
 
                 <footer class="comprobante-generacion" aria-labelledby="generacion-titulo">
@@ -115,12 +116,10 @@
                         <div>
                             <dt>Fecha y hora de generación</dt>
                             <dd>
-                                <time datetime="@comprobante.GeneradoEl.ToString("O", CultureInfo.InvariantCulture)">@Fecha(comprobante.GeneradoEl)</time>
+                                <time datetime="@comprobante.GeneradoEl.ToString("O", CultureInfo.InvariantCulture)">
+                                    @Fecha(comprobante.GeneradoEl)
+                                </time>
                             </dd>
-                        </div>
-                        <div>
-                            <dt>Generado por</dt>
-                            <dd>@comprobante.GeneradoPor</dd>
                         </div>
                     </dl>
                     <p class="comprobante-zona">Fechas y horas expresadas en la hora de Bolivia (UTC−04:00).</p>
