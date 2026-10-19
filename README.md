@@ -101,6 +101,17 @@ docker compose logs -f
 
 ```
 
+**Comprobar la caché distribuida de productos activos:**
+
+La clave lógica `productos:activos` usa el prefijo configurado `libreria:`, por lo que Redis la almacena como `libreria:productos:activos` durante cinco minutos.
+
+```bash
+docker exec libreria-redis redis-cli TYPE libreria:productos:activos
+docker exec libreria-redis redis-cli TTL libreria:productos:activos
+docker exec libreria-redis redis-cli HGET libreria:productos:activos data
+docker compose logs app1 app2 app3 app4 | grep "Cache HIT\|Cache MISS"
+```
+
 **Reiniciar sistema con Base de Datos limpia (Destructivo):**
 
 ```bash

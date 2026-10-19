@@ -9,13 +9,16 @@ public class ProductoService : IProductoService
 {
     private readonly ICatalogoProductoRepository _catalogoRepository;
     private readonly ProductoValidator _validator;
+    private readonly ProductosActivosService _productosActivos;
 
     public ProductoService(
         ICatalogoProductoRepository catalogoRepository,
-        ProductoValidator validator)
+        ProductoValidator validator,
+        ProductosActivosService productosActivos)
     {
         _catalogoRepository = catalogoRepository;
         _validator = validator;
+        _productosActivos = productosActivos;
     }
 
 
@@ -25,12 +28,18 @@ public class ProductoService : IProductoService
     int? marcaId,
     ICrudRepository<Producto> repository)
     {
-        var productos = await repository.ObtenerActivasAsync(busqueda);
+        var productos = await _productosActivos.ObtenerAsync(repository);
+        var busquedaNormalizada = busqueda?.Trim();
 
         var categorias = _catalogoRepository.ObtenerCategoriasActivas();
         var marcas = _catalogoRepository.ObtenerMarcasActivas();
 
         var productosFiltrados = productos
+            .Where(p => string.IsNullOrWhiteSpace(busquedaNormalizada)
+                || p.Nombre.Contains(busquedaNormalizada, StringComparison.OrdinalIgnoreCase)
+                || (p.DescripcionEspecifica?.Contains(
+                    busquedaNormalizada,
+                    StringComparison.OrdinalIgnoreCase) ?? false))
             .Where(p => !categoriaId.HasValue || p.CategoriaId == categoriaId.Value)
             .Where(p => !marcaId.HasValue || p.MarcaId == marcaId.Value)
             .Select(p => new ProductoListItem(
@@ -83,6 +92,7 @@ public class ProductoService : IProductoService
         };
 
         await repository.CrearAsync(producto);
+        await _productosActivos.InvalidarAsync();
 
         return ResultadoOperacion.Correcto();
     }
@@ -187,9 +197,14 @@ public class ProductoService : IProductoService
         producto.CategoriaId = input.CategoriaId;
         producto.MarcaId = input.MarcaId;
 
-        return await repository.ActualizarAsync(producto)
-            ? ResultadoOperacion.Correcto()
-            : ResultadoOperacion.NoExiste();
+        if (!await repository.ActualizarAsync(producto))
+        {
+            return ResultadoOperacion.NoExiste();
+        }
+
+        await _productosActivos.InvalidarAsync();
+
+        return ResultadoOperacion.Correcto();
     }
 
     public async Task<ProductoDetalle?> ObtenerParaBajaAsync(
@@ -203,6 +218,13 @@ public class ProductoService : IProductoService
     Guid publicId,
     ICrudRepository<Producto> repository)
     {
-        return await repository.CambiarEstadoAsync(publicId, false);
+        var productoDesactivado = await repository.CambiarEstadoAsync(publicId, false);
+
+        if (productoDesactivado)
+        {
+            await _productosActivos.InvalidarAsync();
+        }
+
+        return productoDesactivado;
     }
 }

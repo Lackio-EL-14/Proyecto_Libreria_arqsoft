@@ -55,6 +55,7 @@ builder.Services.AddScoped<LoginValidator>();
 
 // Servicios y Repositorios adicionales (Catálogo, Histórico)
 builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoRepository>();
+builder.Services.AddScoped<ProductosActivosService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
 builder.Services.AddScoped<IHistoricoCostoRepository, HistoricoCostoRepository>();
