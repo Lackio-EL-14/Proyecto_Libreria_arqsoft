@@ -9,7 +9,17 @@
         <div class="card-body">
             <h1 class="h4 mb-4">Crear usuario</h1>
 
-            <form method="post" asp-page-handler="Generar">
+            @if (!string.IsNullOrWhiteSpace(Model.MensajeExito))
+            {
+                <div class="alert alert-success">
+                    @Model.MensajeExito
+                </div>
+            }
+
+            <div asp-validation-summary="ModelOnly"
+                 class="text-danger mb-3"></div>
+
+            <form method="post">
                 <div class="mb-3">
                     <label asp-for="Nombre" class="form-label"></label>
                     <input asp-for="Nombre" class="form-control" />
@@ -22,22 +32,50 @@
                     <span asp-validation-for="Apellido" class="text-danger"></span>
                 </div>
 
-                <button type="submit" class="btn btn-primary">
-                    Generar nombre de usuario
-                </button>
-            </form>
-
-            @if (!string.IsNullOrWhiteSpace(Model.NombreUsuario))
-            {
-                <hr />
+                <div class="mb-3">
+                    <label asp-for="Correo" class="form-label"></label>
+                    <input asp-for="Correo"
+                           type="email"
+                           class="form-control" />
+                    <span asp-validation-for="Correo" class="text-danger"></span>
+                </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Nombre de usuario generado</label>
-                    <input class="form-control"
-                           value="@Model.NombreUsuario"
-                           readonly />
+                    <label asp-for="RolId" class="form-label">Rol</label>
+                    <select asp-for="RolId"
+                            asp-items="Model.Roles"
+                            class="form-select">
+                        <option value="">Seleccione un rol</option>
+                    </select>
                 </div>
-            }
+
+                <div class="d-flex gap-2 mb-3">
+                    <button type="submit"
+                            asp-page-handler="Generar"
+                            class="btn btn-outline-secondary">
+                        Generar nombre de usuario
+                    </button>
+
+                    <button type="submit"
+                            asp-page-handler="Crear"
+                            class="btn btn-primary">
+                        Crear usuario
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.NombreUsuario))
+                {
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Nombre de usuario generado
+                        </label>
+
+                        <input class="form-control"
+                               value="@Model.NombreUsuario"
+                               readonly />
+                    </div>
+                }
+            </form>
         </div>
     </div>
 </div>
