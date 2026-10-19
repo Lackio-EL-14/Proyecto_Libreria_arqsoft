@@ -6,6 +6,11 @@ public interface IUsuarioRepository
 {
     Task<Usuario?> ObtenerActivoPorNombreUsuarioAsync(string nombreUsuario);
 
-    // US-40: incluye usuarios inactivos, la trazabilidad no se pierde.
     Task<string?> ObtenerNombreCompletoPorIdAsync(int usuarioId);
+
+    Task<bool> ExisteNombreUsuarioAsync(string nombreUsuario);
+
+    Task<bool> ExisteCorreoAsync(string correo);
+
+    Task<int> InsertarAsync(Usuario usuario);
 }
