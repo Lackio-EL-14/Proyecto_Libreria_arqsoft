@@ -15,15 +15,23 @@ public class CreateModel : PageModel
     private readonly IGeneradorNombreUsuario _generadorNombreUsuario;
     private readonly IUsuarioService _usuarioService;
     private readonly IRolRepository _rolRepository;
+    private readonly ILogger<CreateModel> _logger;
+    private readonly bool _correoLocal;
 
     public CreateModel(
         IGeneradorNombreUsuario generadorNombreUsuario,
         IUsuarioService usuarioService,
-        IRolRepository rolRepository)
+        IRolRepository rolRepository,
+        ILogger<CreateModel> logger,
+        IHostEnvironment environment,
+        IConfiguration configuration)
     {
         _generadorNombreUsuario = generadorNombreUsuario;
         _usuarioService = usuarioService;
         _rolRepository = rolRepository;
+        _logger = logger;
+        _correoLocal = environment.IsDevelopment() &&
+            string.Equals(configuration["EMAIL_DELIVERY_MODE"], "PickupDirectory", StringComparison.OrdinalIgnoreCase);
     }
 
     [BindProperty]
@@ -84,7 +92,9 @@ public class CreateModel : PageModel
                 await _usuarioService.CrearPendienteAsync(input);
             MensajeExito =
                 $"Usuario {NombreUsuario} creado correctamente. " +
-                "Se envió el enlace de activación al correo registrado.";
+                (_correoLocal
+                    ? "El correo de activación se guardó localmente para pruebas; no se envió por Internet."
+                    : "Se envió el enlace de activación al correo registrado.");
 
             return Page();
         }
@@ -93,8 +103,9 @@ public class CreateModel : PageModel
             ModelState.AddModelError(string.Empty, error.Message);
             return Page();
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException error)
         {
+            _logger.LogError(error, "No fue posible completar el alta de usuario.");
             ModelState.AddModelError(
                 string.Empty,
                 "No fue posible crear el usuario. Intente nuevamente.");

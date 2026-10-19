@@ -1,5 +1,7 @@
 @page
 @model Libreria.Client.Pages.Usuarios.IndexModel
+@using Libreria.Client.Pages.Shared.Models
+@using Libreria.Domain
 @{
     ViewData["Title"] = "Usuarios";
 }
@@ -11,6 +13,15 @@
     </div>
     <a asp-page="./Create" class="btn btn--primary">+ Registrar usuario</a>
 </div>
+
+@if (TempData["MensajeExito"] is string exito)
+{
+    <p role="status">@exito</p>
+}
+@if (TempData["MensajeError"] is string error)
+{
+    <p class="text-danger" role="alert">@error</p>
+}
 
 <form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem;">
     <div class="form-group" style="margin-bottom: 0;">
@@ -49,6 +60,7 @@
                         <th>Estado</th>
                         <th>Fecha de creación</th>
                         <th>Creado por</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -63,6 +75,17 @@
                             <td>@usuario.Estado</td>
                             <td>@usuario.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
                             <td>@(usuario.CreadoPor ?? "—")</td>
+                            <td>
+                                @if (usuario.Estado != EstadosUsuario.Inactivo)
+                                {
+                                    <button type="button" class="btn-table btn-table--danger"
+                                            data-confirm-trigger data-modal-target="usuario-baja-modal"
+                                            data-entity-id="@Model.ProtegerId(usuario.PublicId)"
+                                            data-entity-name="@usuario.NombreCompleto">
+                                        Dar de baja
+                                    </button>
+                                }
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -70,3 +93,13 @@
         </div>
     }
 }
+
+@await Html.PartialAsync("_ConfirmModal", new ConfirmModalModel
+{
+    Id = "usuario-baja-modal",
+    Titulo = "Dar de baja usuario",
+    MensajePrincipal = "¿Desea dar de baja al usuario",
+    Handler = "DarDeBaja",
+    CampoIdentificador = "publicId",
+    TextoBotonConfirmar = "Confirmar baja"
+})

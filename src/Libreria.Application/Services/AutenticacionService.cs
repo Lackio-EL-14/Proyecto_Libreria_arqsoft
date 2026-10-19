@@ -3,6 +3,7 @@ using Libreria.Application.Models;
 using Libreria.Application.Ports.Primary;
 using Libreria.Application.Ports.Secondary;
 using Libreria.Application.Validators;
+using Libreria.Domain;
 
 namespace Libreria.Application.Services;
 
@@ -36,7 +37,8 @@ public class AutenticacionService : IAutenticacionService
 
         // Mismo mensaje si el usuario no existe o si la contraseña no coincide:
         // así no se revela qué dato falló (evita enumeración de usuarios).
-        if (usuario is null || !_hasher.Verificar(usuario.PasswordHash, input.Contrasena))
+        if (usuario is null || usuario.Estado != EstadosUsuario.Activo || !usuario.Rol.Estado ||
+            !_hasher.Verificar(usuario.PasswordHash, input.Contrasena))
         {
             return ResultadoAutenticacion.CredencialesInvalidas();
         }

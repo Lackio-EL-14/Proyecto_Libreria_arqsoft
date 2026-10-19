@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.DataProtection;
+using Libreria.Infrastructure.Security;
 
 namespace Libreria.Application.Tests;
 
@@ -117,7 +119,7 @@ public class UsuariosIndexTests
         Assert.True(pagina.ModelState.IsValid);
     }
 
-    private static ServiceProvider CrearServicios()
+    internal static ServiceProvider CrearServicios()
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -126,7 +128,7 @@ public class UsuariosIndexTests
         return services.BuildServiceProvider();
     }
 
-    private static ClaimsPrincipal CrearPrincipal(string? rol)
+    internal static ClaimsPrincipal CrearPrincipal(string? rol)
     {
         var claims = new List<Claim> { new(ClaimTypes.Name, "usuario-prueba") };
         if (rol is not null)
@@ -138,7 +140,8 @@ public class UsuariosIndexTests
 
     private static IndexModel CrearPagina(ServiceProvider services,
         UsuarioListadoRepositoryFake repository, ClaimsPrincipal principal) => new(
-            new ConsultaUsuarioService(repository), services.GetRequiredService<IAuthorizationService>())
+            new ConsultaUsuarioService(repository), services.GetRequiredService<IAuthorizationService>(),
+            new UsuarioSeguridadServiceFake(), new UrlProtector(new EphemeralDataProtectionProvider()))
         {
             PageContext = new PageContext
             {
