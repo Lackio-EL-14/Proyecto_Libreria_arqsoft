@@ -110,11 +110,37 @@ public class UsuarioRepository : IUsuarioRepository
 
         return Convert.ToInt32(resultado) > 0;
     }
-
     public async Task<int> InsertarAsync(Usuario usuario)
     {
         await using var connection = await CrearConexionAbiertaAsync();
+
+        return await InsertarInternoAsync(
+            usuario,
+            connection,
+            transaction: null);
+    }
+
+    public async Task<int> InsertarAsync(
+        Usuario usuario,
+        IDbConnection connection,
+        IDbTransaction transaction)
+    {
+        var (dbConnection, dbTransaction) =
+            ObtenerConexionYTransaccion(connection, transaction);
+
+        return await InsertarInternoAsync(
+            usuario,
+            dbConnection,
+            dbTransaction);
+    }
+
+    private static async Task<int> InsertarInternoAsync(
+        Usuario usuario,
+        DbConnection connection,
+        DbTransaction? transaction)
+    {
         await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
 
         command.CommandText = @"
         INSERT INTO dbo.Usuario
@@ -154,11 +180,40 @@ public class UsuarioRepository : IUsuarioRepository
         var nombreCompleto =
             $"{usuario.Nombre.Trim()} {usuario.Apellido.Trim()}".Trim();
 
-        AgregarParametro(command, "@Nombre", usuario.Nombre.Trim(), DbType.String, 100);
-        AgregarParametro(command, "@Apellido", usuario.Apellido.Trim(), DbType.String, 100);
-        AgregarParametro(command, "@Correo", usuario.Correo.Trim(), DbType.String, 254);
-        AgregarParametro(command, "@NombreUsuario", usuario.NombreUsuario.Trim(), DbType.String, 50);
-        AgregarParametro(command, "@NombreCompleto", nombreCompleto, DbType.String, 150);
+        AgregarParametro(
+            command,
+            "@Nombre",
+            usuario.Nombre.Trim(),
+            DbType.String,
+            100);
+
+        AgregarParametro(
+            command,
+            "@Apellido",
+            usuario.Apellido.Trim(),
+            DbType.String,
+            100);
+
+        AgregarParametro(
+            command,
+            "@Correo",
+            usuario.Correo.Trim(),
+            DbType.String,
+            254);
+
+        AgregarParametro(
+            command,
+            "@NombreUsuario",
+            usuario.NombreUsuario.Trim(),
+            DbType.String,
+            50);
+
+        AgregarParametro(
+            command,
+            "@NombreCompleto",
+            nombreCompleto,
+            DbType.String,
+            150);
 
         AgregarParametro(
             command,
@@ -169,8 +224,18 @@ public class UsuarioRepository : IUsuarioRepository
             DbType.String,
             500);
 
-        AgregarParametro(command, "@RolId", usuario.RolId, DbType.Int32);
-        AgregarParametro(command, "@Estado", usuario.Estado, DbType.String, 20);
+        AgregarParametro(
+            command,
+            "@RolId",
+            usuario.RolId,
+            DbType.Int32);
+
+        AgregarParametro(
+            command,
+            "@Estado",
+            usuario.Estado,
+            DbType.String,
+            20);
 
         AgregarParametro(
             command,
@@ -296,6 +361,28 @@ public class UsuarioRepository : IUsuarioRepository
                 Estado = reader.GetBoolean(reader.GetOrdinal("RolEstado"))
             }
         };
+    }
+
+    private static (DbConnection Connection, DbTransaction Transaction)
+    ObtenerConexionYTransaccion(
+        IDbConnection connection,
+        IDbTransaction transaction)
+    {
+        if (connection is not DbConnection dbConnection)
+        {
+            throw new ArgumentException(
+                "La conexión debe ser compatible con DbConnection.",
+                nameof(connection));
+        }
+
+        if (transaction is not DbTransaction dbTransaction)
+        {
+            throw new ArgumentException(
+                "La transacción debe ser compatible con DbTransaction.",
+                nameof(transaction));
+        }
+
+        return (dbConnection, dbTransaction);
     }
 
     private static void AgregarParametro(

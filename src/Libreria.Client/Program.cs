@@ -11,6 +11,8 @@ using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using System.IO;
+using Libreria.Infrastructure.Email;
+using Libreria.Infrastructure.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -152,7 +154,13 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IGeneradorNombreUsuario, GeneradorNombreUsuario>();
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
+        services.AddScoped<IConfiguracionAplicacion, ConfiguracionAplicacion>();
+        services.AddScoped<IUsuarioService, UsuarioService>();
+        services.AddScoped<IRolRepository, RolRepository>();
 
         return services;
     }
+
+
 }

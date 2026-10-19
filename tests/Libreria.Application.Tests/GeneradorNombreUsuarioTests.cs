@@ -1,6 +1,7 @@
 using Libreria.Application.Ports.Secondary;
 using Libreria.Application.Services;
 using Libreria.Domain;
+using System.Data;
 
 namespace Libreria.Application.Tests;
 
@@ -84,6 +85,12 @@ public class GeneradorNombreUsuarioTests
             => throw new NotImplementedException();
 
         public Task<int> InsertarAsync(Usuario usuario)
+            => throw new NotImplementedException();
+
+        public Task<int> InsertarAsync(
+            Usuario usuario,
+            IDbConnection connection,
+            IDbTransaction transaction)
             => throw new NotImplementedException();
     }
 }
