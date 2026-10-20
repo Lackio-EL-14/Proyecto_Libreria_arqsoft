@@ -5,6 +5,7 @@ using Libreria.Application.Factories;
 using Libreria.Application.Models;
 using Libreria.Application.Ports.Primary;
 using Libreria.Application.Ports.Secondary;
+using Libreria.Application.Services;
 
 namespace Libreria.Application.Facades
 {
@@ -16,6 +17,7 @@ namespace Libreria.Application.Facades
         private readonly IDbConnectionFactory _connectionFactory;
         private readonly IUsuarioActual _usuarioActual;
         private readonly IStockFacade _stockFacade;
+        private readonly ProductosActivosService _productosActivos;
 
         public VentaFacade(
             IVentaRepository ventaRepository,
@@ -23,7 +25,8 @@ namespace Libreria.Application.Facades
             IClienteRepository clienteRepository,
             IDbConnectionFactory connectionFactory,
             IUsuarioActual usuarioActual,
-            IStockFacade stockFacade)
+            IStockFacade stockFacade,
+            ProductosActivosService productosActivos)
         {
             _ventaRepository = ventaRepository;
             _productoRepository = productoRepository;
@@ -31,6 +34,7 @@ namespace Libreria.Application.Facades
             _connectionFactory = connectionFactory;
             _usuarioActual = usuarioActual;
             _stockFacade = stockFacade;
+            _productosActivos = productosActivos;
         }
 
         public async Task<VentaRegistradaResult> RegistrarVentaAsync(
@@ -187,6 +191,7 @@ namespace Libreria.Application.Facades
                     }
                 }
                 await transaction.CommitAsync();
+                await _productosActivos.InvalidarAsync();
 
                 return new VentaRegistradaResult
                 {
@@ -359,6 +364,7 @@ namespace Libreria.Application.Facades
                 }
 
                 await transaction.CommitAsync();
+                await _productosActivos.InvalidarAsync();
             }
             catch
             {

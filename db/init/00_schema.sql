@@ -217,8 +217,8 @@ GO
 
 -- ---------------------------------------------------------
 -- Usuario (US-37)
--- PasswordHash guarda el hash PBKDF2 generado por
--- PasswordHasher de ASP.NET Core; nunca la contraseña.
+-- PasswordHash guarda el hash Argon2id con sal aleatoria;
+-- nunca la contraseña.
 -- ---------------------------------------------------------
 IF OBJECT_ID('dbo.Usuario', 'U') IS NULL
 BEGIN
@@ -260,14 +260,14 @@ GO
 IF NOT EXISTS (SELECT 1 FROM dbo.Usuario WHERE NombreUsuario = N'admin')
     INSERT INTO dbo.Usuario (NombreUsuario, NombreCompleto, PasswordHash, RolId)
     SELECT N'admin', N'Administrador del sistema',
-           N'AQAAAAIAAYagAAAAEOvA0yb/Qb8i4baG1c5Jyu6QwIsOL+E/+RD5uENxg4ry41ZMRzrjyHVg2gP/OxcS4Q==',
+           N'$argon2id$v=19$m=65536,t=3,p=2$hMoB9SdI1DZ2jluCBzKNrw$56NVveYp/elIPZQVGMYG5DZ7BDUa94CUoZuJWeKpmxg',
            RolId
     FROM dbo.Rol WHERE Nombre = N'Administrador';
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Usuario WHERE NombreUsuario = N'vendedor')
     INSERT INTO dbo.Usuario (NombreUsuario, NombreCompleto, PasswordHash, RolId)
     SELECT N'vendedor', N'Vendedor de mostrador',
-           N'AQAAAAIAAYagAAAAEDh3RAQ9Yc7ibdHGSmgl501Txm81qOOimdTVAg2u4ST4xUm/WSwxNhyd8tHeTamYsQ==',
+           N'$argon2id$v=19$m=65536,t=3,p=2$Z4mACIjDrYYGsZ6qUBnowA$8m3mPzVPXCqXntIigdrzBOeeTrtjXdifwvzE6dF84Ig',
            RolId
     FROM dbo.Rol WHERE Nombre = N'Vendedor';
 GO

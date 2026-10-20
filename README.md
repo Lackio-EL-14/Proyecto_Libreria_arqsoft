@@ -112,6 +112,30 @@ docker exec libreria-redis redis-cli HGET libreria:productos:activos data
 docker compose logs app1 app2 app3 app4 | grep "Cache HIT\|Cache MISS"
 ```
 
+### Visor de diagnóstico Redis (US-64)
+
+1. Inicia sesión como `admin`.
+2. Abre [http://localhost:3000/Diagnostico/Cache](http://localhost:3000/Diagnostico/Cache). La vista se actualiza cada dos segundos.
+3. En otra pestaña abre **Productos**. La primera consulta después de eliminar o expirar la clave muestra `MISS` con origen `SQL`; la siguiente muestra `HIT` con origen `Redis`.
+4. Compara la réplica de cada resultado para demostrar que la caché es compartida entre los contenedores.
+
+La entrada de `IDistributedCache` es un `hash` de Redis. Por eso `GET` informa `WRONGTYPE` y el JSON se inspecciona con `HGET ... data`:
+
+```bash
+docker exec libreria-redis redis-cli SCAN 0 MATCH "libreria:*" COUNT 100
+docker exec libreria-redis redis-cli TYPE libreria:productos:activos
+docker exec libreria-redis redis-cli GET libreria:productos:activos
+docker exec libreria-redis redis-cli HGET libreria:productos:activos data
+docker exec libreria-redis redis-cli TTL libreria:productos:activos
+docker exec libreria-redis redis-cli DEL libreria:productos:activos
+```
+
+Para observar los eventos estructurados en tiempo real:
+
+```bash
+docker compose logs -f app1 app2 app3 app4
+```
+
 **Reiniciar sistema con Base de Datos limpia (Destructivo):**
 
 ```bash

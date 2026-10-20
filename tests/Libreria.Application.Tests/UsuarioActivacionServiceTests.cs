@@ -59,6 +59,8 @@ public class UsuarioActivacionServiceTests
 
         public bool Verificar(string hash, string contrasena)
             => throw new NotImplementedException();
+
+        public bool RequiereRehash(string hash) => false;
     }
 
     private sealed class UsuarioRepositoryFake : IUsuarioRepository

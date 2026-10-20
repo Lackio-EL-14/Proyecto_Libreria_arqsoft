@@ -15,4 +15,8 @@ public interface ICacheStore
     Task EliminarAsync(
         string clave,
         CancellationToken cancellationToken = default);
+
+    Task<TimeSpan?> ObtenerTiempoVidaAsync(
+        string clave,
+        CancellationToken cancellationToken = default);
 }
