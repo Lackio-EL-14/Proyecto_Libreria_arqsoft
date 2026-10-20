@@ -91,6 +91,7 @@ builder.Services
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
+        options.EventsType = typeof(ValidarEstadoUsuarioCookieEvents);
     });
 
 // US-39: políticas de autorización por rol
@@ -102,6 +103,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PoliticasAcceso.Ventas, politica =>
         politica.RequireRole(RolesSistema.Administrador, RolesSistema.Vendedor));
 });
+
+builder.Services.AddScoped<ValidarEstadoUsuarioCookieEvents>();
 
 var connectionString = builder.Configuration["DB_CONNECTION_STRING"] 
     ?? builder.Configuration.GetConnectionString("LibreriaDb")
@@ -157,6 +160,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<IConfiguracionAplicacion, ConfiguracionAplicacion>();
         services.AddScoped<IUsuarioService, UsuarioService>();
+        services.AddScoped<IConsultaUsuarioService, ConsultaUsuarioService>();
+        services.AddScoped<IUsuarioSeguridadRepository, UsuarioRepository>();
+        services.AddScoped<IUsuarioSeguridadService, UsuarioSeguridadService>();
         services.AddScoped<IRolRepository, RolRepository>();
 
         return services;

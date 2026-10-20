@@ -18,8 +18,8 @@ public class UsuarioService : IUsuarioService
     private readonly IConfiguracionAplicacion _configuracion;
     private readonly IDbConnectionFactory _connectionFactory;
     private readonly IUsuarioActual _usuarioActual;
-    private readonly IContrasenaHasher _contrasenaHasher;
-    private readonly PasswordPolicyValidator _passwordPolicyValidator;
+    private readonly IContrasenaHasher _hasher;
+    private readonly PasswordPolicyValidator _passwordPolicy;
 
     public UsuarioService(
         IUsuarioRepository usuarioRepository,
@@ -28,8 +28,8 @@ public class UsuarioService : IUsuarioService
         IConfiguracionAplicacion configuracion,
         IDbConnectionFactory connectionFactory,
         IUsuarioActual usuarioActual,
-        IContrasenaHasher contrasenaHasher,
-        PasswordPolicyValidator passwordPolicyValidator)
+        IContrasenaHasher hasher,
+        PasswordPolicyValidator passwordPolicy)
     {
         _usuarioRepository = usuarioRepository;
         _generadorNombreUsuario = generadorNombreUsuario;
@@ -37,8 +37,8 @@ public class UsuarioService : IUsuarioService
         _configuracion = configuracion;
         _connectionFactory = connectionFactory;
         _usuarioActual = usuarioActual;
-        _contrasenaHasher = contrasenaHasher;
-        _passwordPolicyValidator = passwordPolicyValidator;
+        _hasher = hasher;
+        _passwordPolicy = passwordPolicy;
     }
 
     public async Task<string> CrearPendienteAsync(UsuarioAltaInput input)
@@ -129,82 +129,45 @@ public class UsuarioService : IUsuarioService
         }
     }
 
-    private static void ValidarInput(UsuarioAltaInput input)
+    public async Task<ResultadoOperacion> CambiarContrasenaAsync(CambioContrasenaInput input)
     {
         ArgumentNullException.ThrowIfNull(input);
+        var usuarioId = _usuarioActual.UsuarioId;
+        var errores = new Dictionary<string, string>();
 
-        if (string.IsNullOrWhiteSpace(input.Nombre))
-        {
-            throw new ArgumentException(
-                "El nombre es obligatorio.",
-                nameof(input));
-        }
+        if (usuarioId is not > 0)
+            return ResultadoOperacion.Invalido(new Dictionary<string, string>
+                { [string.Empty] = "Debe iniciar sesión para cambiar su contraseña." });
 
-        if (string.IsNullOrWhiteSpace(input.Apellido))
-        {
-            throw new ArgumentException(
-                "El apellido es obligatorio.",
-                nameof(input));
-        }
+        if (string.IsNullOrEmpty(input.ContrasenaActual))
+            errores["Input.ContrasenaActual"] = "Ingrese su contraseña actual.";
+        if (!string.Equals(input.NuevaContrasena, input.Confirmacion, StringComparison.Ordinal))
+            errores["Input.Confirmacion"] = "La confirmación no coincide con la nueva contraseña.";
 
-        if (string.IsNullOrWhiteSpace(input.Correo))
-        {
-            throw new ArgumentException(
-                "El correo es obligatorio.",
-                nameof(input));
-        }
+        var politica = _passwordPolicy.Validar(input.NuevaContrasena);
+        if (politica.Count > 0)
+            errores["Input.NuevaContrasena"] = string.Join(" ", politica);
+        else if (input.NuevaContrasena.Length > 128)
+            errores["Input.NuevaContrasena"] = "La contraseña no puede superar los 128 caracteres.";
 
-        try
-        {
-            _ = new MailAddress(input.Correo.Trim());
-        }
-        catch (FormatException)
-        {
-            throw new ArgumentException(
-                "El correo no tiene un formato válido.",
-                nameof(input));
-        }
+        if (errores.Count > 0)
+            return ResultadoOperacion.Invalido(errores);
 
-        if (input.RolId <= 0)
-        {
-            throw new ArgumentException(
-                "Debe seleccionar un rol válido.",
-                nameof(input));
-        }
-    }
+        var hashActual = await _usuarioRepository.ObtenerHashActivoAsync(usuarioId.Value);
+        if (hashActual is null || !_hasher.Verificar(hashActual, input.ContrasenaActual))
+            return ResultadoOperacion.Invalido(new Dictionary<string, string>
+                { ["Input.ContrasenaActual"] = "La contraseña actual es incorrecta." });
 
-    private string ConstruirEnlaceActivacion(
-        string tokenHash,
-        string token)
-    {
-        var hashCodificado = WebUtility.UrlEncode(tokenHash);
-        var tokenCodificado = WebUtility.UrlEncode(token);
+        if (string.Equals(input.NuevaContrasena, input.ContrasenaActual, StringComparison.Ordinal))
+            return ResultadoOperacion.Invalido(new Dictionary<string, string>
+                { ["Input.NuevaContrasena"] = "La nueva contraseña debe ser distinta de la actual." });
 
-        return
-            $"{_configuracion.BaseUrl}/Usuarios/Activar" +
-            $"?h={hashCodificado}&t={tokenCodificado}";
-    }
-
-    private static string ConstruirCorreo(
-        string nombre,
-        string nombreUsuario,
-        string enlace)
-    {
-        return $"""
-            <h2>Activa tu cuenta</h2>
-            <p>Hola {WebUtility.HtmlEncode(nombre)},</p>
-            <p>Tu nombre de usuario es:
-               <strong>{WebUtility.HtmlEncode(nombreUsuario)}</strong>
-            </p>
-            <p>Para definir tu contraseña y activar tu cuenta,
-               utiliza el siguiente enlace:</p>
-            <p>
-                <a href="{WebUtility.HtmlEncode(enlace)}">
-                    Activar cuenta
-                </a>
-            </p>
-            <p>Este enlace tiene una vigencia de 24 horas.</p>
-            """;
+        var actualizado = await _usuarioRepository.ActualizarContrasenaAsync(
+            usuarioId.Value, hashActual, _hasher.Hashear(input.NuevaContrasena));
+        return actualizado
+            ? ResultadoOperacion.Correcto()
+            : ResultadoOperacion.Invalido(new Dictionary<string, string>
+                { [string.Empty] = "No fue posible cambiar la contraseña. Intente nuevamente." });
     }
 
     public async Task ActivarAsync(UsuarioActivacionInput input)
@@ -247,7 +210,7 @@ public class UsuarioService : IUsuarioService
         }
 
         var erroresContrasena =
-            _passwordPolicyValidator.Validar(input.Contrasena);
+            _passwordPolicy.Validar(input.Contrasena);
 
         if (erroresContrasena.Count > 0)
         {
@@ -256,7 +219,7 @@ public class UsuarioService : IUsuarioService
         }
 
         var passwordHash =
-            _contrasenaHasher.Hashear(input.Contrasena);
+            _hasher.Hashear(input.Contrasena);
 
         var activado = await _usuarioRepository.ActivarAsync(
             usuario.UsuarioId,
@@ -267,6 +230,92 @@ public class UsuarioService : IUsuarioService
         {
             throw new InvalidOperationException(mensajeTokenInvalido);
         }
+    }
+
+    private static void ValidarInput(UsuarioAltaInput input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+
+        if (string.IsNullOrWhiteSpace(input.Nombre))
+        {
+            throw new ArgumentException(
+                "El nombre es obligatorio.",
+                nameof(input));
+        }
+
+        if (string.IsNullOrWhiteSpace(input.Apellido))
+        {
+            throw new ArgumentException(
+                "El apellido es obligatorio.",
+                nameof(input));
+        }
+
+        if (string.IsNullOrWhiteSpace(input.Correo))
+        {
+            throw new ArgumentException(
+                "El correo es obligatorio.",
+                nameof(input));
+        }
+
+        if (!input.Nombre.Trim().All(char.IsLetter))
+            throw new ArgumentException("El nombre solo permite letras, incluyendo acentos y ñ.", nameof(input));
+
+        if (!input.Apellido.Trim().All(char.IsLetter))
+            throw new ArgumentException("El apellido solo permite letras, incluyendo acentos y ñ.", nameof(input));
+
+        try
+        {
+            var direccion = new MailAddress(input.Correo.Trim());
+            if (!string.Equals(direccion.Address, input.Correo.Trim(), StringComparison.OrdinalIgnoreCase))
+                throw new FormatException();
+        }
+        catch (FormatException)
+        {
+            throw new ArgumentException(
+                "El correo no tiene un formato válido.",
+                nameof(input));
+        }
+
+        if (input.RolId <= 0)
+        {
+            throw new ArgumentException(
+                "Debe seleccionar un rol válido.",
+                nameof(input));
+        }
+    }
+
+    private string ConstruirEnlaceActivacion(
+        string tokenHash,
+        string token)
+    {
+        var hashCodificado = WebUtility.UrlEncode(tokenHash);
+        var tokenCodificado = WebUtility.UrlEncode(token);
+
+        return
+            $"{_configuracion.BaseUrl}/Usuarios/Activar" +
+            $"?h={hashCodificado}&t={tokenCodificado}";
+    }
+
+    private static string ConstruirCorreo(
+        string nombre,
+        string nombreUsuario,
+        string enlace)
+    {
+        return $"""
+            <h2>Activa tu cuenta</h2>
+            <p>Hola {WebUtility.HtmlEncode(nombre)},</p>
+            <p>Tu nombre de usuario es:
+                <strong>{WebUtility.HtmlEncode(nombreUsuario)}</strong>
+            </p>
+            <p>Para definir tu contraseña y activar tu cuenta,
+                utiliza el siguiente enlace:</p>
+            <p>
+                <a href="{WebUtility.HtmlEncode(enlace)}">
+                    Activar cuenta
+                </a>
+            </p>
+            <p>Este enlace tiene una vigencia de 24 horas.</p>
+            """;
     }
 
     private static bool CompararHashSeguro(

@@ -59,6 +59,7 @@
                     <span class="user-chip__name">@(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity.Name)</span>
                     <span class="user-chip__role">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
                 </div>
+                <a asp-page="/Cuenta/CambiarContrasena" class="btn btn--secondary">Cambiar contraseña</a>
                 <form method="post" asp-page="/Cuenta/Logout" class="logout-form">
                     <button type="submit" class="btn-logout" title="Cerrar sesión">Cerrar sesión</button>
                 </form>
@@ -154,6 +155,16 @@
                                 <span class="sidebar-link__text">Marcas</span>
                             </a>
                         </div>
+                    </div>
+                }
+                @if (esAdministrador)
+                {
+                    <div class="sidebar-section">
+                        <span class="sidebar-section__title">Administración</span>
+                        <a class="sidebar-link @getActiveClass("/Usuarios")" asp-page="/Usuarios/Index" title="Consultar usuarios">
+                            <span class="sidebar-link__icon" aria-hidden="true">👤</span>
+                            <span class="sidebar-link__text">Usuarios</span>
+                        </a>
                     </div>
                 }
             </nav>

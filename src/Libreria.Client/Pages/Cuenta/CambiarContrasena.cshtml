@@ -1,0 +1,36 @@
+@page
+@model Libreria.Client.Pages.Cuenta.CambiarContrasenaModel
+@{
+    ViewData["Title"] = "Cambiar contraseña";
+}
+
+<div class="page-header"><h1>Cambiar contraseña</h1></div>
+
+@if (TempData["MensajeExito"] is string mensaje)
+{
+    <p role="status">@mensaje</p>
+}
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-group">
+        <label asp-for="Input.ContrasenaActual">Contraseña actual</label>
+        <input asp-for="Input.ContrasenaActual" type="password" class="form-control"
+               autocomplete="current-password" maxlength="128" required />
+        <span asp-validation-for="Input.ContrasenaActual" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Input.NuevaContrasena">Nueva contraseña</label>
+        <input asp-for="Input.NuevaContrasena" type="password" class="form-control"
+               autocomplete="new-password" maxlength="128" required />
+        <span asp-validation-for="Input.NuevaContrasena" class="text-danger"></span>
+        <p>Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.</p>
+    </div>
+    <div class="form-group">
+        <label asp-for="Input.Confirmacion">Confirmación de nueva contraseña</label>
+        <input asp-for="Input.Confirmacion" type="password" class="form-control"
+               autocomplete="new-password" maxlength="128" required />
+        <span asp-validation-for="Input.Confirmacion" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn--primary">Cambiar contraseña</button>
+</form>

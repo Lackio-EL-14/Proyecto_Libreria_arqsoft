@@ -1,17 +1,143 @@
 using Libreria.Domain;
+using Libreria.Application.Models;
 using Libreria.Application.Ports.Secondary;
 using System.Data;
 using System.Data.Common;
 
 namespace Libreria.Infrastructure;
 
-public class UsuarioRepository : IUsuarioRepository
+public class UsuarioRepository : IUsuarioRepository, IUsuarioSeguridadRepository
 {
     private readonly IDbConnectionFactory _connectionFactory;
 
     public UsuarioRepository(IDbConnectionFactory connectionFactory)
     {
         _connectionFactory = connectionFactory;
+    }
+
+    public async Task<string?> ObtenerHashActivoAsync(int usuarioId)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT u.PasswordHash FROM dbo.Usuario u
+            INNER JOIN dbo.Rol r ON r.RolId = u.RolId
+            WHERE u.UsuarioId = @UsuarioId AND u.Estado = @Activo AND r.Estado = 1";
+        AgregarParametro(command, "@UsuarioId", usuarioId, DbType.Int32);
+        AgregarParametro(command, "@Activo", EstadosUsuario.Activo, DbType.String, 20);
+        var resultado = await command.ExecuteScalarAsync();
+        return resultado is null || resultado == DBNull.Value ? null : Convert.ToString(resultado);
+    }
+
+    public async Task<bool> ActualizarContrasenaAsync(int usuarioId, string hashAnterior, string nuevoHash)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+        // Comparar el hash anterior evita sobrescribir otro cambio concurrente.
+        command.CommandText = @"
+            UPDATE dbo.Usuario SET PasswordHash = @NuevoHash,
+                UsuarioModificacionId = @UsuarioId, FechaModificacion = SYSDATETIME()
+            WHERE UsuarioId = @UsuarioId AND Estado = @Activo
+                AND PasswordHash COLLATE Latin1_General_100_BIN2 = @HashAnterior
+                AND EXISTS (SELECT 1 FROM dbo.Rol r WHERE r.RolId = dbo.Usuario.RolId AND r.Estado = 1)";
+        AgregarParametro(command, "@UsuarioId", usuarioId, DbType.Int32);
+        AgregarParametro(command, "@Activo", EstadosUsuario.Activo, DbType.String, 20);
+        AgregarParametro(command, "@HashAnterior", hashAnterior, DbType.String, 500);
+        AgregarParametro(command, "@NuevoHash", nuevoHash, DbType.String, 500);
+        return await command.ExecuteNonQueryAsync() == 1;
+    }
+
+    public async Task<bool> TieneAccesoActivoAsync(int usuarioId)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT COUNT(1) FROM dbo.Usuario u
+            INNER JOIN dbo.Rol r ON r.RolId = u.RolId
+            WHERE u.UsuarioId = @UsuarioId AND u.Estado = @Activo AND r.Estado = 1";
+        AgregarParametro(command, "@UsuarioId", usuarioId, DbType.Int32);
+        AgregarParametro(command, "@Activo", EstadosUsuario.Activo, DbType.String, 20);
+        return Convert.ToInt32(await command.ExecuteScalarAsync()) == 1;
+    }
+
+    public async Task<IReadOnlyList<UsuarioBajaDatos>> BloquearParaBajaAsync(
+        IDbConnection connection, IDbTransaction transaction)
+    {
+        var (dbConnection, dbTransaction) = ObtenerConexionYTransaccion(connection, transaction);
+        await using var command = dbConnection.CreateCommand();
+        command.Transaction = dbTransaction;
+        // Baja administrativa poco frecuente: serializar en SQL entre todas las replicas.
+        command.CommandText = @"
+            SELECT u.UsuarioId, u.PublicId, u.Estado, r.Nombre AS Rol, r.Estado AS RolActivo
+            FROM dbo.Usuario u WITH (TABLOCKX, HOLDLOCK)
+            INNER JOIN dbo.Rol r WITH (HOLDLOCK) ON r.RolId = u.RolId";
+        var usuarios = new List<UsuarioBajaDatos>();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            usuarios.Add(new UsuarioBajaDatos(
+                reader.GetInt32(0), reader.GetGuid(1), reader.GetString(2),
+                reader.GetString(3), reader.GetBoolean(4)));
+        }
+        return usuarios;
+    }
+
+    public async Task<bool> DesactivarAsync(int usuarioId, int usuarioModificacionId,
+        IDbConnection connection, IDbTransaction transaction)
+    {
+        var (dbConnection, dbTransaction) = ObtenerConexionYTransaccion(connection, transaction);
+        await using var command = dbConnection.CreateCommand();
+        command.Transaction = dbTransaction;
+        command.CommandText = @"
+            UPDATE dbo.Usuario SET Estado = @Inactivo,
+                UsuarioModificacionId = @ActorId, FechaModificacion = SYSDATETIME()
+            WHERE UsuarioId = @UsuarioId AND Estado <> @Inactivo";
+        AgregarParametro(command, "@Inactivo", EstadosUsuario.Inactivo, DbType.String, 20);
+        AgregarParametro(command, "@ActorId", usuarioModificacionId, DbType.Int32);
+        AgregarParametro(command, "@UsuarioId", usuarioId, DbType.Int32);
+        return await command.ExecuteNonQueryAsync() == 1;
+    }
+
+    public async Task<IReadOnlyList<UsuarioListItemModel>> ObtenerListadoAsync(string? estado = null)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+
+        // Proyeccion de lectura: no cargar credenciales ni tokens para el listado.
+        command.CommandText = @"
+            SELECT u.PublicId, u.NombreCompleto, u.NombreUsuario, u.Correo,
+                   r.Nombre AS Rol, u.Estado, u.FechaCreacion,
+                   creador.NombreCompleto AS CreadoPor, u.FechaModificacion, modificador.NombreCompleto AS ModificadoPor
+            FROM dbo.Usuario u
+            INNER JOIN dbo.Rol r ON r.RolId = u.RolId
+            LEFT JOIN dbo.Usuario creador ON creador.UsuarioId = u.UsuarioCreacionId
+            LEFT JOIN dbo.Usuario modificador ON modificador.UsuarioId = u.UsuarioModificacionId
+            WHERE (@Estado IS NULL OR u.Estado = @Estado)
+            ORDER BY u.FechaCreacion DESC, u.NombreUsuario ASC";
+
+        AgregarParametro(command, "@Estado", estado is null ? DBNull.Value : estado, DbType.String, 20);
+
+        var usuarios = new List<UsuarioListItemModel>();
+        await using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            usuarios.Add(new UsuarioListItemModel(
+                reader.GetGuid(reader.GetOrdinal("PublicId")),
+                reader.GetString(reader.GetOrdinal("NombreCompleto")),
+                reader.GetString(reader.GetOrdinal("NombreUsuario")),
+                reader.GetString(reader.GetOrdinal("Correo")),
+                reader.GetString(reader.GetOrdinal("Rol")),
+                reader.GetString(reader.GetOrdinal("Estado")),
+                reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
+                reader.IsDBNull(reader.GetOrdinal("CreadoPor"))
+                    ? null
+                    : reader.GetString(reader.GetOrdinal("CreadoPor")),
+                reader.IsDBNull(reader.GetOrdinal("ModificadoPor")) ? null : reader.GetString(reader.GetOrdinal("ModificadoPor")),
+                reader.IsDBNull(reader.GetOrdinal("FechaModificacion")) ? null : reader.GetDateTime(reader.GetOrdinal("FechaModificacion"))));
+        }
+
+        return usuarios;
     }
 
     public async Task<Usuario?> ObtenerActivoPorNombreUsuarioAsync(string nombreUsuario)

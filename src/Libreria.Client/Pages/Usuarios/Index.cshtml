@@ -1,0 +1,109 @@
+@page
+@model Libreria.Client.Pages.Usuarios.IndexModel
+@using Libreria.Client.Pages.Shared.Models
+@using Libreria.Domain
+@{
+    ViewData["Title"] = "Usuarios";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Usuarios</h1>
+        <p>Consulta de usuarios registrados en el sistema.</p>
+    </div>
+    <a asp-page="./Create" class="btn btn--primary">+ Registrar usuario</a>
+</div>
+
+@if (TempData["MensajeExito"] is string exito)
+{
+    <p role="status">@exito</p>
+}
+@if (TempData["MensajeError"] is string error)
+{
+    <p class="text-danger" role="alert">@error</p>
+}
+
+<form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem;">
+    <div class="form-group" style="margin-bottom: 0;">
+        <label asp-for="Estado">Estado</label>
+        <select asp-for="Estado" class="form-control">
+            <option value="">Todos</option>
+            @foreach (var estado in Model.Estados)
+            {
+                <option value="@estado">@estado</option>
+            }
+        </select>
+    </div>
+    <button type="submit" class="btn btn--secondary">Filtrar</button>
+    <a asp-page="./Index" class="btn btn--secondary">Limpiar</a>
+</form>
+
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+
+@if (ViewData.ModelState.IsValid)
+{
+    @if (Model.Usuarios.Count == 0)
+    {
+        <p>No se encontraron usuarios para el estado seleccionado.</p>
+    }
+    else
+    {
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Identificador público</th>
+                        <th>Nombre completo</th>
+                        <th>Nombre de usuario</th>
+                        <th>Correo electrónico</th>
+                        <th>Rol</th>
+                        <th>Estado</th>
+                        <th>Fecha de creación</th>
+                        <th>Creado por</th>
+                        <th>Modificado por</th>
+                        <th>Fecha de modificación</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var usuario in Model.Usuarios)
+                    {
+                        <tr>
+                            <td>@usuario.PublicId</td>
+                            <td>@usuario.NombreCompleto</td>
+                            <td>@usuario.NombreUsuario</td>
+                            <td>@usuario.Correo</td>
+                            <td>@usuario.Rol</td>
+                            <td>@usuario.Estado</td>
+                            <td>@usuario.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@(usuario.CreadoPor ?? "—")</td>
+                            <td>@(usuario.ModificadoPor ?? "Sin modificaciones registradas")</td>
+                            <td>@(usuario.FechaModificacion?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                            <td>
+                                @if (usuario.Estado != EstadosUsuario.Inactivo)
+                                {
+                                    <button type="button" class="btn-table btn-table--danger"
+                                            data-confirm-trigger data-modal-target="usuario-baja-modal"
+                                            data-entity-id="@Model.ProtegerId(usuario.PublicId)"
+                                            data-entity-name="@usuario.NombreCompleto">
+                                        Dar de baja
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@await Html.PartialAsync("_ConfirmModal", new ConfirmModalModel
+{
+    Id = "usuario-baja-modal",
+    Titulo = "Dar de baja usuario",
+    MensajePrincipal = "¿Desea dar de baja al usuario",
+    Handler = "DarDeBaja",
+    CampoIdentificador = "publicId",
+    TextoBotonConfirmar = "Confirmar baja"
+})

@@ -15,15 +15,23 @@ public class CreateModel : PageModel
     private readonly IGeneradorNombreUsuario _generadorNombreUsuario;
     private readonly IUsuarioService _usuarioService;
     private readonly IRolRepository _rolRepository;
+    private readonly ILogger<CreateModel> _logger;
+    private readonly bool _correoLocal;
 
     public CreateModel(
         IGeneradorNombreUsuario generadorNombreUsuario,
         IUsuarioService usuarioService,
-        IRolRepository rolRepository)
+        IRolRepository rolRepository,
+        ILogger<CreateModel> logger,
+        IHostEnvironment environment,
+        IConfiguration configuration)
     {
         _generadorNombreUsuario = generadorNombreUsuario;
         _usuarioService = usuarioService;
         _rolRepository = rolRepository;
+        _logger = logger;
+        _correoLocal = environment.IsDevelopment() &&
+            string.Equals(configuration["EMAIL_DELIVERY_MODE"], "PickupDirectory", StringComparison.OrdinalIgnoreCase);
     }
 
     [BindProperty]
@@ -70,6 +78,12 @@ public class CreateModel : PageModel
     {
         await CargarRolesAsync();
 
+        if (!Roles.Any(rol => rol.Value == RolId.ToString()))
+            ModelState.AddModelError(nameof(RolId), "Debe seleccionar un rol válido.");
+
+        if (!ModelState.IsValid)
+            return Page();
+
         try
         {
             var input = new UsuarioAltaInput
@@ -84,7 +98,9 @@ public class CreateModel : PageModel
                 await _usuarioService.CrearPendienteAsync(input);
             MensajeExito =
                 $"Usuario {NombreUsuario} creado correctamente. " +
-                "Se envió el enlace de activación al correo registrado.";
+                (_correoLocal
+                    ? "El correo de activación se guardó localmente para pruebas; no se envió por Internet."
+                    : "Se envió el enlace de activación al correo registrado.");
 
             return Page();
         }
@@ -93,8 +109,9 @@ public class CreateModel : PageModel
             ModelState.AddModelError(string.Empty, error.Message);
             return Page();
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException error)
         {
+            _logger.LogError(error, "No fue posible completar el alta de usuario.");
             ModelState.AddModelError(
                 string.Empty,
                 "No fue posible crear el usuario. Intente nuevamente.");
@@ -114,6 +131,12 @@ public class CreateModel : PageModel
             ModelState.AddModelError(
                 nameof(Apellido),
                 "El apellido es obligatorio.");
+
+        if (!string.IsNullOrWhiteSpace(Nombre) && !Nombre.Trim().All(char.IsLetter))
+            ModelState.AddModelError(nameof(Nombre), "El nombre solo permite letras, incluyendo acentos y ñ.");
+
+        if (!string.IsNullOrWhiteSpace(Apellido) && !Apellido.Trim().All(char.IsLetter))
+            ModelState.AddModelError(nameof(Apellido), "El apellido solo permite letras, incluyendo acentos y ñ.");
     }
 
     private async Task CargarRolesAsync()
