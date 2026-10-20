@@ -2,22 +2,24 @@ using Libreria.Application.Caching;
 using Libreria.Application.Ports.Secondary;
 using Libreria.Domain;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Libreria.Application.Services;
 
 public sealed class ProductosActivosService
 {
-    private static readonly TimeSpan ExpiracionCache = TimeSpan.FromMinutes(5);
-
     private readonly ICacheStore _cacheStore;
     private readonly ILogger<ProductosActivosService> _logger;
+    private readonly TimeSpan _expiracionCache;
 
     public ProductosActivosService(
         ICacheStore cacheStore,
-        ILogger<ProductosActivosService> logger)
+        ILogger<ProductosActivosService> logger,
+        IOptions<ProductosActivosCacheOptions> options)
     {
         _cacheStore = cacheStore;
         _logger = logger;
+        _expiracionCache = TimeSpan.FromMinutes(options.Value.ExpiracionMinutos);
     }
 
     public async Task<IReadOnlyList<Producto>> ObtenerAsync(
@@ -58,7 +60,7 @@ public sealed class ProductosActivosService
             await _cacheStore.GuardarAsync(
                 CacheKeys.ProductosActivos,
                 productos,
-                ExpiracionCache);
+                _expiracionCache);
         }
         catch (Exception exception)
         {
