@@ -92,5 +92,14 @@ public class GeneradorNombreUsuarioTests
             IDbConnection connection,
             IDbTransaction transaction)
             => throw new NotImplementedException();
+
+        public Task<Usuario?> ObtenerPorTokenActivacionHashAsync(string tokenHash)
+    => throw new NotImplementedException();
+
+        public Task<bool> ActivarAsync(
+            int usuarioId,
+            string passwordHash,
+            DateTime fechaActivacion)
+            => throw new NotImplementedException();
     }
 }

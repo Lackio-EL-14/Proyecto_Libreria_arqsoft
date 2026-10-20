@@ -5,6 +5,8 @@ using Libreria.Application.Models;
 using Libreria.Application.Ports.Primary;
 using Libreria.Application.Ports.Secondary;
 using Libreria.Domain;
+using System.Security.Cryptography;
+using Libreria.Application.Validators;
 
 namespace Libreria.Application.Services;
 
@@ -16,6 +18,8 @@ public class UsuarioService : IUsuarioService
     private readonly IConfiguracionAplicacion _configuracion;
     private readonly IDbConnectionFactory _connectionFactory;
     private readonly IUsuarioActual _usuarioActual;
+    private readonly IContrasenaHasher _contrasenaHasher;
+    private readonly PasswordPolicyValidator _passwordPolicyValidator;
 
     public UsuarioService(
         IUsuarioRepository usuarioRepository,
@@ -23,7 +27,9 @@ public class UsuarioService : IUsuarioService
         IEmailSender emailSender,
         IConfiguracionAplicacion configuracion,
         IDbConnectionFactory connectionFactory,
-        IUsuarioActual usuarioActual)
+        IUsuarioActual usuarioActual,
+        IContrasenaHasher contrasenaHasher,
+        PasswordPolicyValidator passwordPolicyValidator)
     {
         _usuarioRepository = usuarioRepository;
         _generadorNombreUsuario = generadorNombreUsuario;
@@ -31,6 +37,8 @@ public class UsuarioService : IUsuarioService
         _configuracion = configuracion;
         _connectionFactory = connectionFactory;
         _usuarioActual = usuarioActual;
+        _contrasenaHasher = contrasenaHasher;
+        _passwordPolicyValidator = passwordPolicyValidator;
     }
 
     public async Task<string> CrearPendienteAsync(UsuarioAltaInput input)
@@ -197,5 +205,86 @@ public class UsuarioService : IUsuarioService
             </p>
             <p>Este enlace tiene una vigencia de 24 horas.</p>
             """;
+    }
+
+    public async Task ActivarAsync(UsuarioActivacionInput input)
+    {
+        const string mensajeTokenInvalido =
+            "El enlace de activación no es válido o ha expirado.";
+
+        if (string.IsNullOrWhiteSpace(input.TokenHash) ||
+            string.IsNullOrWhiteSpace(input.Token))
+        {
+            throw new InvalidOperationException(mensajeTokenInvalido);
+        }
+
+        var usuario = await _usuarioRepository
+            .ObtenerPorTokenActivacionHashAsync(input.TokenHash);
+
+        if (usuario is null ||
+            usuario.Estado != EstadosUsuario.Pendiente ||
+            usuario.TokenActivacionFechaUso is not null ||
+            usuario.TokenActivacionExpiracion is null ||
+            usuario.TokenActivacionExpiracion <= DateTime.UtcNow ||
+            string.IsNullOrWhiteSpace(usuario.TokenActivacionHash))
+        {
+            throw new InvalidOperationException(mensajeTokenInvalido);
+        }
+
+        var hashCalculado = TokenActivacionService.CalcularHash(input.Token);
+
+        if (!CompararHashSeguro(
+                usuario.TokenActivacionHash,
+                hashCalculado))
+        {
+            throw new InvalidOperationException(mensajeTokenInvalido);
+        }
+
+        if (input.Contrasena != input.ConfirmarContrasena)
+        {
+            throw new ArgumentException(
+                "La contraseña y su confirmación no coinciden.");
+        }
+
+        var erroresContrasena =
+            _passwordPolicyValidator.Validar(input.Contrasena);
+
+        if (erroresContrasena.Count > 0)
+        {
+            throw new ArgumentException(
+                string.Join(" ", erroresContrasena));
+        }
+
+        var passwordHash =
+            _contrasenaHasher.Hashear(input.Contrasena);
+
+        var activado = await _usuarioRepository.ActivarAsync(
+            usuario.UsuarioId,
+            passwordHash,
+            DateTime.UtcNow);
+
+        if (!activado)
+        {
+            throw new InvalidOperationException(mensajeTokenInvalido);
+        }
+    }
+
+    private static bool CompararHashSeguro(
+    string hashEsperado,
+    string hashCalculado)
+    {
+        try
+        {
+            var esperado = Convert.FromHexString(hashEsperado);
+            var calculado = Convert.FromHexString(hashCalculado);
+
+            return CryptographicOperations.FixedTimeEquals(
+                esperado,
+                calculado);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 }

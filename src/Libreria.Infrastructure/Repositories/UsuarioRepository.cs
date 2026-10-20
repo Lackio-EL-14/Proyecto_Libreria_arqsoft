@@ -404,4 +404,96 @@ public class UsuarioRepository : IUsuarioRepository
 
         command.Parameters.Add(parametro);
     }
+
+    public async Task<Usuario?> ObtenerPorTokenActivacionHashAsync(
+    string tokenHash)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = @"
+        SELECT u.UsuarioId, u.PublicId,
+               u.Nombre, u.Apellido, u.Correo,
+               u.NombreUsuario, u.NombreCompleto,
+               u.PasswordHash, u.RolId, u.Estado,
+               u.TokenActivacionHash,
+               u.TokenActivacionExpiracion,
+               u.TokenActivacionFechaUso,
+               u.FechaCreacion, u.FechaModificacion,
+               u.UsuarioCreacionId, u.UsuarioModificacionId,
+               r.Nombre AS RolNombre,
+               r.Descripcion AS RolDescripcion,
+               r.Estado AS RolEstado
+        FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON u.RolId = r.RolId
+        WHERE u.TokenActivacionHash = @TokenHash;";
+
+        AgregarParametro(
+            command,
+            "@TokenHash",
+            tokenHash,
+            DbType.String,
+            200);
+
+        await using var reader = await command.ExecuteReaderAsync();
+
+        if (!await reader.ReadAsync())
+            return null;
+
+        return MapearUsuario(reader);
+    }
+
+    public async Task<bool> ActivarAsync(
+        int usuarioId,
+        string passwordHash,
+        DateTime fechaActivacion)
+    {
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = @"
+        UPDATE dbo.Usuario
+        SET PasswordHash = @PasswordHash,
+            Estado = @EstadoActivo,
+            TokenActivacionFechaUso = @FechaActivacion,
+            FechaModificacion = @FechaActivacion
+        WHERE UsuarioId = @UsuarioId
+          AND Estado = @EstadoPendiente
+          AND TokenActivacionFechaUso IS NULL;";
+
+        AgregarParametro(
+            command,
+            "@PasswordHash",
+            passwordHash,
+            DbType.String,
+            500);
+
+        AgregarParametro(
+            command,
+            "@EstadoActivo",
+            EstadosUsuario.Activo,
+            DbType.String,
+            20);
+
+        AgregarParametro(
+            command,
+            "@EstadoPendiente",
+            EstadosUsuario.Pendiente,
+            DbType.String,
+            20);
+
+        AgregarParametro(
+            command,
+            "@FechaActivacion",
+            fechaActivacion,
+            DbType.DateTime2);
+
+        AgregarParametro(
+            command,
+            "@UsuarioId",
+            usuarioId,
+            DbType.Int32);
+
+        return await command.ExecuteNonQueryAsync() == 1;
+    }
 }

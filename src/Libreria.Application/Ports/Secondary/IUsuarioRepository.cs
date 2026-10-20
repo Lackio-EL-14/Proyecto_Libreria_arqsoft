@@ -19,4 +19,11 @@ public interface IUsuarioRepository
     Usuario usuario,
     IDbConnection connection,
     IDbTransaction transaction);
+
+    Task<Usuario?> ObtenerPorTokenActivacionHashAsync(string tokenHash);
+
+    Task<bool> ActivarAsync(
+        int usuarioId,
+        string passwordHash,
+        DateTime fechaActivacion);
 }
