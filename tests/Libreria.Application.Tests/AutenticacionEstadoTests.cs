@@ -44,6 +44,7 @@ public class AutenticacionEstadoTests
     {
         public string Hashear(string contrasena) => throw new NotSupportedException();
         public bool Verificar(string hash, string contrasena) => true;
+        public bool RequiereRehash(string hash) => false;
     }
     private sealed class LoginRepositoryFake(string estado) : IUsuarioRepository
     {
