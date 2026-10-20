@@ -5,6 +5,7 @@ using Libreria.Application.Models;
 using Libreria.Application.Ports.Primary;
 using Libreria.Application.Ports.Secondary;
 using Libreria.Domain;
+using System.Security.Cryptography;
 using Libreria.Application.Validators;
 
 namespace Libreria.Application.Services;
@@ -38,47 +39,6 @@ public class UsuarioService : IUsuarioService
         _usuarioActual = usuarioActual;
         _hasher = hasher;
         _passwordPolicy = passwordPolicy;
-    }
-
-    public async Task<ResultadoOperacion> CambiarContrasenaAsync(CambioContrasenaInput input)
-    {
-        ArgumentNullException.ThrowIfNull(input);
-        var usuarioId = _usuarioActual.UsuarioId;
-        var errores = new Dictionary<string, string>();
-
-        if (usuarioId is not > 0)
-            return ResultadoOperacion.Invalido(new Dictionary<string, string>
-                { [string.Empty] = "Debe iniciar sesión para cambiar su contraseña." });
-
-        if (string.IsNullOrEmpty(input.ContrasenaActual))
-            errores["Input.ContrasenaActual"] = "Ingrese su contraseña actual.";
-        if (!string.Equals(input.NuevaContrasena, input.Confirmacion, StringComparison.Ordinal))
-            errores["Input.Confirmacion"] = "La confirmación no coincide con la nueva contraseña.";
-
-        var politica = _passwordPolicy.Validar(input.NuevaContrasena);
-        if (politica.Count > 0)
-            errores["Input.NuevaContrasena"] = string.Join(" ", politica);
-        else if (input.NuevaContrasena.Length > 128)
-            errores["Input.NuevaContrasena"] = "La contraseña no puede superar los 128 caracteres.";
-
-        if (errores.Count > 0)
-            return ResultadoOperacion.Invalido(errores);
-
-        var hashActual = await _usuarioRepository.ObtenerHashActivoAsync(usuarioId.Value);
-        if (hashActual is null || !_hasher.Verificar(hashActual, input.ContrasenaActual))
-            return ResultadoOperacion.Invalido(new Dictionary<string, string>
-                { ["Input.ContrasenaActual"] = "La contraseña actual es incorrecta." });
-
-        if (string.Equals(input.NuevaContrasena, input.ContrasenaActual, StringComparison.Ordinal))
-            return ResultadoOperacion.Invalido(new Dictionary<string, string>
-                { ["Input.NuevaContrasena"] = "La nueva contraseña debe ser distinta de la actual." });
-
-        var actualizado = await _usuarioRepository.ActualizarContrasenaAsync(
-            usuarioId.Value, hashActual, _hasher.Hashear(input.NuevaContrasena));
-        return actualizado
-            ? ResultadoOperacion.Correcto()
-            : ResultadoOperacion.Invalido(new Dictionary<string, string>
-                { [string.Empty] = "No fue posible cambiar la contraseña. Intente nuevamente." });
     }
 
     public async Task<string> CrearPendienteAsync(UsuarioAltaInput input)
@@ -169,6 +129,109 @@ public class UsuarioService : IUsuarioService
         }
     }
 
+    public async Task<ResultadoOperacion> CambiarContrasenaAsync(CambioContrasenaInput input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        var usuarioId = _usuarioActual.UsuarioId;
+        var errores = new Dictionary<string, string>();
+
+        if (usuarioId is not > 0)
+            return ResultadoOperacion.Invalido(new Dictionary<string, string>
+                { [string.Empty] = "Debe iniciar sesión para cambiar su contraseña." });
+
+        if (string.IsNullOrEmpty(input.ContrasenaActual))
+            errores["Input.ContrasenaActual"] = "Ingrese su contraseña actual.";
+        if (!string.Equals(input.NuevaContrasena, input.Confirmacion, StringComparison.Ordinal))
+            errores["Input.Confirmacion"] = "La confirmación no coincide con la nueva contraseña.";
+
+        var politica = _passwordPolicy.Validar(input.NuevaContrasena);
+        if (politica.Count > 0)
+            errores["Input.NuevaContrasena"] = string.Join(" ", politica);
+        else if (input.NuevaContrasena.Length > 128)
+            errores["Input.NuevaContrasena"] = "La contraseña no puede superar los 128 caracteres.";
+
+        if (errores.Count > 0)
+            return ResultadoOperacion.Invalido(errores);
+
+        var hashActual = await _usuarioRepository.ObtenerHashActivoAsync(usuarioId.Value);
+        if (hashActual is null || !_hasher.Verificar(hashActual, input.ContrasenaActual))
+            return ResultadoOperacion.Invalido(new Dictionary<string, string>
+                { ["Input.ContrasenaActual"] = "La contraseña actual es incorrecta." });
+
+        if (string.Equals(input.NuevaContrasena, input.ContrasenaActual, StringComparison.Ordinal))
+            return ResultadoOperacion.Invalido(new Dictionary<string, string>
+                { ["Input.NuevaContrasena"] = "La nueva contraseña debe ser distinta de la actual." });
+
+        var actualizado = await _usuarioRepository.ActualizarContrasenaAsync(
+            usuarioId.Value, hashActual, _hasher.Hashear(input.NuevaContrasena));
+        return actualizado
+            ? ResultadoOperacion.Correcto()
+            : ResultadoOperacion.Invalido(new Dictionary<string, string>
+                { [string.Empty] = "No fue posible cambiar la contraseña. Intente nuevamente." });
+    }
+
+    public async Task ActivarAsync(UsuarioActivacionInput input)
+    {
+        const string mensajeTokenInvalido =
+            "El enlace de activación no es válido o ha expirado.";
+
+        if (string.IsNullOrWhiteSpace(input.TokenHash) ||
+            string.IsNullOrWhiteSpace(input.Token))
+        {
+            throw new InvalidOperationException(mensajeTokenInvalido);
+        }
+
+        var usuario = await _usuarioRepository
+            .ObtenerPorTokenActivacionHashAsync(input.TokenHash);
+
+        if (usuario is null ||
+            usuario.Estado != EstadosUsuario.Pendiente ||
+            usuario.TokenActivacionFechaUso is not null ||
+            usuario.TokenActivacionExpiracion is null ||
+            usuario.TokenActivacionExpiracion <= DateTime.UtcNow ||
+            string.IsNullOrWhiteSpace(usuario.TokenActivacionHash))
+        {
+            throw new InvalidOperationException(mensajeTokenInvalido);
+        }
+
+        var hashCalculado = TokenActivacionService.CalcularHash(input.Token);
+
+        if (!CompararHashSeguro(
+                usuario.TokenActivacionHash,
+                hashCalculado))
+        {
+            throw new InvalidOperationException(mensajeTokenInvalido);
+        }
+
+        if (input.Contrasena != input.ConfirmarContrasena)
+        {
+            throw new ArgumentException(
+                "La contraseña y su confirmación no coinciden.");
+        }
+
+        var erroresContrasena =
+            _passwordPolicy.Validar(input.Contrasena);
+
+        if (erroresContrasena.Count > 0)
+        {
+            throw new ArgumentException(
+                string.Join(" ", erroresContrasena));
+        }
+
+        var passwordHash =
+            _hasher.Hashear(input.Contrasena);
+
+        var activado = await _usuarioRepository.ActivarAsync(
+            usuario.UsuarioId,
+            passwordHash,
+            DateTime.UtcNow);
+
+        if (!activado)
+        {
+            throw new InvalidOperationException(mensajeTokenInvalido);
+        }
+    }
+
     private static void ValidarInput(UsuarioAltaInput input)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -242,10 +305,10 @@ public class UsuarioService : IUsuarioService
             <h2>Activa tu cuenta</h2>
             <p>Hola {WebUtility.HtmlEncode(nombre)},</p>
             <p>Tu nombre de usuario es:
-               <strong>{WebUtility.HtmlEncode(nombreUsuario)}</strong>
+                <strong>{WebUtility.HtmlEncode(nombreUsuario)}</strong>
             </p>
             <p>Para definir tu contraseña y activar tu cuenta,
-               utiliza el siguiente enlace:</p>
+                utiliza el siguiente enlace:</p>
             <p>
                 <a href="{WebUtility.HtmlEncode(enlace)}">
                     Activar cuenta
@@ -253,5 +316,24 @@ public class UsuarioService : IUsuarioService
             </p>
             <p>Este enlace tiene una vigencia de 24 horas.</p>
             """;
+    }
+
+    private static bool CompararHashSeguro(
+    string hashEsperado,
+    string hashCalculado)
+    {
+        try
+        {
+            var esperado = Convert.FromHexString(hashEsperado);
+            var calculado = Convert.FromHexString(hashCalculado);
+
+            return CryptographicOperations.FixedTimeEquals(
+                esperado,
+                calculado);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 }

@@ -22,7 +22,14 @@ public interface IUsuarioRepository
     Task<int> InsertarAsync(Usuario usuario);
 
     Task<int> InsertarAsync(
-    Usuario usuario,
-    IDbConnection connection,
-    IDbTransaction transaction);
+        Usuario usuario,
+        IDbConnection connection,
+        IDbTransaction transaction);
+
+    Task<Usuario?> ObtenerPorTokenActivacionHashAsync(string tokenHash);
+
+    Task<bool> ActivarAsync(
+        int usuarioId,
+        string passwordHash,
+        DateTime fechaActivacion);
 }
