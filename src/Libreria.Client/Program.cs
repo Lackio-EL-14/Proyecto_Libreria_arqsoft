@@ -29,6 +29,7 @@ builder.Services
         options.Conventions.AuthorizeFolder("/Marcas", PoliticasAcceso.SoloAdministrador);
         options.Conventions.AuthorizeFolder("/Productos", PoliticasAcceso.SoloAdministrador);
         options.Conventions.AuthorizeFolder("/Historico", PoliticasAcceso.SoloAdministrador);
+        options.Conventions.AuthorizeFolder("/Diagnostico", PoliticasAcceso.SoloAdministrador);
 
         // Ventas: Administrador y Vendedor (cubre las páginas que se agreguen en /Ventas).
         options.Conventions.AuthorizeFolder("/Ventas", PoliticasAcceso.Ventas);
@@ -64,6 +65,7 @@ builder.Services.AddScoped<PasswordPolicyValidator>();
 
 // Servicios y Repositorios adicionales (Catálogo, Histórico)
 builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoRepository>();
+builder.Services.AddSingleton<CacheDiagnosticoService>();
 builder.Services.AddScoped<ProductosActivosService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
