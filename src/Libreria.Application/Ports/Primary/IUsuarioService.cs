@@ -5,4 +5,5 @@ namespace Libreria.Application.Ports.Primary;
 public interface IUsuarioService
 {
     Task<string> CrearPendienteAsync(UsuarioAltaInput input);
+    Task ActivarAsync(UsuarioActivacionInput input);
 }
