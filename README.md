@@ -48,7 +48,7 @@ cp .env.example .env
 
 ## 3. Levantar la Aplicación (El Clúster)
 
-Abre **Docker Desktop manualmente** y espera hasta que indique que el motor está en ejecución. Construye la imagen optimizada y levanta los 6 contenedores en segundo plano:
+Abre **Docker Desktop manualmente** y espera hasta que indique que el motor está en ejecución. Construye la imagen optimizada y levanta los 7 contenedores en segundo plano:
 
 ```bash
 docker compose up -d --build
@@ -58,7 +58,7 @@ docker compose up -d --build
 El clúster incluye:
 
 * 1 Proxy Inverso (Nginx) balanceando en Round-Robin.
-* 3 Réplicas de la aplicación web (`app1`, `app2`, `app3`).
+* 4 Réplicas de la aplicación web (`app1`, `app2`, `app3`, `app4`).
 * 1 Base de datos SQL Server.
 * 1 Servidor Redis para caché distribuida.
 
@@ -83,7 +83,7 @@ docker exec -it libreria-db bash -c 'for f in /scripts/*.sql; do echo "Ejecutand
 ## 5. Acceso y Uso
 
 * **Aplicación Web:** Navega a [http://localhost:3000](http://localhost:3000). Nginx recibirá tu petición y la enviará a una de las réplicas disponibles.
-* **Sesiones Compartidas:** Puedes recargar la página y verás que el ID del servidor cambia (en el banner superior), pero tu sesión y el cifrado de URLs se mantienen gracias al volumen compartido de Data Protection.
+* **Sesiones compartidas:** La cookie contiene una referencia protegida y el ticket autenticado se almacena en Redis. Cualquier réplica puede recuperarlo. El volumen de Data Protection comparte las claves que protegen la cookie y Redis comparte la sesión.
 
 ### Usuarios de prueba
 
@@ -109,8 +109,19 @@ La clave lógica `productos:activos` usa el prefijo configurado `libreria:`, por
 docker exec libreria-redis redis-cli TYPE libreria:productos:activos
 docker exec libreria-redis redis-cli TTL libreria:productos:activos
 docker exec libreria-redis redis-cli HGET libreria:productos:activos data
-docker compose logs app1 app2 app3 app4 | grep "Cache HIT\|Cache MISS"
+docker compose logs app1 app2 app3 app4
 ```
+
+**Comprobar las sesiones distribuidas:**
+
+```bash
+docker exec libreria-redis redis-cli SCAN 0 MATCH "libreria:sesiones:*" COUNT 100
+docker exec libreria-redis redis-cli TYPE <clave-de-sesion>
+docker exec libreria-redis redis-cli TTL <clave-de-sesion>
+docker compose logs app1 app2 app3 app4
+```
+
+No muestres el campo `data` de una sesión: contiene el ticket autenticado serializado. `SCAN` y `TTL` son suficientes para demostrar que la sesión vive en Redis y es compartida entre réplicas.
 
 ### Visor de diagnóstico Redis (US-64)
 
@@ -136,12 +147,27 @@ Para observar los eventos estructurados en tiempo real:
 docker compose logs -f app1 app2 app3 app4
 ```
 
+Los eventos `Sesion Redis CREADA`, `Sesion Redis LECTURA` y `Sesion Redis ELIMINADA` incluyen la réplica y la duración. Las operaciones normales deben tardar muy por debajo de un segundo. La conexión es única y compartida por las sesiones, la caché de consultas y el diagnóstico; no se crea una conexión nueva por petición. La resolución DNS explícita está desactivada y los timeouts de conexión y operación son configurables, con un valor predeterminado de 1000 ms.
+
+Para revisar Redis cuando se sospeche una demora:
+
+```bash
+docker exec libreria-redis redis-cli PING
+docker exec libreria-redis redis-cli LATENCY LATEST
+docker exec libreria-redis redis-cli SLOWLOG GET 10
+docker exec libreria-app1 getent hosts redis
+docker compose logs --since=5m app1 app2 app3 app4 redis
+```
+
+No agregues `family=InterNetwork` a la cadena de conexión: esa palabra clave no está soportada. El hostname correcto dentro de Docker es `redis:6379`, no `localhost:6379`.
+
 **Reiniciar sistema con Base de Datos limpia (Destructivo):**
 
 ```bash
 docker compose down -v
+docker build -t libreria-app .
 docker compose up -d
-# (Requiere volver a ejecutar el comando del paso 4)
+docker exec libreria-db bash -c 'for f in /scripts/*.sql; do echo "Ejecutando $f..."; /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Libreria2026!" -C -b -i "$f" || exit 1; done'
 
 ```
 
