@@ -104,6 +104,15 @@ builder.Services
         options.EventsType = typeof(ValidarEstadoUsuarioCookieEvents);
     });
 
+builder.Services.AddSingleton<ITicketStore, RedisTicketStore>();
+builder.Services
+    .AddOptions<CookieAuthenticationOptions>(
+        CookieAuthenticationDefaults.AuthenticationScheme)
+    .Configure<ITicketStore>((options, store) =>
+    {
+        options.SessionStore = store;
+    });
+
 // US-39: Políticas de autorización por rol
 builder.Services.AddAuthorization(options =>
 {
@@ -165,34 +174,4 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddRedisCaching(this IServiceCollection services, IConfiguration configuration)
-    {
-        // 1. Configurar la conexión nativa a Redis (Parse extrae el EndPoint automáticamente)
-        services.AddStackExchangeRedisCache(options =>
-        {
-            var configString = configuration["REDIS_HOST"] ?? "redis:6379";
-            var redisConfig = StackExchange.Redis.ConfigurationOptions.Parse(configString);
-            
-            redisConfig.ResolveDns = true;
-            redisConfig.AbortOnConnectFail = false;
-
-            options.ConfigurationOptions = redisConfig;
-            options.InstanceName = "LibreriaCache_";
-        });
-
-        // 2. Registrar el puerto de Caché Distribuida (US-61, para los Productos)
-        services.AddSingleton<ICacheStore, Libreria.Infrastructure.Caching.RedisCacheStore>();
-
-        // 3. Registrar el interceptor de sesiones en Redis (Requerimiento del docente)
-        services.AddSingleton<ITicketStore, RedisTicketStore>();
-
-        // 4. Sobrescribir la cookie para que deposite el contenido real en Redis
-        services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
-            .Configure<ITicketStore>((options, store) =>
-            {
-                options.SessionStore = store;
-            });
-
-        return services;
-    }
 }

@@ -6,36 +6,25 @@ using StackExchange.Redis;
 
 namespace Libreria.Infrastructure.Caching;
 
-public sealed class RedisCacheStore : ICacheStore, IDisposable
+public sealed class RedisCacheStore : ICacheStore
 {
     private static readonly JsonSerializerOptions SerializerOptions =
         new(JsonSerializerDefaults.Web);
 
     private readonly IDistributedCache _cache;
-    private readonly Lazy<ConnectionMultiplexer> _connection;
+    private readonly IConnectionMultiplexer _connection;
     private readonly string _instanceName;
 
     public RedisCacheStore(
         IDistributedCache cache,
+        IConnectionMultiplexer connection,
         IConfiguration configuration)
     {
         _cache = cache;
+        _connection = connection;
         _instanceName = configuration["Redis:InstanceName"]
             ?? configuration["REDIS_INSTANCE_NAME"]
             ?? "libreria:";
-
-        var host = configuration["Redis:Host"]
-            ?? configuration["REDIS_HOST"]
-            ?? throw new InvalidOperationException("Falta la configuración Redis:Host.");
-
-        var connectionOptions = ConfigurationOptions.Parse(host);
-        connectionOptions.AbortOnConnectFail = false;
-        connectionOptions.ConnectRetry = 1;
-        connectionOptions.ConnectTimeout = 1000;
-
-        _connection = new Lazy<ConnectionMultiplexer>(
-            () => ConnectionMultiplexer.Connect(connectionOptions),
-            LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     public async Task<T?> ObtenerAsync<T>(
@@ -77,16 +66,8 @@ public sealed class RedisCacheStore : ICacheStore, IDisposable
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        return await _connection.Value
+        return await _connection
             .GetDatabase()
             .KeyTimeToLiveAsync($"{_instanceName}{clave}");
-    }
-
-    public void Dispose()
-    {
-        if (_connection.IsValueCreated)
-        {
-            _connection.Value.Dispose();
-        }
     }
 }
