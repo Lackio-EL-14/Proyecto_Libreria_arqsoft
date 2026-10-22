@@ -602,6 +602,31 @@ public async Task InvalidarAsync()
 ```
 Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo ProductosActivosService.cs.
 
+
+#### Evidencias Experimentales del Funcionamiento de Caché
+
+A continuación se documentan las cuatro evidencias empíricas obtenidas en el entorno de pruebas, demostrando la integración completa de Redis, el patrón Cache-Aside, la persistencia compartida entre réplicas heterogéneas y la invalidación reactiva ante cambios en el catálogo:
+
+1. **Evidencia 1 — Registro de Cache MISS (Carga Inicial desde SQL Server):**
+   Al acceder inicialmente a la ruta `/Productos`, la clave `libreria:productos:activos` no se encuentra en memoria RAM. La aplicación ejecuta la consulta relacional con ADO.NET hacia SQL Server, transfiere los datos al almacén volátil con un TTL de 300 segundos y registra el evento en la vista de diagnóstico (`/Diagnostico/Cache`), evidenciando el origen `SQL` y la réplica balanceada que resolvió la petición:
+   
+   ![Evidencia 1: Registro de Cache MISS con origen SQL Server](img/captura1.png)
+
+2. **Evidencia 2 — Registro de Cache HIT Compartido entre Réplicas:**
+   Al recargar el catálogo de productos (`F5`), el proxy inverso Nginx deriva la solicitud mediante Round-Robin hacia un nodo de cómputo diferente. Esta segunda réplica recupera el catálogo directamente desde Redis en memoria RAM sin interactuar con la base de datos relacional. La vista compartida de diagnóstico confirma el estado `HIT`, origen `Redis`, tiempo de respuesta sub-milisegundo (< 3 ms) y el decremento progresivo del TTL:
+
+   ![Evidencia 2: Registro de Cache HIT en memoria RAM servido por réplica balanceada](img/captura2.png)
+
+3. **Evidencia 3 — Inspección de Claves y TTL en Vivo vía CLI:**
+   Mediante la herramienta `redis-cli` en la terminal del contenedor `libreria-redis`, se valida de forma independiente la conectividad (`ping`), la existencia física de la clave serializada en memoria (`keys "*"`), el tiempo de vida restante (`ttl "libreria:productos:activos"`) y la estructura de datos utilizada (`type`):
+
+   ![Evidencia 3: Inspección de claves y TTL en el contenedor mediante redis-cli](img/captura3.png)
+
+4. **Evidencia 4 — Invalidación Atómica ante Modificación de Precio:**
+   Para garantizar la consistencia de datos y evitar que los clientes visualicen precios desactualizados (*stale data*), se procedió a modificar el precio de venta de un producto en el catálogo. La capa de aplicación invocó el método `InvalidarAsync()`, expulsando de forma inmediata la clave en Redis. La terminal comprueba mediante `exists "libreria:productos:activos"` que el valor retornado es `0` (clave eliminada), obligando a que la próxima consulta genere un nuevo ciclo MISS/HIT consistente:
+
+   ![Evidencia 4: Verificación de clave invalidada (exists = 0) tras modificación de precio](img/captura4.png)
+
 ### 8.6. Autenticación y Autorización Distribuida (Cookies + Claims)
 **Decisión Técnica:** Para soportar balanceo de carga sin sesiones pegajosas (*sticky sessions*), la autenticación se configuró mediante cookies de ASP.NET Core asociadas a claims de identidad y roles (`RolesSistema.Administrador`, `RolesSistema.Vendedor`). Las cookies viajan protegidas con `HttpOnly`, `SameSite=Lax` y cifrado simétrico mediante el anillo de claves compartido de Data Protection:
 
