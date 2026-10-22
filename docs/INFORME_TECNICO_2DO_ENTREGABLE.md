@@ -1,8 +1,37 @@
-# INFORME TÉCNICO DE ARQUITECTURA DE SOFTWARE
-## SEGUNDO ELEMENTO DE COMPETENCIA: ESCALAMIENTO HORIZONTAL DE UNA APLICACIÓN MONOLÍTICA
+<div align="center">
+
+# DEPARTAMENTO DE INGENIERÍA Y CIENCIAS EXACTAS
+## CARRERA DE INGENIERÍA DE SISTEMAS
+
+---
+
+### ASIGNATURA: ARQUITECTURA DE SOFTWARE
+#### SEGUNDO ELEMENTO DE COMPETENCIA (2DO ENTREGABLE)
+
+# INFORME TÉCNICO DE ARQUITECTURA: ESCALAMIENTO HORIZONTAL DE UNA APLICACIÓN MONOLÍTICA
 ### PROYECTO: SISTEMA DE GESTIÓN DE INVENTARIO Y VENTAS — LIBRERÍA
 
 ---
+
+### **INTEGRANTES DEL EQUIPO:**
+* **Cesar Cadiz Rivero**
+* **Josue Junior Camacho Canaviri**
+* **Gabriel Mauricio Claros García**
+* **Mauricio André Garron Claros**
+* **Juan Mateo Soruco Sejas**
+* **Edson Lamas Alcocer**
+
+---
+
+**Cochabamba — Bolivia**  
+**Octubre de 2026**
+
+</div>
+
+<div style="page-break-after: always;"></div>
+
+---
+
 
 ## 1. INTRODUCCIÓN Y OBJETIVOS
 
