@@ -7,16 +7,16 @@
 ## 1. INTRODUCCIÓN Y OBJETIVOS
 
 ### 1.1. Introducción
-El desarrollo moderno de software empresarial exige que los sistemas no solo satisfagan requerimientos funcionales de negocio, sino que también garanticen atributos de calidad esenciales como la disponibilidad continua, la tolerancia a fallos, el rendimiento bajo alta concurrencia y la escalabilidad operativa.
+El desarrollo moderno de software empresarial exige que los sistemas no solo satisfagan requerimientos funcionales de negocio, sino que también garanticen atributos de calidad esenciales como disponibilidad continua, tolerancia a fallos, rendimiento bajo alta concurrencia y escalabilidad operativa.
 
-En las fases iniciales del proyecto, se implementó un sistema monolítico modular organizado por responsabilidad técnica bajo los principios de la Arquitectura Hexagonal (Puertos y Adaptadores), persistencia relacional con ADO.NET y una interfaz web construida sobre ASP.NET Core Razor Pages. Si bien esta estructura garantizó un alto desacoplamiento y apego a los principios SOLID, su ejecución dependía de un único proceso de servidor en memoria. Esta dependencia introducía un punto único de falla (*Single Point of Failure*, SPOF) y limitaba la capacidad de procesamiento concurrente a los recursos físicos de una sola instancia de cómputo.
+En la primera etapa del proyecto, construimos un sistema monolítico modular organizado por responsabilidad técnica bajo los principios de la Arquitectura Hexagonal (Puertos y Adaptadores), persistencia relacional con ADO.NET puro y una interfaz web interactiva sobre ASP.NET Core Razor Pages. Si bien este diseño garantizó un estricto desacoplamiento y apego a los principios SOLID, su ejecución dependía de un único proceso de servidor en memoria. Esta dependencia introducía un punto único de falla (*Single Point of Failure*, SPOF) y limitaba la capacidad de procesamiento concurrente a los recursos físicos de una sola instancia de cómputo.
 
-El presente entregable documenta la transición e ingeniería de escalamiento horizontal del monolito, transformándolo en un clúster contenedorizado de alta disponibilidad distribuido a través de Docker Compose, balanceado mediante Nginx como proxy inverso, acelerado con Redis como capa de almacenamiento en caché distribuida y blindado mediante la sincronización descentralizada de estado con ASP.NET Core Data Protection.
+El presente informe documenta la auditoría de ingeniería y evolución técnica aplicada en este segundo sprint: la transformación del monolito local en un clúster contenedorizado de alta disponibilidad distribuido con Docker Compose, balanceado mediante Nginx como proxy inverso, acelerado con Redis bajo el patrón Cache-Aside y blindado mediante la sincronización descentralizada de estado criptográfico con ASP.NET Core Data Protection.
 
 ### 1.2. Objetivos
 
 #### Objetivo General
-Evolucionar la arquitectura monolítica modular existente hacia una solución escalada horizontalmente y contenerizada, garantizando alta disponibilidad, distribución de carga entre múltiples réplicas activas, sincronización segura de sesiones y optimización de lectura de datos mediante caché distribuida, preservando íntegramente las reglas de negocio, transacciones ACID y patrones de diseño previamente implementados.
+Evolucionar la arquitectura monolítica modular existente hacia una solución escalada horizontalmente y contenerizada, garantizando alta disponibilidad, distribución equitativa de carga entre múltiples réplicas activas, sincronización transparente de sesiones y optimización de lectura de datos mediante caché distribuida, preservando íntegramente las reglas de negocio, transacciones ACID y patrones de diseño previamente implementados.
 
 #### Objetivos Específicos
 1. **Contenerizar y orquestar el clúster de ejecución:** Diseñar imágenes Docker reproducibles y orquestar mediante Docker Compose un entorno integrado por la base de datos relacional, el motor de caché distribuida, el proxy inverso y cuatro réplicas simultáneas e independientes del monolito web.
@@ -30,7 +30,7 @@ Evolucionar la arquitectura monolítica modular existente hacia una solución es
 ## 2. DESCRIPCIÓN DEL SISTEMA Y EVOLUCIÓN
 
 ### 2.1. Descripción del Sistema y Proceso Principal
-El sistema tiene como propósito resolver de manera integral la administración operativa de una librería comercial. Su proceso principal radica en el **Flujo Transaccional de Ventas**, el cual involucra operaciones de alta criticidad:
+El sistema resuelve de manera integral la administración operativa de una librería comercial. Su proceso principal radica en el **Flujo Transaccional de Ventas**, el cual involucra operaciones de alta criticidad:
 * Consulta dinámica y selección reactiva de clientes y productos.
 * Validación estricta de existencias en almacén.
 * Registro atómico multilínea en tablas relacionales de cabecera y detalle (`Venta` y `DetalleVenta`).
@@ -41,12 +41,12 @@ El sistema tiene como propósito resolver de manera integral la administración 
 ### 2.2. Evolución Arquitectónica hacia el Segundo Entregable
 Durante el primer entregable, la aplicación operaba bajo un esquema monolítico en un único entorno de ejecución local (`localhost:5000`), donde el ciclo de vida del servidor web concentraba la gestión de memoria, la emisión de cookies y las conexiones a base de datos.
 
-La evolución implementada para este segundo hito transformó radicalmente el modelo operacional sin fracturar el código de dominio ni la distribución por proyectos:
+La evolución implementada transformó radicalmente el modelo operacional sin fracturar el código de dominio ni la estructura de proyectos:
 
 ```
 +-----------------------------------------------------------------------------------+
-| ANTES: Monolito Local                                                 |
-| [Navegador] ---> [Instancia Única Kestrel] ---> [Base de Datos Relacional]         |
+| ANTES: Monolito Local                                                             |
+| [Navegador] ---> [Instancia Única Kestrel] ---> [Base de Datos Relacional]        |
 |                  * Claves criptográficas en RAM local                             |
 |                  * Consultas repetitivas sin caché                                |
 |                  * Si el proceso cae, el sistema colapsa                          |
@@ -54,7 +54,7 @@ La evolución implementada para este segundo hito transformó radicalmente el mo
                                           |
                                           v
 +-----------------------------------------------------------------------------------+
-| AHORA: Monolito Escalado Horizontalmente                             |
+| AHORA: Monolito Escalado Horizontalmente                                          |
 |                                                                                   |
 |                  +------------------ [ Nginx Proxy ] <--- [Navegador Web]         |
 |                  |                     (:3000)                                    |
@@ -97,7 +97,7 @@ En una configuración predeterminada de ASP.NET Core, el proveedor de protecció
 2. La siguiente petición de navegación es dirigida por Nginx hacia la **Réplica 2**.
 3. Al carecer de la clave privada que originó el cifrado, la Réplica 2 es incapaz de desencriptar el payload de la cookie, interpreta la sesión como corrupta, expulsa al usuario del sistema y lo redirige compulsivamente al formulario de inicio de sesión (`/Cuenta/Login`).
 
-Para resolver este desafío y garantizar nodos completamente desprovistos de estado (*stateless*), se desacopló el ciclo de vida de las claves del ciclo de vida de los contenedores. Se configuró un volumen Docker compartido (`keys_data`) montado en la ruta `/keys` de cada réplica, forzando a todas las instancias a converger en un mismo almacén criptográfico centralizado y a identificarse bajo el mismo nombre de aplicación unificado (`LibreriaCompartida`).
+Para resolver este desafío y garantizar nodos completamente desprovistos de estado (*stateless*), desacoplamos el ciclo de vida de las claves del ciclo de vida de los contenedores. Configuramos un volumen Docker compartido (`keys_data`) montado en la ruta `/keys` de cada réplica, forzando a todas las instancias a converger en un mismo almacén criptográfico centralizado y a identificarse bajo el mismo nombre de aplicación unificado (`LibreriaCompartida`).
 
 ---
 
@@ -135,7 +135,7 @@ graph TB
 * **Administrador:** Usuario autenticado con privilegios completos para gestionar el catálogo de inventario, dar de alta y baja usuarios, auditar márgenes de ganancia y anular transacciones.
 * **Vendedor:** Usuario de mostrador enfocado exclusivamente en la captura rápida de ventas, consulta de existencias y alta rápida de clientes.
 * **Sistema de Gestión de Librería:** Núcleo de software responsable de aplicar las políticas de negocio, transacciones ACID y caché distribuida.
-* **Servidor SMTP:** Sistema de transporte de mensajería electrónica utilizado para notificar a nuevos usuarios su enlace de activación de cuenta.
+* **Servidor de Correo:** Sistema externo de transporte de mensajería (SMTP) utilizado para notificar a nuevos usuarios su enlace de activación de cuenta.
 
 ---
 
@@ -169,7 +169,7 @@ graph TB
     Nginx -->|"Enruta peticiones web balanceadas<br>[HTTP :8080]"| WebApp
     WebApp -->|"Consulta y almacena en memoria volátil<br>[RESP Protocol :6379]"| Redis
     WebApp -->|"Lee y persiste datos transaccionales<br>[TDS Protocol / ADO.NET :1433]"| Database
-    WebApp -->|"Solicita entrega de correos transaccionales<br>[SMTP]"| ServidorCorreo
+    WebApp -->|"Solicita envío de correos transaccionales<br>[SMTP]"| ServidorCorreo
 ```
 
 **Explicación del Nivel 2 (Diagrama de Contenedores):**
@@ -187,40 +187,43 @@ En el estándar **C4 Model**, un **Contenedor** representa un subsistema ejecuta
 Detalla la estructuración interna de código dentro de cualquiera de las réplicas activas, evidenciando el desacoplamiento estricto de la Arquitectura Hexagonal:
 
 ```mermaid
+---
+title: Diagrama de Componentes (Nivel 3) - Aplicación Web Monolítica
+---
 graph TB
     subgraph ClientLayer["Adaptador Primario (Libreria.Client)"]
-        RazorPages["📄 Razor Pages Models<br>(Ventas, Usuarios, Diagnóstico)"]
-        ReplicaBadge["🏷️ _ReplicaBadge<br>(Extracción de Hostname/MachineName)"]
-        AuthEvents["🛡️ ValidarEstadoUsuarioCookieEvents<br>(Validación de estado activo en BD)"]
+        RazorPages["📄 Razor Pages Models<br>[Component: ASP.NET Core]<br>Ventas, Usuarios, Diagnóstico"]
+        ReplicaBadge["🏷️ _ReplicaBadge<br>[Component: Razor Partial / C#]<br>Extracción de Hostname/MachineName"]
+        AuthEvents["🛡️ ValidarEstadoUsuarioCookieEvents<br>[Component: CookieAuthenticationEvents]<br>Validación de estado activo en BD"]
     end
 
     subgraph ApplicationLayer["Núcleo Hexagonal (Libreria.Application)"]
-        VentaFacade["⚡ VentaFacade / StockFacade<br>(Patrón Facade - Transacciones)"]
-        ProdService["⚡ ProductosActivosService<br>(Patrón Cache-Aside)"]
-        UserService["⚡ UsuarioService / SeguridadService<br>(Lógica de Negocio y Bajas)"]
-        PrimaryPorts["🚪 Puertos Primarios (Interfaces)<br>(IVentaFacade, IUsuarioService, etc.)"]
-        SecondaryPorts["🔌 Puertos Secundarios (Interfaces)<br>(IVentaRepository, ICacheStore, etc.)"]
+        VentaFacade["⚡ VentaFacade / StockFacade<br>[Component: C# Facades]<br>Patrón Facade - Transacciones"]
+        ProdService["⚡ ProductosActivosService<br>[Component: C# Cache-Aside Service]"]
+        UserService["⚡ UsuarioService / SeguridadService<br>[Component: C# Domain Services]<br>Lógica de Negocio y Bajas"]
+        PrimaryPorts["🚪 Puertos Primarios (Interfaces)<br>[Component: C# Interfaces]<br>IVentaFacade, IUsuarioService, etc."]
+        SecondaryPorts["🔌 Puertos Secundarios (Interfaces)<br>[Component: C# Interfaces]<br>IVentaRepository, ICacheStore, etc."]
     end
 
     subgraph InfraLayer["Adaptador Secundario (Libreria.Infrastructure)"]
-        SqlRepos["💾 Repositorios ADO.NET<br>(VentaRepository, UsuarioRepository)"]
-        RedisStore["⚡ RedisCacheStore<br>(StackExchange.Redis Adapter)"]
-        DataProtectionCfg["🔐 DataProtection Provider<br>(Persistencia física en /keys)"]
+        SqlRepos["💾 Repositorios ADO.NET<br>[Component: Microsoft.Data.SqlClient]<br>VentaRepository, UsuarioRepository"]
+        RedisStore["⚡ RedisCacheStore<br>[Component: StackExchange.Redis Adapter]"]
+        DataProtectionCfg["🔐 DataProtection Provider<br>[Component: ASP.NET Core Cryptography]<br>Persistencia compartida de claves"]
     end
 
     subgraph DomainLayer["Núcleo Puro (Libreria.Domain)"]
-        Entities["📦 Entidades & Catálogos<br>(Venta, DetalleVenta, Usuario, Rol)"]
+        Entities["📦 Entidades & Catálogos<br>[Component: POCOs]<br>Venta, DetalleVenta, Usuario, Rol"]
     end
 
     RazorPages -->|"Consume"| PrimaryPorts
     AuthEvents -->|"Consume"| PrimaryPorts
-    PrimaryPorts --> VentaFacade
-    PrimaryPorts --> ProdService
-    PrimaryPorts --> UserService
+    PrimaryPorts -->|"Implementado por"| VentaFacade
+    PrimaryPorts -->|"Implementado por"| ProdService
+    PrimaryPorts -->|"Implementado por"| UserService
 
-    VentaFacade -->|"Usa"| SecondaryPorts
-    ProdService -->|"Usa"| SecondaryPorts
-    UserService -->|"Usa"| SecondaryPorts
+    VentaFacade -->|"Usa puertos"| SecondaryPorts
+    ProdService -->|"Usa puertos"| SecondaryPorts
+    UserService -->|"Usa puertos"| SecondaryPorts
 
     SecondaryPorts -.->|"Implementado por"| SqlRepos
     SecondaryPorts -.->|"Implementado por"| RedisStore
@@ -353,7 +356,7 @@ La vista integrada unifica los tres primeros niveles del Modelo C4, proporcionan
 
 ## 6. DIAGRAMA DE DESPLIEGUE (DEPLOYMENT DIAGRAM)
 
-El siguiente diagrama formaliza el mapeo físico entre el hardware anfitrión (*Host OS*), el motor de ejecución de Docker, las redes virtuales tipo bridge, los puntos de montaje de volúmenes persistentes y el aislamiento de puertos:
+El siguiente diagrama formaliza el mapeo físico entre el hardware anfitrión (*Host OS*), el motor de ejecución de Docker, la red virtual compartida tipo bridge, los puntos de montaje de volúmenes persistentes y el aislamiento de puertos:
 
 ```mermaid
 flowchart TB
@@ -372,6 +375,7 @@ flowchart TB
                 App1Cont["📦 Contenedor: libreria-app1<br>Imagen: libreria-app:latest<br>Escucha: :8080"]
                 App2Cont["📦 Contenedor: libreria-app2<br>Imagen: libreria-app:latest<br>Escucha: :8080"]
                 App3Cont["📦 Contenedor: libreria-app3<br>Imagen: libreria-app:latest<br>Escucha: :8080"]
+                App4Cont["📦 Contenedor: libreria-app4<br>Imagen: libreria-app:latest<br>Escucha: :8080"]
                 
                 RedisCont["📦 Contenedor: libreria-redis<br>Imagen: redis:alpine<br>Escucha: :6379"]
                 
@@ -398,19 +402,33 @@ flowchart TB
     App1Cont === VolKeys
     App2Cont === VolKeys
     App3Cont === VolKeys
+    App4Cont === VolKeys
 
     NginxCont -->|"Balanceo Round-Robin :8080"| App1Cont
     NginxCont -->|"Balanceo Round-Robin :8080"| App2Cont
     NginxCont -->|"Balanceo Round-Robin :8080"| App3Cont
+    NginxCont -->|"Balanceo Round-Robin :8080"| App4Cont
 
     App1Cont -->|"Lectura / Escritura de Caché"| RedisCont
     App2Cont -->|"Lectura / Escritura de Caché"| RedisCont
     App3Cont -->|"Lectura / Escritura de Caché"| RedisCont
+    App4Cont -->|"Lectura / Escritura de Caché"| RedisCont
 
     App1Cont -->|"ADO.NET Connections & Queries"| DbCont
     App2Cont -->|"ADO.NET Connections & Queries"| DbCont
     App3Cont -->|"ADO.NET Connections & Queries"| DbCont
+    App4Cont -->|"ADO.NET Connections & Queries"| DbCont
 ```
+
+**Explicación del Diagrama de Despliegue:**
+El diagrama de despliegue formaliza el mapeo físico y la infraestructura de virtualización sobre el host de laboratorio:
+* **Host Físico y Puertos Expuestos:** Se mapean tres puntos de entrada hacia el sistema anfitrión: puerto `:3000` redirigido al puerto `:80` de `libreria-nginx` para acceso web, puerto `:1433` hacia `libreria-db` para administración por herramientas SQL externas, y puerto `:6379` hacia `libreria-redis` para inspección con Redis CLI.
+* **Red Virtual Docker (Bridge):** Todos los contenedores convergen en una red bridge común, permitiendo la resolución de nombres DNS interna de Docker (`app1`, `app2`, `app3`, `app4`, `db`, `redis`, `nginx`) sin exponer los puertos internos `:8080` de las aplicaciones al exterior.
+* **Clúster de Réplicas Web (`libreria-app1` a `libreria-app4`):** Cuatro instancias idénticas ejecutando la imagen compilada sobre ASP.NET Core Razor Pages (.NET 10). Cada réplica consume independientemente los servicios de Redis y SQL Server y responde peticiones HTTP balanceadas por Nginx.
+* **Volúmenes Persistentes y Montajes:**
+  * `keys_data`: Volumen compartido montado en `/keys` de las cuatro réplicas para descentralizar el anillo criptográfico de Data Protection.
+  * `mssql_data`: Volumen administrado montado en `/var/opt/mssql` para asegurar la durabilidad física de las bases de datos (archivos `.mdf` y `.ldf`).
+  * `./db/init` y `./nginx.conf`: Bind mounts de sólo lectura (`:ro`) para aprovisionamiento declarativo del esquema y de las reglas de balanceo.
 
 ---
 
@@ -424,7 +442,24 @@ Para desacoplar el motor de base de datos de la lógica de negocio, se diseñaro
 
 ### 7.3. Patrón Facade (`VentaFacade` y `StockFacade`)
 El proceso de ventas representa un flujo de alta complejidad que exige coordinar múltiples servicios heterogéneos: validación de cliente, comprobación de catálogo, apertura de conexión física, inicio de transacción ACID, inserción en cabecera y detalle, descuento de stock y cálculo de márgenes. 
-El patrón **Facade** encapsula toda esta orquestación técnica compleja detrás de un método simple y cohesivo (`RegistrarVentaAsync`), entregando a la UI un punto de contacto único, claro y desacoplado.
+El patrón **Facade** encapsula toda esta orquestación técnica compleja detrás de un método simple y cohesivo (`RegistrarVentaAsync`), entregando a la UI un punto de contacto único, claro y desacoplado:
+
+```csharp
+public async Task<int> RegistrarVentaAsync(Venta venta, List<DetalleVenta> detalles)
+{
+    await using var connection = _connectionFactory.CreateConnection();
+    await connection.OpenAsync();
+    await using var transaction = await connection.BeginTransactionAsync();
+
+    var ventaId = await _ventaRepository.InsertarAsync(venta, connection, transaction);
+    await _stockFacade.DescontarStockAsync(detalles, connection, transaction);
+    await transaction.CommitAsync();
+
+    await _productosService.InvalidarAsync();
+    return ventaId;
+}
+```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo VentaFacade.cs.
 
 ### 7.4. Cumplimiento de Principios SOLID y Clean Code
 * **S (Single Responsibility):** Se separó la lógica de validación de contraseñas (`PasswordPolicyValidator`), generación de identificadores (`GeneradorNombreUsuario`), emisión de correos (`SmtpEmailSender`) y persistencia de seguridad (`UsuarioSeguridadService`).
@@ -438,90 +473,18 @@ El patrón **Facade** encapsula toda esta orquestación técnica compleja detrá
 ## 8. DECISIONES TÉCNICAS Y EVIDENCIAS DE CÓDIGO
 
 ### 8.1. Orquestación del Clúster (`docker-compose.yml`)
-**Decisión Técnica:** Se optó por levantar el clúster con cuatro réplicas de aplicación (superando el umbral de tres exigido), configurando dependencias de salud estrictas (`condition: service_healthy`) para asegurar que los contenedores web inicien únicamente tras la disponibilidad comprobada de Redis y SQL Server.
+**Decisión Técnica:** Se optó por levantar el clúster con cuatro réplicas de aplicación (superando el umbral de tres exigido), configurando dependencias de salud estrictas (`condition: service_healthy`) para asegurar que los contenedores web inicien únicamente tras la disponibilidad comprobada de Redis y SQL Server:
 
 ```yaml
 services:
-  db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: libreria-db
-    environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "Libreria2026!"
-      MSSQL_PID: "Express"
-    ports:
-      - "1433:1433"
-    volumes:
-      - mssql_data:/var/opt/mssql
-      - ./db/init:/scripts:ro
-    healthcheck:
-      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Libreria2026!", "-C", "-Q", "SELECT 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
-  redis:
-    image: redis:alpine
-    container_name: libreria-redis
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   app1:
     image: libreria-app:latest
     container_name: libreria-app1
-    env_file:
-      - .env
     volumes:
       - keys_data:/keys
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  app2:
-    image: libreria-app:latest
-    container_name: libreria-app2
-    env_file:
-      - .env
-    volumes:
-      - keys_data:/keys
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  app3:
-    image: libreria-app:latest
-    container_name: libreria-app3
-    env_file:
-      - .env
-    volumes:
-      - keys_data:/keys
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  app4:
-    image: libreria-app:latest
-    container_name: libreria-app4
-    env_file:
-      - .env
-    volumes:
-      - keys_data:/keys
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
 
   nginx:
     image: nginx:alpine
@@ -530,204 +493,120 @@ services:
       - "3000:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - app1
-      - app2
-      - app3
-      - app4 
-
-volumes:
-  mssql_data:
-  keys_data:
+    depends_on: [app1, app2, app3, app4]
 ```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo docker-compose.yml.
 
 ### 8.2. Balanceo de Carga y Conmutación por Falla (`nginx.conf`)
-**Decisión Técnica:** Se configuró un bloque `upstream` con algoritmo Round-Robin. Para garantizar la continuidad de servicio ante la caída deliberada de un nodo (`docker stop`), se fijaron umbrales de detección agresivos (`max_fails=2`, `fail_timeout=5s`, `proxy_connect_timeout 3s`) combinados con la directiva `proxy_next_upstream`, la cual desvía la petición en vuelo a un nodo sano sin arrojar un error HTTP 502 al usuario. Se añadió además el encabezado de diagnóstico `X-Served-By`.
+**Decisión Técnica:** Se configuró un bloque `upstream` con algoritmo Round-Robin. Para garantizar la continuidad de servicio ante la caída deliberada de un nodo (`docker stop`), se fijaron umbrales de detección agresivos (`max_fails=2`, `fail_timeout=5s`, `proxy_connect_timeout 3s`) combinados con la directiva `proxy_next_upstream`, la cual desvía la petición en vuelo a un nodo sano sin arrojar un error HTTP 502 al usuario. Se añadió además el encabezado de diagnóstico `X-Served-By`:
 
 ```nginx
-events { 
-    worker_connections 1024; 
+upstream backend {
+    server app1:8080 max_fails=2 fail_timeout=5s;
+    server app2:8080 max_fails=2 fail_timeout=5s;
+    server app3:8080 max_fails=2 fail_timeout=5s;
+    server app4:8080 max_fails=2 fail_timeout=5s;
 }
 
-http {
-    upstream backend {
-        server app1:8080 max_fails=2 fail_timeout=5s;
-        server app2:8080 max_fails=2 fail_timeout=5s;
-        server app3:8080 max_fails=2 fail_timeout=5s;
-        server app4:8080 max_fails=2 fail_timeout=5s;
-    }
-
-    server {
-        listen 80;
-
-        location / {
-            proxy_pass http://backend;
-            proxy_set_header Host $http_host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-            
-            add_header X-Served-By $upstream_addr always;
-            
-            proxy_connect_timeout 3s;
-            proxy_next_upstream error timeout http_500 http_502 http_503 http_504;
-        }
+server {
+    listen 80;
+    location / {
+        proxy_pass http://backend;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        add_header X-Served-By $upstream_addr always;
+        proxy_connect_timeout 3s;
+        proxy_next_upstream error timeout http_500 http_502 http_503 http_504;
     }
 }
 ```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo nginx.conf.
 
 ### 8.3. Visualización del Identificador Real de Réplica (`_ReplicaBadge.cshtml`)
-**Decisión Técnica:** Para transparentar qué nodo del clúster resolvió la transacción y validar el balanceo en la interfaz visual, se implementó una vista parcial que renderiza la propiedad nativa del sistema operativo `@Environment.MachineName`. En entornos contenerizados bajo Linux, esta propiedad devuelve dinámicamente el *Container Hostname*, demostrando que no se trata de un valor estático simulado.
+**Decisión Técnica:** Para transparentar qué nodo del clúster resolvió la transacción y validar el balanceo en la interfaz visual, se implementó una vista parcial que renderiza la propiedad nativa del sistema operativo `@Environment.MachineName`. En entornos contenerizados bajo Linux, esta propiedad devuelve dinámicamente el *Container Hostname*, demostrando que no se trata de un valor estático simulado:
 
 ```cshtml
-<div style="background-color: #2c3e50; color: #ecf0f1; padding: 5px 15px; text-align: center; font-size: 0.9rem; font-weight: bold; border-bottom: 2px solid #3498db; margin-bottom: 15px;">
-    Servidor que atendió la solicitud: <span style="color: #f1c40f;">@Environment.MachineName</span>
+<div class="replica-badge">
+    Servidor que atendió la solicitud: 
+    <span class="badge-hostname">@Environment.MachineName</span>
 </div>
 ```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo _ReplicaBadge.cshtml.
 
 ### 8.4. Sincronización de Claves Criptográficas en `Program.cs`
-**Decisión Técnica:** Se invocó `AddDataProtection` indicando el almacenamiento de claves en la ruta `/keys` (montada sobre el volumen Docker persistente `keys_data`) y asignando un nombre de aplicación homogéneo (`LibreriaCompartida`).
+**Decisión Técnica:** Se invocó `AddDataProtection` indicando el almacenamiento de claves en la ruta `/keys` (montada sobre el volumen Docker persistente `keys_data`) y asignando un nombre de aplicación homogéneo (`LibreriaCompartida`):
 
 ```csharp
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(@"/keys"))
     .SetApplicationName("LibreriaCompartida");
 ```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo Program.cs.
 
 ### 8.5. Caché Distribuida con Redis y Patrón Cache-Aside
 **Decisión Técnica:** Se seleccionó el listado de productos activos como la consulta de mayor frecuencia de lectura. Se implementó `ProductosActivosService` gestionando las condiciones de HIT, MISS, almacenamiento con expiración de 5 minutos e invalidación atómica ante modificaciones.
 
+#### Recuperación Cache-Aside (HIT vs. MISS con TTL)
 ```csharp
-public async Task<IReadOnlyList<Producto>> ObtenerAsync(
-    ICrudRepository<Producto> repository)
+// 1. Intento de lectura desde Redis (Cache HIT)
+var productosCacheados = await _cacheStore.ObtenerAsync<List<Producto>>(CacheKeys.ProductosActivos);
+if (productosCacheados is not null)
 {
-    var cronometro = Stopwatch.StartNew();
-
-    try
-    {
-        var productosCacheados = await _cacheStore.ObtenerAsync<List<Producto>>(
-            CacheKeys.ProductosActivos);
-
-        if (productosCacheados is not null)
-        {
-            var ttl = await ObtenerTiempoVidaSeguroAsync();
-            cronometro.Stop();
-            await RegistrarResultadoAsync(
-                "HIT",
-                "Redis",
-                ttl,
-                cronometro.Elapsed.TotalMilliseconds);
-
-            return productosCacheados; 
-        }
-    }
-    catch (Exception exception)
-    {
-        _logger.LogWarning(exception, "Redis no disponible; fallback a base de datos");
-        var productosSinRedis = await repository.ObtenerActivasAsync();
-        cronometro.Stop();
-        await RegistrarResultadoAsync("MISS", "SQL", null, cronometro.Elapsed.TotalMilliseconds);
-        return productosSinRedis;
-    }
-
-    var productos = await repository.ObtenerActivasAsync();
-
-    try
-    {
-        await _cacheStore.GuardarAsync(
-            CacheKeys.ProductosActivos,
-            productos,
-            _expiracionCache);
-    }
-    catch (Exception exception)
-    {
-        _logger.LogWarning(exception, "No se pudo almacenar en Redis");
-    }
-
-    var tiempoVida = await ObtenerTiempoVidaSeguroAsync();
-    cronometro.Stop();
-    await RegistrarResultadoAsync("MISS", "SQL", tiempoVida, cronometro.Elapsed.TotalMilliseconds);
-
-    return productos;
+    await RegistrarResultadoAsync("HIT", "Redis", await ObtenerTiempoVidaSeguroAsync(), cronometro.Elapsed.TotalMilliseconds);
+    return productosCacheados;
 }
 
+// 2. Consulta a Base de Datos en caso de ausencia (Cache MISS) y guardado con TTL
+var productos = await repository.ObtenerActivasAsync();
+await _cacheStore.GuardarAsync(CacheKeys.ProductosActivos, productos, _expiracionCache);
+await RegistrarResultadoAsync("MISS", "SQL", await ObtenerTiempoVidaSeguroAsync(), cronometro.Elapsed.TotalMilliseconds);
+return productos;
+```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo ProductosActivosService.cs.
 
+#### Invalidación Atómica de Caché
+```csharp
 public async Task InvalidarAsync()
 {
-    try
-    {
-        await _cacheStore.EliminarAsync(CacheKeys.ProductosActivos);
-        _logger.LogInformation("Caché invalidada Clave={CacheKey} Réplica={Replica}",
-            CacheKeys.ProductosActivos, Environment.MachineName);
-    }
-    catch (Exception exception)
-    {
-        _logger.LogWarning(exception, "Error al invalidar clave en Redis");
-    }
+    // Expulsa la clave del clúster Redis obligando a refrescar desde SQL Server
+    await _cacheStore.EliminarAsync(CacheKeys.ProductosActivos);
+    _logger.LogInformation("Caché invalidada Clave={CacheKey} Réplica={Replica}",
+        CacheKeys.ProductosActivos, Environment.MachineName);
 }
 ```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo ProductosActivosService.cs.
 
 ---
 
 ## 9. MÓDULO DE USUARIOS: ADMINISTRACIÓN, SEGURIDAD Y ADO.NET
 
 ### 9.1. Consulta SELECT Segura (Sin Exposición de Credenciales)
-**Decisión de Seguridad:** Para evitar brechas de seguridad o fugas de información sensible en memoria, la sentencia SQL en ADO.NET dentro de `UsuarioRepository.cs` proyecta estrictamente las columnas públicas y de auditoría, prescindiendo por completo de `PasswordHash` o `TokenActivacionHash`.
+**Decisión de Seguridad:** Para evitar brechas de seguridad o fugas de información sensible en memoria, la sentencia SQL en ADO.NET dentro de `UsuarioRepository.cs` proyecta estrictamente las columnas públicas y de auditoría, prescindiendo por completo de `PasswordHash` o `TokenActivacionHash`:
 
 ```csharp
-public async Task<IReadOnlyList<UsuarioListItemModel>> ObtenerListadoAsync(string? estado = null)
-{
-    await using var connection = await CrearConexionAbiertaAsync();
-    await using var command = connection.CreateCommand();
+command.CommandText = @"
+    SELECT u.PublicId, u.NombreCompleto, u.NombreUsuario, u.Correo,
+           r.Nombre AS Rol, u.Estado, u.FechaCreacion,
+           creador.NombreCompleto AS CreadoPor
+    FROM dbo.Usuario u
+    INNER JOIN dbo.Rol r ON r.RolId = u.RolId
+    LEFT JOIN dbo.Usuario creador ON creador.UsuarioId = u.UsuarioCreacionId
+    WHERE (@Estado IS NULL OR u.Estado = @Estado)
+    ORDER BY u.FechaCreacion DESC";
 
-    command.CommandText = @"
-        SELECT u.PublicId, u.NombreCompleto, u.NombreUsuario, u.Correo,
-               r.Nombre AS Rol, u.Estado, u.FechaCreacion,
-               creador.NombreCompleto AS CreadoPor, 
-               u.FechaModificacion, 
-               modificador.NombreCompleto AS ModificadoPor
-        FROM dbo.Usuario u
-        INNER JOIN dbo.Rol r ON r.RolId = u.RolId
-        LEFT JOIN dbo.Usuario creador ON creador.UsuarioId = u.UsuarioCreacionId
-        LEFT JOIN dbo.Usuario modificador ON modificador.UsuarioId = u.UsuarioModificacionId
-        WHERE (@Estado IS NULL OR u.Estado = @Estado)
-        ORDER BY u.FechaCreacion DESC, u.NombreUsuario ASC";
-
-    AgregarParametro(command, "@Estado", estado is null ? DBNull.Value : estado, DbType.String, 20);
-
-    var usuarios = new List<UsuarioListItemModel>();
-    await using var reader = await command.ExecuteReaderAsync();
-
-    while (await reader.ReadAsync())
-    {
-        usuarios.Add(new UsuarioListItemModel(
-            reader.GetGuid(reader.GetOrdinal("PublicId")),
-            reader.GetString(reader.GetOrdinal("NombreCompleto")),
-            reader.GetString(reader.GetOrdinal("NombreUsuario")),
-            reader.GetString(reader.GetOrdinal("Correo")),
-            reader.GetString(reader.GetOrdinal("Rol")),
-            reader.GetString(reader.GetOrdinal("Estado")),
-            reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
-            reader.IsDBNull(reader.GetOrdinal("CreadoPor")) ? null : reader.GetString(reader.GetOrdinal("CreadoPor")),
-            reader.IsDBNull(reader.GetOrdinal("ModificadoPor")) ? null : reader.GetString(reader.GetOrdinal("ModificadoPor")),
-            reader.IsDBNull(reader.GetOrdinal("FechaModificacion")) ? null : reader.GetDateTime(reader.GetOrdinal("FechaModificacion"))));
-    }
-
-    return usuarios;
-}
+AgregarParametro(command, "@Estado", estado is null ? DBNull.Value : estado, DbType.String, 20);
+await using var reader = await command.ExecuteReaderAsync();
+// Proyección limpia directa al DTO sin consultar PasswordHash ni TokenActivacionHash
 ```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo UsuarioRepository.cs.
 
 ### 9.2. Generación Determinista de Nombre de Usuario Único
-**Regla de Negocio:** El sistema compone el nombre de usuario normalizando el texto (remoción de acentos mediante descomposición Unicode `FormD`), extrayendo la inicial del primer nombre y concatenando el apellido completo. Si el nombre base colisiona en base de datos, incrementa un sufijo numérico secuencial a partir del número 2.
+**Regla de Negocio:** El sistema compone el nombre de usuario normalizando el texto (remoción de acentos mediante descomposición Unicode `FormD`), extrayendo la inicial del primer nombre y concatenando el apellido completo. Si el nombre base colisiona en base de datos, incrementa un sufijo numérico secuencial a partir del número 2:
 
 ```csharp
 public async Task<string> GenerarAsync(string nombre, string apellido)
 {
-    var nombreNormalizado = Normalizar(nombre);
-    var apellidoNormalizado = Normalizar(apellido);
-
-    var nombreBase = $"{nombreNormalizado[0]}{apellidoNormalizado}";
-
+    var nombreBase = $"{Normalizar(nombre)[0]}{Normalizar(apellido)}";
     if (!await _usuarioRepository.ExisteNombreUsuarioAsync(nombreBase))
         return nombreBase;
 
@@ -736,102 +615,56 @@ public async Task<string> GenerarAsync(string nombre, string apellido)
     {
         numero++;
     }
-
     return $"{nombreBase}{numero}";
 }
 ```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo GeneradorNombreUsuario.cs.
 
 ### 9.3. Inserción Transaccional y Enlace de Activación por Correo
-**Flujo Criptográfico Seguro:** El nuevo usuario se crea en estado inactivo (`Pendiente`) con `PasswordHash` vacío. Se genera un token criptográfico en Base64 URL-safe; **únicamente el hash SHA-256 del token es persistido en base de datos**, garantizando que si la base de datos sufriera una filtración, los enlaces en tránsito no puedan ser reconstruidos. El token original viaja en el cuerpo del correo mediante SMTP.
+**Flujo Criptográfico Seguro:** El nuevo usuario se crea en estado inactivo (`Pendiente`) con `PasswordHash` vacío. Se genera un token criptográfico en Base64 URL-safe; **únicamente el hash SHA-256 del token es persistido en base de datos**, garantizando que si la base de datos sufriera una filtración, los enlaces en tránsito no puedan ser reconstruidos. El token original viaja en el cuerpo del correo mediante SMTP:
 
 ```csharp
+// Token en texto plano para el correo; solo el hash SHA-256 se persiste en BD
 var token = TokenActivacionService.GenerarToken();
 var tokenHash = TokenActivacionService.CalcularHash(token);
-var expiracion = DateTime.UtcNow.AddHours(24);
-
-var usuario = new Usuario
-{
-    Nombre = input.Nombre.Trim(),
-    Apellido = input.Apellido.Trim(),
-    Correo = correo,
-    NombreUsuario = nombreUsuario,
-    NombreCompleto = $"{input.Nombre.Trim()} {input.Apellido.Trim()}",
-    PasswordHash = string.Empty,
-    RolId = input.RolId,
-    Estado = EstadosUsuario.Pendiente, 
-    TokenActivacionHash = tokenHash,   
-    TokenActivacionExpiracion = expiracion,
-    UsuarioCreacionId = usuarioCreacionId
-};
+usuario.TokenActivacionHash = tokenHash;
+usuario.TokenActivacionExpiracion = DateTime.UtcNow.AddHours(24);
 
 await using var connection = _connectionFactory.CreateConnection();
 await using var transaction = await connection.BeginTransactionAsync();
+await _usuarioRepository.InsertarAsync(usuario, connection, transaction);
 
-try
-{
-    await _usuarioRepository.InsertarAsync(usuario, connection, transaction);
+var enlace = ConstruirEnlaceActivacion(tokenHash, token);
+await _emailSender.EnviarAsync(usuario.Correo, "Activa tu cuenta", ConstruirCorreo(usuario.Nombre, enlace));
 
-    var enlace = ConstruirEnlaceActivacion(tokenHash, token);
-    var cuerpoHtml = ConstruirCorreo(usuario.Nombre, usuario.NombreUsuario, enlace);
-
-    await _emailSender.EnviarAsync(usuario.Correo, "Activa tu cuenta - Sistema Librería", cuerpoHtml);
-
-    await transaction.CommitAsync();
-    return usuario.NombreUsuario;
-}
-catch
-{
-    await transaction.RollbackAsync();
-    throw;
-}
+await transaction.CommitAsync();
 ```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo UsuarioService.cs.
 
 ### 9.4. Baja Lógica y Bloqueo Inmediato de Sesión
 
 #### Reglas de Negocio en `UsuarioSeguridadService.cs`
-Para evitar condiciones de carrera, la baja lógica se ejecuta bajo un nivel de aislamiento `IsolationLevel.Serializable`. Se prohíbe explícitamente que un usuario se dé de baja a sí mismo y se valida estrictamente que no sea posible eliminar al último administrador activo del sistema.
+Para evitar condiciones de carrera, la baja lógica se ejecuta bajo un nivel de aislamiento `IsolationLevel.Serializable`. Se prohíbe explícitamente que un usuario se dé de baja a sí mismo y se valida estrictamente que no sea posible eliminar al último administrador activo del sistema:
 
 ```csharp
-public async Task<ResultadoOperacion> DarDeBajaAsync(Guid publicId)
-{
-    var actorId = _usuarioActual.UsuarioId;
-    if (actorId is not > 0)
-        return Error("Debe iniciar sesión como administrador.");
+await using var connection = _connectionFactory.CreateConnection();
+await connection.OpenAsync();
+await using var transaction = await connection.BeginTransactionAsync(IsolationLevel.Serializable);
 
-    await using var connection = _connectionFactory.CreateConnection();
-    await connection.OpenAsync();
-    await using var transaction = await connection.BeginTransactionAsync(IsolationLevel.Serializable);
+var usuarios = await _repository.BloquearParaBajaAsync(connection, transaction);
+var actor = usuarios.SingleOrDefault(u => u.UsuarioId == actorId);
 
-    try
-    {
-        var usuarios = await _repository.BloquearParaBajaAsync(connection, transaction);
-        var actor = usuarios.SingleOrDefault(u => u.UsuarioId == actorId);
-        if (actor is null || !EsAdministradorActivo(actor))
-            return Error("Solo un administrador activo puede dar de baja usuarios.");
+if (usuario.UsuarioId == actorId) return Error("No puede darse de baja a sí mismo.");
+if (EsAdministradorActivo(usuario) && usuarios.Count(EsAdministradorActivo) <= 1)
+    return Error("No se puede dar de baja al último administrador activo.");
 
-        var usuario = usuarios.SingleOrDefault(u => u.PublicId == publicId);
-        if (usuario is null) return ResultadoOperacion.NoExiste();
-        if (usuario.Estado == EstadosUsuario.Inactivo)
-            return Error("El usuario ya se encuentra inactivo.");
-        if (EsAdministradorActivo(usuario) && usuarios.Count(EsAdministradorActivo) <= 1)
-            return Error("No se puede dar de baja al último administrador activo.");
-        if (usuario.UsuarioId == actorId)
-            return Error("No puede darse de baja a sí mismo.");
-
-        await _repository.DesactivarAsync(usuario.UsuarioId, actorId.Value, connection, transaction);
-        await transaction.CommitAsync();
-        return ResultadoOperacion.Correcto();
-    }
-    catch
-    {
-        await transaction.RollbackAsync();
-        throw;
-    }
-}
+await _repository.DesactivarAsync(usuario.UsuarioId, actorId.Value, connection, transaction);
+await transaction.CommitAsync();
 ```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo UsuarioSeguridadService.cs.
 
 #### Revocación de Sesión entre Réplicas (`ValidarEstadoUsuarioCookieEvents.cs`)
-Aunque la cookie de sesión del usuario continúe vigente temporalmente en su navegador, el middleware de autenticación consulta en tiempo de ejecución a la base de datos; si el usuario fue cambiado a `Inactivo`, la cookie es destruida y el usuario es expulsado de inmediato en la siguiente petición.
+Aunque la cookie de sesión del usuario continúe vigente temporalmente en su navegador, el middleware de autenticación consulta en tiempo de ejecución a la base de datos; si el usuario fue cambiado a `Inactivo`, la cookie es destruida y el usuario es expulsado de inmediato en la siguiente petición:
 
 ```csharp
 public override async Task ValidatePrincipal(CookieValidatePrincipalContext context)
@@ -846,6 +679,7 @@ public override async Task ValidatePrincipal(CookieValidatePrincipalContext cont
     }
 }
 ```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo ValidarEstadoUsuarioCookieEvents.cs.
 
 ---
 
