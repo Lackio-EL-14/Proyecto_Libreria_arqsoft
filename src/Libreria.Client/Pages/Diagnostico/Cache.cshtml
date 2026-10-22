@@ -55,7 +55,7 @@ else
             <table>
                 <tbody>
                     <tr><th>Clave lógica</th><td><code>@Model.UltimoResultado.Clave</code></td></tr>
-                    <tr><th>Clave física en Redis</th><td><code>libreria:@Model.UltimoResultado.Clave</code></td></tr>
+                    <tr><th>Clave física en Redis</th><td><code>@Model.ClaveProductoFisica</code></td></tr>
                     <tr><th>Resultado</th><td>@Model.UltimoResultado.Resultado</td></tr>
                     <tr><th>Origen de los datos</th><td>@Model.UltimoResultado.Origen</td></tr>
                     <tr><th>Réplica</th><td>@Model.UltimoResultado.Replica</td></tr>
@@ -66,6 +66,22 @@ else
     </section>
 }
 
+<section class="dashboard-panel">
+    <div class="dashboard-panel__header">
+        <h2>Sesiones distribuidas</h2>
+        <p>La cookie conserva una referencia protegida; el ticket autenticado se comparte en Redis entre todas las réplicas.</p>
+    </div>
+    <div class="table-container">
+        <table>
+            <tbody>
+                <tr><th>Patrón de claves</th><td><code>@Model.PatronSesiones</code></td></tr>
+                <tr><th>Inspección segura</th><td>Use <code>SCAN</code>, <code>TYPE</code> y <code>TTL</code>. No exponga el campo binario del ticket.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
 <script>
     window.setTimeout(() => window.location.reload(), 2000);
 </script>
+

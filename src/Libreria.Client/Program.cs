@@ -20,24 +20,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddRazorPages(options =>
     {
-        // (y la página de error) quedan públicas con [AllowAnonymous].
         options.Conventions.AuthorizeFolder("/");
 
-        // US-39: el acceso por rol se valida en el servidor, no solo
-        // ocultando el menú. Inventario e histórico: solo Administrador.
         options.Conventions.AuthorizeFolder("/Categorias", PoliticasAcceso.SoloAdministrador);
         options.Conventions.AuthorizeFolder("/Marcas", PoliticasAcceso.SoloAdministrador);
         options.Conventions.AuthorizeFolder("/Productos", PoliticasAcceso.SoloAdministrador);
         options.Conventions.AuthorizeFolder("/Historico", PoliticasAcceso.SoloAdministrador);
         options.Conventions.AuthorizeFolder("/Diagnostico", PoliticasAcceso.SoloAdministrador);
 
-        // Ventas: Administrador y Vendedor (cubre las páginas que se agreguen en /Ventas).
         options.Conventions.AuthorizeFolder("/Ventas", PoliticasAcceso.Ventas);
     })
     .AddMvcOptions(options =>
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 
-
+// Llamadas a las extensiones modulares
 builder.Services.AddRedisCaching(builder.Configuration);
 builder.Services
     .AddOptions<ProductosActivosCacheOptions>()
@@ -63,7 +59,7 @@ builder.Services.AddScoped<ClienteValidator>();
 builder.Services.AddScoped<LoginValidator>();
 builder.Services.AddScoped<PasswordPolicyValidator>();
 
-// Servicios y Repositorios adicionales (Catálogo, Histórico)
+// Servicios y Repositorios adicionales
 builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoRepository>();
 builder.Services.AddSingleton<CacheDiagnosticoService>();
 builder.Services.AddScoped<ProductosActivosService>();
@@ -79,16 +75,20 @@ builder.Services.AddScoped<IVentaFacade, VentaFacade>();
 builder.Services.AddScoped<IConsultaVentaService, ConsultaVentaService>();
 builder.Services.AddScoped<IComprobanteVentaService, ComprobanteVentaService>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
-builder.Services.AddDataProtection();
+
+// Seguridad y Auditoría
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(@"/keys"))
+    .SetApplicationName("LibreriaCompartida");
+
 builder.Services.AddScoped<Libreria.Application.Ports.Primary.IUrlProtector, Libreria.Infrastructure.Security.UrlProtector>();
 builder.Services.AddScoped<IContrasenaHasher, Libreria.Infrastructure.Security.ContrasenaHasher>();
 
-// US-40: auditoría (usuario de la sesión actual + nombres para mostrar)
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUsuarioActual, Libreria.Infrastructure.Security.UsuarioActual>();
 builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
 
-// US-38: autenticación por cookie de ASP.NET Core
+// US-38: Autenticación por cookie de ASP.NET Core
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -104,7 +104,16 @@ builder.Services
         options.EventsType = typeof(ValidarEstadoUsuarioCookieEvents);
     });
 
-// US-39: políticas de autorización por rol
+builder.Services.AddSingleton<ITicketStore, RedisTicketStore>();
+builder.Services
+    .AddOptions<CookieAuthenticationOptions>(
+        CookieAuthenticationDefaults.AuthenticationScheme)
+    .Configure<ITicketStore>((options, store) =>
+    {
+        options.SessionStore = store;
+    });
+
+// US-39: Políticas de autorización por rol
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(PoliticasAcceso.SoloAdministrador, politica =>
@@ -126,25 +135,12 @@ connectionStringSingleton.Configurar(connectionString);
 builder.Services.AddSingleton(connectionStringSingleton);
 builder.Services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
 
-
-builder.Services.AddDataProtection()
-.PersistKeysToFileSystem(new DirectoryInfo(@"/keys"))
-.SetApplicationName("LibreriaCompartida");
-
-
 var app = builder.Build();
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
 });
-
-
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
-});
-
 
 if (!app.Environment.IsDevelopment())
 {
@@ -177,6 +173,5 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-
 
 }
