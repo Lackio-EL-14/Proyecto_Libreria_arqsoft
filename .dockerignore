@@ -4,3 +4,8 @@ bin/
 obj/
 .env
 db/
+.agents/
+.gemini/
+.zed/
+docs/
+*.pdf
