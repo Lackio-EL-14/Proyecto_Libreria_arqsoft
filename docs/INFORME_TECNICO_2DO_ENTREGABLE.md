@@ -45,7 +45,7 @@ La evolución implementada para este segundo hito transformó radicalmente el mo
 
 ```
 +-----------------------------------------------------------------------------------+
-| PRIMER ENTREGABLE: Monolito Local                                                 |
+| ANTES: Monolito Local                                                 |
 | [Navegador] ---> [Instancia Única Kestrel] ---> [Base de Datos Relacional]         |
 |                  * Claves criptográficas en RAM local                             |
 |                  * Consultas repetitivas sin caché                                |
@@ -54,7 +54,7 @@ La evolución implementada para este segundo hito transformó radicalmente el mo
                                           |
                                           v
 +-----------------------------------------------------------------------------------+
-| SEGUNDO ENTREGABLE: Monolito Escalado Horizontalmente                             |
+| AHORA: Monolito Escalado Horizontalmente                             |
 |                                                                                   |
 |                  +------------------ [ Nginx Proxy ] <--- [Navegador Web]         |
 |                  |                     (:3000)                                    |
@@ -109,23 +109,26 @@ El modelado formal de la arquitectura se estructuró siguiendo el estándar **C4
 El diagrama de contexto establece los límites del sistema, identificando los actores humanos primarios y los sistemas externos con los que colabora:
 
 ```mermaid
+---
+title: Diagrama de Contexto (Nivel 1) - Sistema de Gestión de Librería
+---
 graph TB
     subgraph Actores["Usuarios del Sistema"]
-        Admin["👤 Administrador<br>[Rol: Gestión total, auditoría, catálogos y usuarios]"]
-        Vendedor["👤 Vendedor<br>[Rol: Registro de ventas, consulta y clientes]"]
+        Admin["👤 Administrador<br>[Person]<br>Gestión total, auditoría, catálogos y usuarios"]
+        Vendedor["👤 Vendedor<br>[Person]<br>Registro de ventas, consulta y clientes"]
     end
 
     subgraph Frontera["Frontera del Sistema: Librería"]
-        SistemaLibreria["📚 Sistema de Gestión de Librería<br>[Monolito Escalado Horizontalmente]<br>Permite el control de inventario, facturación y usuarios"]
+        SistemaLibreria["📚 Sistema de Gestión de Librería<br>[Software System]<br>Permite el control de inventario, facturación y usuarios"]
     end
 
     subgraph Externos["Sistemas Externos"]
-        ServidorCorreo["✉️ Servidor SMTP<br>[Infraestructura de Red]<br>Envío de correos con enlaces de activación"]
+        ServidorCorreo["✉️ Servidor de Correo<br>[Software System]<br>Envío de correos con enlaces de activación"]
     end
 
-    Admin -->|Gestiona catálogos, audita y opera usuarios| SistemaLibreria
-    Vendedor -->|Registra transacciones y clientes| SistemaLibreria
-    SistemaLibreria -->|Envía credenciales de activación mediante SMTP| ServidorCorreo
+    Admin -->|"Gestiona catálogos, audita y opera usuarios"| SistemaLibreria
+    Vendedor -->|"Registra transacciones y clientes"| SistemaLibreria
+    SistemaLibreria -->|"Solicita envío de correos de activación"| ServidorCorreo
 ```
 
 **Explicación del Nivel 1:**
@@ -137,58 +140,46 @@ graph TB
 ---
 
 ### 4.2. Nivel 2: Diagrama de Contenedores
-Ilustra la topología de contenedores Docker desplegados, los protocolos de comunicación de red utilizados y las responsabilidades de infraestructura asignadas:
+Ilustra la arquitectura lógica del sistema descomponiéndolo en sus aplicaciones y almacenes de datos autónomos (contenedores en el estándar C4), los protocolos de comunicación utilizados y las responsabilidades asignadas:
 
 ```mermaid
+---
+title: Diagrama de Contenedores (C4 Nivel 2) - Sistema de Gestión de Librería
+---
 graph TB
-    subgraph Clientes["Navegadores Clientes"]
-        Browser["🌐 Navegador Web del Usuario"]
+    subgraph Actores["Usuarios del Sistema"]
+        Usuario["👤 Usuario del Sistema<br>[Person]<br>Administrador o Vendedor interactuando mediante navegador web"]
     end
 
-    subgraph DMZ["Punto de Entrada / Proxy Inverso"]
-        Nginx["📦 libreria-nginx<br>[Nginx:alpine]<br>Proxy inverso, balanceo Round-Robin, cabeceras HTTP"]
+    subgraph Externos["Sistemas Externos"]
+        ServidorCorreo["✉️ Servidor de Correo<br>[Software System]<br>Servicio externo SMTP para entrega de enlaces de activación"]
     end
 
-    subgraph AppCluster["Clúster de Aplicación"]
-        App1["📦 libreria-app1<br>[ASP.NET Core Razor Pages]<br>Puerto interno :8080"]
-        App2["📦 libreria-app2<br>[ASP.NET Core Razor Pages]<br>Puerto interno :8080"]
-        App3["📦 libreria-app3<br>[ASP.NET Core Razor Pages]<br>Puerto interno :8080"]
-        App4["📦 libreria-app4<br>[ASP.NET Core Razor Pages]<br>Puerto interno :8080"]
+    subgraph SistemaLibreria["Sistema de Gestión de Librería<br>[Software System]"]
+        Nginx["📦 Proxy Inverso & Balanceador<br>[Container: Nginx / Alpine]<br>Punto de entrada perimetral, terminación HTTP, reescritura de cabeceras y balanceo Round-Robin"]
+        
+        WebApp["📦 Aplicación Web Monolítica<br>[Container: ASP.NET Core Razor Pages / .NET 10]<br>Provee interfaz de usuario, orquestación de casos de uso, lógica de negocio y arquitectura hexagonal"]
+        
+        Redis[("⚡ Almacén de Caché Distribuida<br>[Container: Redis 7 / Alpine]<br>Almacén clave-valor en memoria RAM para catálogo de productos activos y estado distribuido")]
+        
+        Database[("🗄️ Base de Datos Principal<br>[Container: Microsoft SQL Server 2022 Express]<br>Almacén relacional para transacciones ACID de ventas, inventario, usuarios y auditoría")]
     end
 
-    subgraph DataServices["Servicios de Persistencia y Caché"]
-        Redis["📦 libreria-redis<br>[Redis:alpine]<br>Almacenamiento clave-valor en RAM (:6379)"]
-        Database["📦 libreria-db<br>[SQL Server 2022 Express]<br>Motor relacional transaccional (:1433)"]
-    end
-
-    subgraph SharedStorage["Almacenamiento Compartido"]
-        KeysVol[("📁 keys_data<br>[Volumen Docker]<br>Claves criptográficas sincronizadas")]
-    end
-
-    Browser -->|HTTP :3000| Nginx
-    Nginx -->|HTTP :8080| App1
-    Nginx -->|HTTP :8080| App2
-    Nginx -->|HTTP :8080| App3
-    Nginx -->|HTTP :8080| App4
-
-    App1 -.->|Lectura/Escritura de claves| KeysVol
-    App2 -.->|Lectura/Escritura de claves| KeysVol
-    App3 -.->|Lectura/Escritura de claves| KeysVol
-    App4 -.->|Lectura/Escritura de claves| KeysVol
-
-    App1 -->|RESP Protocol :6379| Redis
-    App2 -->|RESP Protocol :6379| Redis
-    App3 -->|RESP Protocol :6379| Redis
-    App4 -->|RESP Protocol :6379| Redis
-
-    App1 -->|"TDS Protocol :1433 (ADO.NET)"| Database
-    App2 -->|"TDS Protocol :1433 (ADO.NET)"| Database
-    App3 -->|"TDS Protocol :1433 (ADO.NET)"| Database
-    App4 -->|"TDS Protocol :1433 (ADO.NET)"| Database
+    Usuario -->|"Visita la aplicación web<br>[HTTPS/HTTP :3000]"| Nginx
+    Nginx -->|"Enruta peticiones web balanceadas<br>[HTTP :8080]"| WebApp
+    WebApp -->|"Consulta y almacena en memoria volátil<br>[RESP Protocol :6379]"| Redis
+    WebApp -->|"Lee y persiste datos transaccionales<br>[TDS Protocol / ADO.NET :1433]"| Database
+    WebApp -->|"Solicita entrega de correos transaccionales<br>[SMTP]"| ServidorCorreo
 ```
 
-**Explicación del Nivel 2:**
-El tráfico público ingresa por el puerto TCP `3000` del host hacia el contenedor `libreria-nginx`. Este distribuye las peticiones mediante balanceo hacia cuatro réplicas de aplicación (`libreria-app1` a `libreria-app4`), las cuales ejecutan la imagen compilada sobre .NET 10. Las réplicas comparten el volumen `keys_data` para no invalidar sesiones y consumen concurrentemente `libreria-redis` (puerto `6379`) y `libreria-db` (puerto `1433`).
+**Explicación del Nivel 2 (Diagrama de Contenedores):**
+En el estándar **C4 Model**, un **Contenedor** representa un subsistema ejecutable o almacén de datos autónomo (unidad lógica de software), distinguiéndose conceptualmente de un contenedor de virtualización física (Docker). El diagrama refleja la descomposición lógica del sistema y las responsabilidades arquitectónicas asignadas:
+
+* **Proxy Inverso y Balanceador (`Container: Nginx / Alpine`):** Actúa como único punto de entrada perimetral para el tráfico externo. Centraliza la recepción de solicitudes HTTP/HTTPS en el puerto `:3000`, efectúa la terminación de transporte, propaga las cabeceras proxy (`X-Forwarded-For`, `X-Forwarded-Proto`) y distribuye uniformemente la carga hacia la aplicación web mediante el algoritmo Round-Robin.
+* **Aplicación Web Monolítica (`Container: ASP.NET Core Razor Pages / .NET 10`):** Núcleo ejecutable del sistema estructurado bajo Arquitectura Hexagonal. Gestiona la presentación web interactiva, autenticación por cookies mediante Data Protection, orquestación de casos de uso (Ventas, Inventario, Usuarios) y validaciones de dominio sin depender directamente de implementaciones de infraestructura.
+* **Almacén de Caché Distribuida (`Container: Redis 7 / Alpine`):** Almacenamiento clave-valor en memoria de alta velocidad operando bajo el protocolo binario RESP en el puerto `:6379`. Implementa el patrón Cache-Aside para el catálogo de productos activos (reduciendo drásticamente la latencia de lectura en transacciones de mostrador) y soporta la coherencia de estado distribuido.
+* **Base de Datos Principal (`Container: Microsoft SQL Server 2022 Express`):** Almacén relacional principal del sistema en el puerto `:1433`. Garantiza la durabilidad, consistencia y atomicidad (propiedades ACID) de las operaciones transaccionales mediante el protocolo TDS, comunicándose exclusivamente con la capa de infraestructura a través de ADO.NET puro sin sobrecargas de ORM.
+* **Servidor de Correo (`Software System: Externo`):** Sistema externo que recibe comandos SMTP para la entrega de correos de notificación y enlaces de activación de credenciales.
 
 ---
 
@@ -221,22 +212,22 @@ graph TB
         Entities["📦 Entidades & Catálogos<br>(Venta, DetalleVenta, Usuario, Rol)"]
     end
 
-    RazorPages -->|Consume| PrimaryPorts
-    AuthEvents -->|Consume| PrimaryPorts
+    RazorPages -->|"Consume"| PrimaryPorts
+    AuthEvents -->|"Consume"| PrimaryPorts
     PrimaryPorts --> VentaFacade
     PrimaryPorts --> ProdService
     PrimaryPorts --> UserService
 
-    VentaFacade -->|Usa| SecondaryPorts
-    ProdService -->|Usa| SecondaryPorts
-    UserService -->|Usa| SecondaryPorts
+    VentaFacade -->|"Usa"| SecondaryPorts
+    ProdService -->|"Usa"| SecondaryPorts
+    UserService -->|"Usa"| SecondaryPorts
 
-    SecondaryPorts -.->|Implementado por| SqlRepos
-    SecondaryPorts -.->|Implementado por| RedisStore
+    SecondaryPorts -.->|"Implementado por"| SqlRepos
+    SecondaryPorts -.->|"Implementado por"| RedisStore
 
-    SqlRepos --> Entities
-    VentaFacade --> Entities
-    UserService --> Entities
+    SqlRepos -->|"Mapea a"| Entities
+    VentaFacade -->|"Aplica reglas sobre"| Entities
+    UserService -->|"Aplica reglas sobre"| Entities
 ```
 
 **Explicación del Nivel 3:**
@@ -249,80 +240,114 @@ graph TB
 
 ## 5. VISTA INTEGRADA (NIVELES 1, 2 Y 3: DIAGRAMA COMBINADO C4)
 
-A continuación, se presenta la vista arquitectónica unificada que correlaciona a los actores, la capa perimetral de Nginx, el clúster de réplicas y el flujo detallado de componentes hacia la persistencia y la memoria:
+A continuación, se presenta la vista arquitectónica unificada que correlaciona de manera continua a los actores, la frontera del sistema de software, los contenedores perimetrales y de persistencia, y el zoom detallado a los componentes de la Arquitectura Hexagonal dentro del contenedor web:
 
 ```mermaid
+---
+title: Vista Integrada (C4 Niveles 1, 2 y 3) - Sistema de Gestión de Librería
+---
 graph TB
-    subgraph Actores["Actores del Sistema (Nivel 1)"]
-        Admin["👤 Administrador"]
-        Vendedor["👤 Vendedor"]
+    %% NIVEL 1: ACTORES Y SISTEMAS EXTERNOS
+    subgraph Actores["Usuarios del Sistema [Person]"]
+        Admin["👤 Administrador<br>[Person]<br>Gestión de catálogos, auditoría, márgenes y usuarios"]
+        Vendedor["👤 Vendedor<br>[Person]<br>Registro de ventas, consulta de stock y clientes"]
     end
 
-    subgraph Perimetro["Proxy Inverso & Balanceador (Nivel 2)"]
-        Nginx["🌐 Nginx (Reverse Proxy)<br>[Docker: libreria-nginx]<br>Balanceo Round-Robin :3000"]
+    subgraph Externos["Sistemas Externos [Software System]"]
+        ServidorCorreo["✉️ Servidor de Correo<br>[Software System]<br>Servidor SMTP externo para envío de enlaces de activación"]
     end
 
-    Admin -->|HTTPS / HTTP :3000| Nginx
-    Vendedor -->|HTTPS / HTTP :3000| Nginx
+    %% NIVEL 2: LÍMITE EXTERIOR DEL SOFTWARE SYSTEM
+    subgraph SistemaLibreria["Sistema de Gestión de Librería [Software System]"]
 
-    subgraph Clúster["Clúster de Réplicas ASP.NET Core (Nivel 2 y 3)"]
+        Nginx["📦 Proxy Inverso & Balanceador<br>[Container: Nginx / Alpine]<br>Enrutador perimetral de tráfico HTTP y balanceador Round-Robin"]
         
-        subgraph App1["Réplica 1 (libreria-app1)"]
-            subgraph Client1["Libreria.Client (Adaptador Primario)"]
-                Razor1["Razor Pages / UI Controllers<br>(Ventas, Usuarios, Diagnóstico)"]
-                ReplicaBadge1["_ReplicaBadge<br>(Hostname / MachineName)"]
-                AuthEvents1["CookieAuthEvents<br>(ValidarEstadoUsuario)"]
+        RedisServer[("⚡ Almacén de Caché Distribuida<br>[Container: Redis 7 / Alpine]<br>Almacén clave-valor en memoria RAM para catálogo y TTL")]
+        
+        Database[("🗄️ Base de Datos Principal<br>[Container: SQL Server 2022 Express]<br>Persistencia relacional y transaccional ACID")]
+
+        %% NIVEL 3: DETALLE DE COMPONENTES DENTRO DEL CONTENEDOR WEB
+        subgraph ContainerWeb["📦 Aplicación Web Monolítica [Container: ASP.NET Core Razor Pages / .NET 10]"]
+            
+            subgraph ClientLayer["Adaptador Primario (Capa de Presentación)"]
+                RazorPages["📄 Modelos Razor Pages<br>[Component: ASP.NET Core Pages]<br>Vistas interactivas de Ventas, Usuarios y Catálogo"]
+                ReplicaBadge["🏷️ Indicador de Réplica<br>[Component: Razor Partial / C#]<br>Extracción de MachineName / Hostname"]
+                AuthEvents["🛡️ Control de Cookies y Sesión<br>[Component: CookieAuthenticationEvents]<br>Validación de usuario activo y Data Protection"]
             end
 
-            subgraph AppCore1["Libreria.Application (Núcleo Hexagonal)"]
-                VentaFacade1["VentaFacade / StockFacade<br>(Orquestación Transaccional)"]
-                CacheService1["ProductosActivosService<br>(Patrón Cache-Aside)"]
-                UsuarioService1["UsuarioService / Seguridad<br>(Activación & Baja Lógica)"]
-                Ports1["Puertos Primarios & Secundarios<br>(IVentaFacade, ICacheStore, etc.)"]
+            subgraph ApplicationLayer["Núcleo Hexagonal (Capa de Aplicación)"]
+                PrimaryPorts["🚪 Puertos Primarios (Entrada)<br>[Component: C# Interfaces]<br>IVentaFacade, IUsuarioService, IProductosActivosService"]
+                VentaFacade["⚡ VentaFacade & StockFacade<br>[Component: C# Application Services]<br>Orquestación de transacciones y reglas complejas"]
+                ProdService["⚡ ProductosActivosService<br>[Component: C# Cache-Aside Service]<br>Gestión de caché con TTL e invalidación"]
+                UserService["⚡ UsuarioService & SeguridadService<br>[Component: C# Application Services]<br>Políticas de contraseña, token de activación y bajas"]
+                SecondaryPorts["🔌 Puertos Secundarios (Salida)<br>[Component: C# Interfaces]<br>IVentaRepository, IUsuarioRepository, ICacheStore"]
             end
 
-            subgraph Infra1["Libreria.Infrastructure (Adaptador Secundario)"]
-                Repos1["Repositorios ADO.NET<br>(Venta, Usuario, Producto)"]
-                RedisAdapter1["RedisCacheStore<br>(StackExchange.Redis)"]
-                DataProt1["ASP.NET Core Data Protection<br>(Claves compartidas)"]
+            subgraph InfraLayer["Adaptadores Secundarios (Capa de Infraestructura)"]
+                SqlRepos["💾 Repositorios de Acceso a Datos<br>[Component: ADO.NET / Microsoft.Data.SqlClient]<br>Consultas parametrizadas y aislamiento transaccional"]
+                RedisStore["⚡ Almacén de Caché<br>[Component: StackExchange.Redis Adapter]<br>Serialización JSON y comandos Redis"]
+                DataProtectionCfg["🔐 Data Protection Provider<br>[Component: ASP.NET Core Cryptography]<br>Cifrado simétrico y persistencia de anillo de claves"]
             end
 
-            Razor1 --> Ports1
-            Ports1 --> VentaFacade1
-            Ports1 --> CacheService1
-            Ports1 --> UsuarioService1
-            VentaFacade1 --> Repos1
-            CacheService1 --> RedisAdapter1
-            CacheService1 --> Repos1
-            AuthEvents1 --> Repos1
-        end
+            subgraph DomainLayer["Núcleo Puro (Capa de Dominio)"]
+                Entities["📦 Entidades y Modelos de Dominio<br>[Component: POCOs / Domain Models]<br>Venta, DetalleVenta, Usuario, Rol, Producto"]
+            end
 
-        subgraph App2["Réplica 2 (libreria-app2)"]
-            App2Core["[Instancia idéntica de componentes C4-N3]<br>Razor Pages + Application + Infrastructure"]
-        end
+            %% Relaciones internas del Nivel 3 (Componentes)
+            RazorPages -->|"Invoca casos de uso"| PrimaryPorts
+            AuthEvents -->|"Valida estado de cuenta"| PrimaryPorts
+            PrimaryPorts -->|"Implementado por"| VentaFacade
+            PrimaryPorts -->|"Implementado por"| ProdService
+            PrimaryPorts -->|"Implementado por"| UserService
 
-        subgraph App3["Réplica 3 (libreria-app3)"]
-            App3Core["[Instancia idéntica de componentes C4-N3]<br>Razor Pages + Application + Infrastructure"]
+            VentaFacade -->|"Consume puertos de persistencia"| SecondaryPorts
+            ProdService -->|"Consume puertos de caché y catálogo"| SecondaryPorts
+            UserService -->|"Consume puertos de persistencia"| SecondaryPorts
+
+            SecondaryPorts -.->|"Implementado por"| SqlRepos
+            SecondaryPorts -.->|"Implementado por"| RedisStore
+            SecondaryPorts -.->|"Implementado por"| DataProtectionCfg
+
+            SqlRepos -->|"Mapea registros a"| Entities
+            VentaFacade -->|"Aplica reglas de negocio sobre"| Entities
+            UserService -->|"Aplica políticas de dominio sobre"| Entities
         end
     end
 
-    Nginx -->|HTTP :8080| App1
-    Nginx -->|HTTP :8080| App2
-    Nginx -->|HTTP :8080| App3
-
-    subgraph Persistencia["Servicios de Datos y Caché (Nivel 2)"]
-        RedisServer[("⚡ Redis Cache<br>[Docker: libreria-redis]<br>Protocolo RESP :6379<br>Catálogo cacheados & TTL")]
-        Database[("🗄️ Base de Datos Relacional<br>[Docker: libreria-db]<br>SQL Server 2022 / TDS :1433<br>Tablas: Venta, Detalle, Usuario, etc.")]
-    end
-
-    RedisAdapter1 -->|"Cache HIT/MISS (RESP :6379)"| RedisServer
-    App2Core -->|"Cache HIT/MISS (RESP :6379)"| RedisServer
-    App3Core -->|"Cache HIT/MISS (RESP :6379)"| RedisServer
-
-    Repos1 -->|"Transacciones ADO.NET (TDS :1433)"| Database
-    App2Core -->|"Transacciones ADO.NET (TDS :1433)"| Database
-    App3Core -->|"Transacciones ADO.NET (TDS :1433)"| Database
+    %% INTEGRACIÓN DE NIVELES (Flujos de Actores a Contenedores y Componentes)
+    Admin -->|"Gestiona catálogos y administra usuarios<br>[HTTPS/HTTP :3000]"| Nginx
+    Vendedor -->|"Registra transacciones y consulta inventario<br>[HTTPS/HTTP :3000]"| Nginx
+    
+    Nginx -->|"Enruta peticiones web balanceadas<br>[HTTP :8080]"| RazorPages
+    Nginx -->|"Transfiere cabeceras y host de respuesta<br>[HTTP :8080]"| ReplicaBadge
+    
+    SqlRepos -->|"Ejecuta transacciones ACID y consultas<br>[TDS Protocol / ADO.NET :1433]"| Database
+    RedisStore -->|"Recupera y almacena datos cacheados<br>[RESP Protocol :6379]"| RedisServer
+    
+    UserService -->|"Solicita entrega de correos de activación<br>[SMTP]"| ServidorCorreo
 ```
+
+**Explicación de la Vista Integrada (Correlación Niveles 1, 2 y 3):**
+La vista integrada unifica los tres primeros niveles del Modelo C4, proporcionando una trazabilidad integral y sin fisuras del ciclo de vida de una petición, desde la interacción humana en el cliente web hasta los motores de almacenamiento relacional y en memoria:
+
+1. **Interacción del Usuario al Perímetro (Nivel 1 ➔ Nivel 2):**
+   Los actores humanos (**Administrador** y **Vendedor**) efectúan peticiones HTTP/HTTPS desde sus exploradores hacia la dirección IP del servidor en el puerto público `:3000`. Estas solicitudes son interceptadas por el contenedor perimetral **Proxy Inverso (Nginx)**, que actúa como escudo protector, realiza la terminación de transporte, sanitiza las cabeceras (`X-Forwarded-For`, `X-Forwarded-Proto`) y balancea la carga de forma equitativa mediante Round-Robin.
+2. **Recepción en el Contenedor Web y Presentación (Nivel 2 ➔ Nivel 3):**
+   Nginx reenvía la solicitud por el puerto interno `:8080` hacia el contenedor **Aplicación Web Monolítica (ASP.NET Core)**. Dentro del contenedor, la petición ingresa por el **Adaptador Primario** en la capa de presentación (`RazorPages`), ejecutando el ciclo de vida del *PageModel* correspondiente (`OnGetAsync` o `OnPostAsync`). En paralelo, el componente transversal `ReplicaBadge` extrae las propiedades del entorno (`Environment.MachineName`) para estampar la identidad de la réplica en la vista, y `AuthEvents` (`CookieAuthenticationEvents`) valida contra el anillo de claves compartido de `DataProtection` que la sesión no haya sido revocada ni el usuario dado de baja.
+3. **Invocación a través de Puertos Primarios (Nivel 3 - Capa de Aplicación):**
+   Siguiendo los principios de la Arquitectura Hexagonal y la Inversión de Dependencias (IoC), la capa de presentación desconoce por completo la existencia de motores SQL o servidores Redis. Los modelos Razor invocan exclusivamente **Puertos Primarios** tipados mediante interfaces (`IVentaFacade`, `IUsuarioService`, `IProductosActivosService`). El **Núcleo Hexagonal** asume el control:
+   * `VentaFacade`: Orquesta la apertura transaccional, cálculo de totales, descuento de existencias y emisión de comprobantes.
+   * `ProductosActivosService`: Implementa la estrategia de *Cache-Aside* con caducidad e invalidación tras operaciones de venta.
+   * `UsuarioService`: Coordina la generación de nombres de usuario únicos normalizados, validación de contraseñas bajo directivas seguras y baja lógica.
+4. **Desacoplamiento hacia Adaptadores Secundarios (Nivel 3 - Capa de Infraestructura):**
+   Los servicios de aplicación requieren comunicarse con el exterior mediante **Puertos Secundarios** (`IVentaRepository`, `IUsuarioRepository`, `ICacheStore`). Estos puertos son satisfechos por componentes de la capa de infraestructura:
+   * `SqlRepos`: Implementa acceso a datos mediante ADO.NET crudo (`Microsoft.Data.SqlClient`), mapeando directamente hacia las entidades de dominio (`Entities`) sin exponer credenciales ni depender de abstracciones pesadas.
+   * `RedisStore`: Implementa la comunicación con la memoria volátil a través del cliente `StackExchange.Redis`, serializando y deserializando modelos JSON livianos.
+   * `DataProtectionCfg`: Configura el proveedor criptográfico simétrico para la firma y cifrado de las cookies de autenticación.
+5. **Persistencia Final y Sistemas Externos (Nivel 3 ➔ Nivel 2 y Nivel 1):**
+   * **Base de Datos Principal (`Database`):** Los repositorios SQL abren conexiones físicas mediante el protocolo TDS (`:1433`) hacia Microsoft SQL Server 2022, garantizando aislamiento transaccional y atomicidad en cada inserción o actualización.
+   * **Almacén de Caché Distribuida (`RedisServer`):** Ante un *Cache MISS* en la consulta de inventario, `RedisStore` almacena la colección serializada con expiración TTL vía protocolo RESP (`:6379`); ante un *Cache HIT*, retorna los datos en sub-milisegundos evitando sobrecargar el motor SQL.
+   * **Servidor de Correo Externo (`ServidorCorreo`):** Al concretar el alta de un usuario, `UsuarioService` interactúa con el servidor de correo corporativo mediante el protocolo SMTP para entregar el enlace con el token de activación criptográfica.
 
 ---
 
@@ -362,9 +387,9 @@ flowchart TB
         end
     end
 
-    P3000 -->|Mapeo :3000 -> :80| NginxCont
-    P1433 -.->|Mapeo :1433 -> :1433| DbCont
-    P6379 -.->|Mapeo :6379 -> :6379| RedisCont
+    P3000 -->|"Mapeo :3000 -> :80"| NginxCont
+    P1433 -.->|"Mapeo :1433 -> :1433"| DbCont
+    P6379 -.->|"Mapeo :6379 -> :6379"| RedisCont
 
     VolNginx -.-> NginxCont
     VolInit -.-> DbCont
@@ -374,17 +399,17 @@ flowchart TB
     App2Cont === VolKeys
     App3Cont === VolKeys
 
-    NginxCont -->|Balanceo Round-Robin :8080| App1Cont
-    NginxCont -->|Balanceo Round-Robin :8080| App2Cont
-    NginxCont -->|Balanceo Round-Robin :8080| App3Cont
+    NginxCont -->|"Balanceo Round-Robin :8080"| App1Cont
+    NginxCont -->|"Balanceo Round-Robin :8080"| App2Cont
+    NginxCont -->|"Balanceo Round-Robin :8080"| App3Cont
 
-    App1Cont -->|Lectura / Escritura de Caché| RedisCont
-    App2Cont -->|Lectura / Escritura de Caché| RedisCont
-    App3Cont -->|Lectura / Escritura de Caché| RedisCont
+    App1Cont -->|"Lectura / Escritura de Caché"| RedisCont
+    App2Cont -->|"Lectura / Escritura de Caché"| RedisCont
+    App3Cont -->|"Lectura / Escritura de Caché"| RedisCont
 
-    App1Cont -->|ADO.NET Connections & Queries| DbCont
-    App2Cont -->|ADO.NET Connections & Queries| DbCont
-    App3Cont -->|ADO.NET Connections & Queries| DbCont
+    App1Cont -->|"ADO.NET Connections & Queries"| DbCont
+    App2Cont -->|"ADO.NET Connections & Queries"| DbCont
+    App3Cont -->|"ADO.NET Connections & Queries"| DbCont
 ```
 
 ---
