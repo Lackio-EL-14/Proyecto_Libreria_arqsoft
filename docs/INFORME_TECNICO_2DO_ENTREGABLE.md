@@ -655,7 +655,6 @@ Nota: Para ver la implementación completa y el contexto de esta clase, se puede
 **Decisión Técnica:** Se descartó el uso de un ORM pesado (como Entity Framework Core) en favor de **ADO.NET puro** (`Microsoft.Data.SqlClient`) orquestado bajo fábricas de conexiones (`IDbConnectionFactory`, `SqlConnectionFactory`). Esta decisión garantiza un control determinista de transacciones ACID (`BeginTransactionAsync`), erradica el sobrecosto de seguimiento de entidades en memoria y asegura planes de ejecución SQL óptimos:
 
 ```csharp
-// Configuración de la fábrica de conexiones ADO.NET pura desacoplada
 var connectionStringSingleton = ConnectionStringSingleton.Instancia;
 connectionStringSingleton.Configurar(connectionString);
 
@@ -792,7 +791,6 @@ Nota: Para ver la implementación completa y el contexto de esta clase, se puede
 **Regla de Negocio:** La solución establece dos roles operacionales (`Administrador` y `Vendedor`) almacenados en la tabla relacional `Rol`. Para asegurar la trazabilidad forense, cada registro de usuario, producto o transacción vincula de forma obligatoria los metadatos de auditoría (`UsuarioCreacionId`, `UsuarioModificacionId`, marcas de tiempo `SYSDATETIME()`), permitiendo rastrear al actor exacto responsable de cada mutación:
 
 ```csharp
-// Inserción parametrizada vinculando el Rol y metadatos de auditoría
 command.CommandText = @"
     INSERT INTO dbo.Usuario (PublicId, Nombre, Apellido, Correo, NombreUsuario, 
                              NombreCompleto, PasswordHash, RolId, Estado, 
