@@ -548,7 +548,6 @@ Nota: Para ver la implementación completa y el contexto de esta clase, se puede
 
 #### Recuperación Cache-Aside (HIT vs. MISS con TTL)
 ```csharp
-// 1. Intento de lectura desde Redis (Cache HIT)
 var productosCacheados = await _cacheStore.ObtenerAsync<List<Producto>>(CacheKeys.ProductosActivos);
 if (productosCacheados is not null)
 {
@@ -556,7 +555,6 @@ if (productosCacheados is not null)
     return productosCacheados;
 }
 
-// 2. Consulta a Base de Datos en caso de ausencia (Cache MISS) y guardado con TTL
 var productos = await repository.ObtenerActivasAsync();
 await _cacheStore.GuardarAsync(CacheKeys.ProductosActivos, productos, _expiracionCache);
 await RegistrarResultadoAsync("MISS", "SQL", await ObtenerTiempoVidaSeguroAsync(), cronometro.Elapsed.TotalMilliseconds);
@@ -568,13 +566,49 @@ Nota: Para ver la implementación completa y el contexto de esta clase, se puede
 ```csharp
 public async Task InvalidarAsync()
 {
-    // Expulsa la clave del clúster Redis obligando a refrescar desde SQL Server
     await _cacheStore.EliminarAsync(CacheKeys.ProductosActivos);
     _logger.LogInformation("Caché invalidada Clave={CacheKey} Réplica={Replica}",
         CacheKeys.ProductosActivos, Environment.MachineName);
 }
 ```
 Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo ProductosActivosService.cs.
+
+### 8.6. Autenticación y Autorización Distribuida (Cookies + Claims)
+**Decisión Técnica:** Para soportar balanceo de carga sin sesiones pegajosas (*sticky sessions*), la autenticación se configuró mediante cookies de ASP.NET Core asociadas a claims de identidad y roles (`RolesSistema.Administrador`, `RolesSistema.Vendedor`). Las cookies viajan protegidas con `HttpOnly`, `SameSite=Lax` y cifrado simétrico mediante el anillo de claves compartido de Data Protection:
+
+```csharp
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Cuenta/Login";
+        options.Cookie.Name = "Libreria.Sesion";
+        options.Cookie.HttpOnly = true;
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+        options.EventsType = typeof(ValidarEstadoUsuarioCookieEvents);
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(PoliticasAcceso.SoloAdministrador, p => p.RequireRole(RolesSistema.Administrador));
+    options.AddPolicy(PoliticasAcceso.Ventas, p => p.RequireRole(RolesSistema.Administrador, RolesSistema.Vendedor));
+});
+```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo Program.cs.
+
+### 8.7. Persistencia Relacional de Alto Rendimiento con ADO.NET Puro
+**Decisión Técnica:** Se descartó el uso de un ORM pesado (como Entity Framework Core) en favor de **ADO.NET puro** (`Microsoft.Data.SqlClient`) orquestado bajo fábricas de conexiones (`IDbConnectionFactory`, `SqlConnectionFactory`). Esta decisión garantiza un control determinista de transacciones ACID (`BeginTransactionAsync`), erradica el sobrecosto de seguimiento de entidades en memoria y asegura planes de ejecución SQL óptimos:
+
+```csharp
+// Configuración de la fábrica de conexiones ADO.NET pura desacoplada
+var connectionStringSingleton = ConnectionStringSingleton.Instancia;
+connectionStringSingleton.Configurar(connectionString);
+
+builder.Services.AddSingleton(connectionStringSingleton);
+builder.Services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
+```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo Program.cs.
 
 ---
 
@@ -596,7 +630,6 @@ command.CommandText = @"
 
 AgregarParametro(command, "@Estado", estado is null ? DBNull.Value : estado, DbType.String, 20);
 await using var reader = await command.ExecuteReaderAsync();
-// Proyección limpia directa al DTO sin consultar PasswordHash ni TokenActivacionHash
 ```
 Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo UsuarioRepository.cs.
 
@@ -624,7 +657,6 @@ Nota: Para ver la implementación completa y el contexto de esta clase, se puede
 **Flujo Criptográfico Seguro:** El nuevo usuario se crea en estado inactivo (`Pendiente`) con `PasswordHash` vacío. Se genera un token criptográfico en Base64 URL-safe; **únicamente el hash SHA-256 del token es persistido en base de datos**, garantizando que si la base de datos sufriera una filtración, los enlaces en tránsito no puedan ser reconstruidos. El token original viaja en el cuerpo del correo mediante SMTP:
 
 ```csharp
-// Token en texto plano para el correo; solo el hash SHA-256 se persiste en BD
 var token = TokenActivacionService.GenerarToken();
 var tokenHash = TokenActivacionService.CalcularHash(token);
 usuario.TokenActivacionHash = tokenHash;
@@ -680,6 +712,43 @@ public override async Task ValidatePrincipal(CookieValidatePrincipalContext cont
 }
 ```
 Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo ValidarEstadoUsuarioCookieEvents.cs.
+
+### 9.5. Política de Contraseñas y Criptografía Segura con Argon2id
+**Decisión de Seguridad:** La robustez de las credenciales se valida mediante `PasswordPolicyValidator`, que exige un mínimo de 8 caracteres, al menos una letra mayúscula, una minúscula, un dígito numérico y un carácter especial. Para el almacenamiento en base de datos, se implementó el algoritmo **Argon2id** (mediante la biblioteca `Konscious.Security.Cryptography.Argon2`), estándar recomendado por OWASP por su resistencia frente a ataques de fuerza bruta y GPU:
+
+```csharp
+public IReadOnlyList<string> Validar(string? contrasena)
+{
+    var errores = new List<string>();
+    contrasena ??= string.Empty;
+
+    if (contrasena.Length < 8) errores.Add("Debe tener al menos 8 caracteres.");
+    if (!contrasena.Any(char.IsUpper)) errores.Add("Debe contener al menos una mayúscula.");
+    if (!contrasena.Any(char.IsLower)) errores.Add("Debe contener al menos una minúscula.");
+    if (!contrasena.Any(char.IsDigit)) errores.Add("Debe contener al menos un número.");
+    if (!contrasena.Any(c => char.IsPunctuation(c) || char.IsSymbol(c)))
+        errores.Add("Debe contener al menos un carácter especial.");
+
+    return errores;
+}
+```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo PasswordPolicyValidator.cs.
+
+### 9.6. Modelo de Roles, Permisos y Trazabilidad de Auditoría
+**Regla de Negocio:** La solución establece dos roles operacionales (`Administrador` y `Vendedor`) almacenados en la tabla relacional `Rol`. Para asegurar la trazabilidad forense, cada registro de usuario, producto o transacción vincula de forma obligatoria los metadatos de auditoría (`UsuarioCreacionId`, `UsuarioModificacionId`, marcas de tiempo `SYSDATETIME()`), permitiendo rastrear al actor exacto responsable de cada mutación:
+
+```csharp
+// Inserción parametrizada vinculando el Rol y metadatos de auditoría
+command.CommandText = @"
+    INSERT INTO dbo.Usuario (PublicId, Nombre, Apellido, Correo, NombreUsuario, 
+                             NombreCompleto, PasswordHash, RolId, Estado, 
+                             TokenActivacionHash, TokenActivacionExpiracion, 
+                             FechaCreacion, UsuarioCreacionId)
+    VALUES (@PublicId, @Nombre, @Apellido, @Correo, @NombreUsuario, 
+            @NombreCompleto, @PasswordHash, @RolId, @Estado, 
+            @TokenHash, @TokenExpiracion, SYSDATETIME(), @UsuarioCreacionId)";
+```
+Nota: Para ver la implementación completa y el contexto de esta clase, se puede revisar el repositorio en el archivo UsuarioRepository.cs.
 
 ---
 
