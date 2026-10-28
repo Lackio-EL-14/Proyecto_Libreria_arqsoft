@@ -8,16 +8,13 @@ public class ConsultaVentaService : IConsultaVentaService
 {
     private readonly IProductoRepository _productos;
     private readonly IClienteRepository _clientes;
-    private readonly ProductosActivosService _productosActivos;
 
     public ConsultaVentaService(
         IProductoRepository productos,
-        IClienteRepository clientes,
-        ProductosActivosService productosActivos)
+        IClienteRepository clientes)
     {
         _productos = productos;
         _clientes = clientes;
-        _productosActivos = productosActivos;
     }
 
     public async Task<IReadOnlyList<ProductoVentaItem>> BuscarProductosAsync(string? nombre)
@@ -28,7 +25,7 @@ public class ConsultaVentaService : IConsultaVentaService
             return Array.Empty<ProductoVentaItem>();
         }
 
-        var productos = await _productosActivos.ObtenerAsync(_productos);
+        var productos = await _productos.ObtenerActivasAsync(null);
 
         // El catálogo también busca por descripción. En ventas se busca solo por nombre.
         return productos
