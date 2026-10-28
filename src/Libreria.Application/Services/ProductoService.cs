@@ -9,18 +9,14 @@ public class ProductoService : IProductoService
 {
     private readonly ICatalogoProductoRepository _catalogoRepository;
     private readonly ProductoValidator _validator;
-    private readonly ProductosActivosService _productosActivos;
 
     public ProductoService(
         ICatalogoProductoRepository catalogoRepository,
-        ProductoValidator validator,
-        ProductosActivosService productosActivos)
+        ProductoValidator validator)
     {
         _catalogoRepository = catalogoRepository;
         _validator = validator;
-        _productosActivos = productosActivos;
     }
-
 
     public async Task<ProductoListado> ObtenerListadoAsync(
     string? busqueda,
@@ -28,7 +24,7 @@ public class ProductoService : IProductoService
     int? marcaId,
     ICrudRepository<Producto> repository)
     {
-        var productos = await _productosActivos.ObtenerAsync(repository);
+        var productos = await repository.ObtenerActivasAsync(null);
         var busquedaNormalizada = busqueda?.Trim();
 
         var categorias = _catalogoRepository.ObtenerCategoriasActivas();
@@ -92,7 +88,6 @@ public class ProductoService : IProductoService
         };
 
         await repository.CrearAsync(producto);
-        await _productosActivos.InvalidarAsync();
 
         return ResultadoOperacion.Correcto();
     }
@@ -202,8 +197,6 @@ public class ProductoService : IProductoService
             return ResultadoOperacion.NoExiste();
         }
 
-        await _productosActivos.InvalidarAsync();
-
         return ResultadoOperacion.Correcto();
     }
 
@@ -219,11 +212,6 @@ public class ProductoService : IProductoService
     ICrudRepository<Producto> repository)
     {
         var productoDesactivado = await repository.CambiarEstadoAsync(publicId, false);
-
-        if (productoDesactivado)
-        {
-            await _productosActivos.InvalidarAsync();
-        }
 
         return productoDesactivado;
     }

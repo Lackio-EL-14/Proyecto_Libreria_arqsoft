@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.DataProtection;
 using System.IO;
 using Libreria.Infrastructure.Email;
 using Libreria.Infrastructure.Configuration;
-using Libreria.Application.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,15 +32,6 @@ builder.Services
     .AddMvcOptions(options =>
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 
-// Llamadas a las extensiones modulares
-builder.Services.AddRedisCaching(builder.Configuration);
-builder.Services
-    .AddOptions<ProductosActivosCacheOptions>()
-    .Bind(builder.Configuration.GetSection(ProductosActivosCacheOptions.SectionName))
-    .Validate(
-        options => options.ExpiracionMinutos > 0,
-        "La expiración de la caché de productos debe ser mayor a cero.")
-    .ValidateOnStart();
 builder.Services.AddUsuariosModule();
 
 // Fábricas base del Factory Method
@@ -61,8 +51,6 @@ builder.Services.AddScoped<PasswordPolicyValidator>();
 
 // Servicios y Repositorios adicionales
 builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoRepository>();
-builder.Services.AddSingleton<CacheDiagnosticoService>();
-builder.Services.AddScoped<ProductosActivosService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
 builder.Services.AddScoped<IHistoricoCostoRepository, HistoricoCostoRepository>();
@@ -104,14 +92,6 @@ builder.Services
         options.EventsType = typeof(ValidarEstadoUsuarioCookieEvents);
     });
 
-builder.Services.AddSingleton<ITicketStore, RedisTicketStore>();
-builder.Services
-    .AddOptions<CookieAuthenticationOptions>(
-        CookieAuthenticationDefaults.AuthenticationScheme)
-    .Configure<ITicketStore>((options, store) =>
-    {
-        options.SessionStore = store;
-    });
 
 // US-39: Políticas de autorización por rol
 builder.Services.AddAuthorization(options =>
