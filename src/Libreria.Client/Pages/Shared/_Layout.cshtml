@@ -1,24 +1,12 @@
 @using Libreria.Client.Seguridad
+@using Libreria.Client.Pages.Shared.Models
 @using Microsoft.AspNetCore.Authorization
 @inject IAuthorizationService AuthorizationService
 @{
-    // US-39: el menú consulta las MISMAS políticas que protegen las páginas
-    // en el servidor (Program.cs), así menú y permisos no se desincronizan.
     var esAdministrador = (await AuthorizationService.AuthorizeAsync(User, PoliticasAcceso.SoloAdministrador)).Succeeded;
     var puedeVender = (await AuthorizationService.AuthorizeAsync(User, PoliticasAcceso.Ventas)).Succeeded;
-
-    // Las páginas de Ventas las agregan otras historias (US-47 / US-52);
-    // el enlace aparece solo cuando la página exista.
-    var urlRegistrarVenta = Url.Page("/Ventas/Registrar");
-    var urlListadoVentas = Url.Page("/Ventas/Index");
-
     var currentPage = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
-    Func<string, string> getActiveClass = (path) =>
-    {
-        if (path == "/Index" && currentPage == "/Index") return "is-active";
-        if (path != "/Index" && currentPage.StartsWith(path, StringComparison.OrdinalIgnoreCase)) return "is-active";
-        return "";
-    };
+    var menuModel = new MenuModuleViewModel(currentPage, esAdministrador, puedeVender);
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -90,87 +78,15 @@
                 <!-- Sección Principal -->
                 <div class="sidebar-section">
                     <span class="sidebar-section__title">General</span>
-                    <a class="sidebar-link @getActiveClass("/Index")" asp-page="/Index" title="Inicio / Dashboard">
+                    <a class="sidebar-link @menuModel.ActiveClass("/Index")" asp-page="/Index" title="Inicio / Dashboard">
                         <span class="sidebar-link__icon" aria-hidden="true">📊</span>
                         <span class="sidebar-link__text">Inicio</span>
                     </a>
                 </div>
 
-                @if (puedeVender && (urlRegistrarVenta is not null || urlListadoVentas is not null))
-                {
-                    @* Sección Ventas (Administrador y Vendedor) *@
-                    <div class="sidebar-section">
-                        <button
-                            type="button"
-                            class="sidebar-section__toggle"
-                            data-sidebar-section-toggle
-                            aria-controls="sidebar-section-ventas"
-                            aria-expanded="true">
-                            <span class="sidebar-section__title">Ventas</span>
-                            <span class="sidebar-section__chevron" aria-hidden="true">▾</span>
-                        </button>
-                        <div class="sidebar-section__items" id="sidebar-section-ventas">
-                            @if (urlRegistrarVenta is not null)
-                            {
-                                <a class="sidebar-link @getActiveClass("/Ventas/Registrar")" href="@urlRegistrarVenta" title="Registrar venta">
-                                    <span class="sidebar-link__icon" aria-hidden="true">🧾</span>
-                                    <span class="sidebar-link__text">Registrar venta</span>
-                                </a>
-                            }
-                            @if (urlListadoVentas is not null)
-                            {
-                                <a class="sidebar-link @getActiveClass("/Ventas/Index")" href="@urlListadoVentas" title="Listado de ventas">
-                                    <span class="sidebar-link__icon" aria-hidden="true">💵</span>
-                                    <span class="sidebar-link__text">Ventas</span>
-                                </a>
-                            }
-                        </div>
-                    </div>
-                }
-
-                @if (esAdministrador)
-                {
-                    @* Sección Inventario y Catálogos (solo Administrador) *@
-                    <div class="sidebar-section">
-                        <button
-                            type="button"
-                            class="sidebar-section__toggle"
-                            data-sidebar-section-toggle
-                            aria-controls="sidebar-section-inventario"
-                            aria-expanded="true">
-                            <span class="sidebar-section__title">Inventario</span>
-                            <span class="sidebar-section__chevron" aria-hidden="true">▾</span>
-                        </button>
-                        <div class="sidebar-section__items" id="sidebar-section-inventario">
-                            <a class="sidebar-link @getActiveClass("/Productos")" asp-page="/Productos/Index" title="Consultar productos">
-                                <span class="sidebar-link__icon" aria-hidden="true">📦</span>
-                                <span class="sidebar-link__text">Productos</span>
-                            </a>
-                            <a class="sidebar-link @getActiveClass("/Categorias")" asp-page="/Categorias/Index" title="Categorías">
-                                <span class="sidebar-link__icon" aria-hidden="true">🏷️</span>
-                                <span class="sidebar-link__text">Categorías</span>
-                            </a>
-                            <a class="sidebar-link @getActiveClass("/Marcas")" asp-page="/Marcas/Index" title="Marcas">
-                                <span class="sidebar-link__icon" aria-hidden="true">🏢</span>
-                                <span class="sidebar-link__text">Marcas</span>
-                            </a>
-                        </div>
-                    </div>
-                }
-                @if (esAdministrador)
-                {
-                    <div class="sidebar-section">
-                        <span class="sidebar-section__title">Administración</span>
-                        <a class="sidebar-link @getActiveClass("/Usuarios")" asp-page="/Usuarios/Index" title="Consultar usuarios">
-                            <span class="sidebar-link__icon" aria-hidden="true">👤</span>
-                            <span class="sidebar-link__text">Usuarios</span>
-                        </a>
-                        <a class="sidebar-link @getActiveClass("/Diagnostico")" asp-page="/Diagnostico/Cache" title="Diagnóstico de Redis">
-                            <span class="sidebar-link__icon" aria-hidden="true">🧭</span>
-                            <span class="sidebar-link__text">Diagnóstico Redis</span>
-                        </a>
-                    </div>
-                }
+                <partial name="_MenuVentas" model="menuModel" />
+                <partial name="_MenuUsuarios" model="menuModel" />
+                <partial name="_MenuReportes" model="menuModel" />
             </nav>
         </aside>
 
