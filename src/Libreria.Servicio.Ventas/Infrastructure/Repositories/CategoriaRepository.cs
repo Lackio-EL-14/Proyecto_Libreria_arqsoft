@@ -1,7 +1,7 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
+using Libreria.Servicio.Ventas.Domain;
+using Libreria.Servicio.Ventas.Application.Models;
+using Libreria.Servicio.Ventas.Application.Ports.Secondary;
+using Libreria.Servicio.Ventas.Application.Factories;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -9,7 +9,7 @@ using System.Data.Common;
 using System.Threading.Tasks;
 
 
-namespace Libreria.Infrastructure
+namespace Libreria.Servicio.Ventas.Infrastructure
 {
     public class CategoriaRepository : ICrudRepository<Categoria>
     {

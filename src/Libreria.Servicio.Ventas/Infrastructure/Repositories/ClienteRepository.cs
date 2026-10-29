@@ -1,4 +1,4 @@
-using Libreria.Domain;
+using Libreria.Servicio.Ventas.Domain;
 using Libreria.Servicio.Ventas.Application.Ports.Secondary;
 using System.Data;
 using System.Data.Common;
