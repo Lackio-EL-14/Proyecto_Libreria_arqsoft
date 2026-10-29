@@ -1,8 +1,8 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-namespace Libreria.Application.Models;
+using Libreria.Servicio.Ventas.Domain;
+using Libreria.Servicio.Ventas.Application.Models;
+using Libreria.Servicio.Ventas.Application.Ports.Secondary;
+using Libreria.Servicio.Ventas.Application.Factories;
+namespace Libreria.Servicio.Ventas.Application.Models;
 
 public class HistoricoCostoItem
 {

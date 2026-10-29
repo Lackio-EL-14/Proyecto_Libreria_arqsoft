@@ -1,5 +1,5 @@
 using System.Data.Common;
-using Libreria.Domain;
+using Libreria.Servicio.Ventas.Domain;
 using Libreria.Servicio.Ventas.Application.Models;
 using Libreria.Servicio.Ventas.Application.Ports.Primary;
 using Libreria.Servicio.Ventas.Application.Ports.Secondary;

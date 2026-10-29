@@ -1,4 +1,4 @@
-namespace Libreria.Domain;
+namespace Libreria.Servicio.Ventas.Domain;
 
 public class Marca
 {

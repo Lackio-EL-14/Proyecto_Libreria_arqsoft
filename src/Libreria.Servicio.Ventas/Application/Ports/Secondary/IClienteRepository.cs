@@ -1,4 +1,4 @@
-using Libreria.Domain;
+using Libreria.Servicio.Ventas.Domain;
 
 namespace Libreria.Servicio.Ventas.Application.Ports.Secondary;
 
