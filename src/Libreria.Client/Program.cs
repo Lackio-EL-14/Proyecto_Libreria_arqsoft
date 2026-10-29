@@ -76,7 +76,6 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUsuarioActual, Libreria.Infrastructure.Security.UsuarioActual>();
 builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
 
-// US-38: Autenticación por cookie de ASP.NET Core
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
