@@ -14,4 +14,24 @@
     <ProjectReference Include="..\Libreria.Infrastructure\Libreria.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Pages\Categorias\**\*.cs" />
+    <Compile Remove="Pages\Historico\**\*.cs" />
+    <Compile Remove="Pages\Marcas\**\*.cs" />
+    <Compile Remove="Pages\Productos\**\*.cs" />
+    <Compile Remove="Pages\Ventas\**\*.cs" />
+    <Content Remove="Pages\Categorias\**\*.cshtml" />
+    <Content Remove="Pages\Historico\**\*.cshtml" />
+    <Content Remove="Pages\Marcas\**\*.cshtml" />
+    <Content Remove="Pages\Productos\**\*.cshtml" />
+    <Content Remove="Pages\Ventas\**\*.cshtml" />
+    <Content Remove="Pages\Shared\_ClienteAltaRapidaCampos.cshtml" />
+    <None Include="Pages\Categorias\**\*" />
+    <None Include="Pages\Historico\**\*" />
+    <None Include="Pages\Marcas\**\*" />
+    <None Include="Pages\Productos\**\*" />
+    <None Include="Pages\Ventas\**\*" />
+    <None Include="Pages\Shared\_ClienteAltaRapidaCampos.cshtml" />
+  </ItemGroup>
+
 </Project>
