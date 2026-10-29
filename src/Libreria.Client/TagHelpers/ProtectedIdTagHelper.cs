@@ -1,6 +1,6 @@
 using System;
 using Microsoft.AspNetCore.Razor.TagHelpers;
-using Libreria.Application.Ports.Primary;
+using Libreria.Client.Seguridad;
 
 namespace Libreria.Client.TagHelpers
 {
@@ -30,7 +30,7 @@ namespace Libreria.Client.TagHelpers
             
    
             var hrefAttr = output.Attributes["href"];
-            var hrefBase = hrefAttr != null ? hrefAttr.Value.ToString() : "";
+            var hrefBase = hrefAttr?.Value?.ToString() ?? string.Empty;
             
    
             var separador = hrefBase.Contains("?") ? "&" : "?";
