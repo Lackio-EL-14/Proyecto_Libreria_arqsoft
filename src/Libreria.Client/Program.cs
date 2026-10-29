@@ -1,18 +1,17 @@
 using Libreria.Domain;
-using Libreria.Application.Models;
 using Libreria.Application.Ports.Secondary;
 using Libreria.Application.Factories;
 using Libreria.Infrastructure;
 using Libreria.Application.Validators;
 using Libreria.Application.Services;
 using Libreria.Application.Ports.Primary;
-using Libreria.Application.Facades;
 using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
-using System.IO;
 using Libreria.Infrastructure.Email;
 using Libreria.Infrastructure.Configuration;
+using Libreria.Client.Clients.Common;
+using Libreria.Client.Clients.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,51 +24,36 @@ builder.Services
         options.Conventions.AuthorizeFolder("/Marcas", PoliticasAcceso.SoloAdministrador);
         options.Conventions.AuthorizeFolder("/Productos", PoliticasAcceso.SoloAdministrador);
         options.Conventions.AuthorizeFolder("/Historico", PoliticasAcceso.SoloAdministrador);
-        options.Conventions.AuthorizeFolder("/Diagnostico", PoliticasAcceso.SoloAdministrador);
+        options.Conventions.AuthorizeFolder("/Reportes", PoliticasAcceso.SoloAdministrador);
 
         options.Conventions.AuthorizeFolder("/Ventas", PoliticasAcceso.Ventas);
     })
     .AddMvcOptions(options =>
-        options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
+    {
+        options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+        options.Filters.Add<ServicioNoDisponibleFilter>();
+    });
+
+builder.Services
+    .AddContextoUsuarioServicios(builder.Configuration)
+    .AddServicioVentas(builder.Configuration)
+    .AddServicioUsuarios(builder.Configuration)
+    .AddServicioReportes(builder.Configuration);
 
 builder.Services.AddUsuariosModule();
 
-// Fábricas base del Factory Method
-builder.Services.AddScoped<CrudRepositoryFactory<Categoria>, CategoriaRepositoryFactory>();
-builder.Services.AddScoped<CrudRepositoryFactory<Marca>, MarcaRepositoryFactory>();
-builder.Services.AddScoped<CrudRepositoryFactory<Producto>, ProductoRepositoryFactory>();
-builder.Services.AddScoped<HistoricoRepositoryFactory, HistoricoCostoRepositoryFactory>();
 builder.Services.AddScoped<UsuarioRepositoryFactory, SqlUsuarioRepositoryFactory>();
 
-// Validadores
-builder.Services.AddScoped<CategoriaValidator>();
-builder.Services.AddScoped<MarcaValidator>();
-builder.Services.AddScoped<ProductoValidator>();
-builder.Services.AddScoped<ClienteValidator>();
 builder.Services.AddScoped<LoginValidator>();
 builder.Services.AddScoped<PasswordPolicyValidator>();
 
-// Servicios y Repositorios adicionales
-builder.Services.AddScoped<ICatalogoProductoRepository, CatalogoProductoRepository>();
-builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
-builder.Services.AddScoped<IHistoricoCostoRepository, HistoricoCostoRepository>();
-builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
-builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
-builder.Services.AddScoped<IVentaRepository, VentaRepository>();
-
-builder.Services.AddScoped<IStockFacade, StockFacade>();
-builder.Services.AddScoped<IVentaFacade, VentaFacade>();
-builder.Services.AddScoped<IConsultaVentaService, ConsultaVentaService>();
-builder.Services.AddScoped<IComprobanteVentaService, ComprobanteVentaService>();
-builder.Services.AddScoped<IClienteService, ClienteService>();
 
 // Seguridad y Auditoría
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(@"/keys"))
-    .SetApplicationName("LibreriaCompartida");
+    .SetApplicationName("Libreria.Client");
 
-builder.Services.AddScoped<Libreria.Application.Ports.Primary.IUrlProtector, Libreria.Infrastructure.Security.UrlProtector>();
+builder.Services.AddScoped<IUrlProtector, UrlProtector>();
 builder.Services.AddScoped<IContrasenaHasher, Libreria.Infrastructure.Security.ContrasenaHasher>();
 
 builder.Services.AddHttpContextAccessor();
@@ -116,11 +100,6 @@ builder.Services.AddSingleton(connectionStringSingleton);
 builder.Services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
 
 var app = builder.Build();
-
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
-});
 
 if (!app.Environment.IsDevelopment())
 {

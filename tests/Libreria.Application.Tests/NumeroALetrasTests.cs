@@ -1,4 +1,4 @@
-using Libreria.Application.Services;
+using Libreria.Servicio.Ventas.Application.Services;
 
 namespace Libreria.Application.Tests;
 

@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Libreria.Application\Libreria.Application.csproj" />
     <ProjectReference Include="..\..\src\Libreria.Client\Libreria.Client.csproj" />
+    <ProjectReference Include="..\..\src\Libreria.Servicio.Ventas\Libreria.Servicio.Ventas.csproj" />
   </ItemGroup>
 
 </Project>
