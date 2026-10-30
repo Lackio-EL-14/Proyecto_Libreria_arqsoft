@@ -72,6 +72,41 @@ public sealed class UserRepository : IUserRepository
             : null;
     }
 
+    public async Task<string?> GetActivePasswordHashAsync(int userId)
+    {
+        await using var connection = _connectionFactory.CreateConnection();
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = """
+        SELECT u.PasswordHash
+        FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r
+            ON r.RolId = u.RolId
+        WHERE u.UsuarioId = @UserId
+          AND u.Estado = @ActiveStatus
+          AND r.Estado = 1;
+        """;
+
+        AddParameter(
+            command,
+            "@UserId",
+            userId,
+            DbType.Int32);
+
+        AddParameter(
+            command,
+            "@ActiveStatus",
+            UserStatuses.Active,
+            DbType.String,
+            20);
+
+        var result = await command.ExecuteScalarAsync();
+
+        return result is null || result == DBNull.Value
+            ? null
+            : Convert.ToString(result);
+    }
+
     public async Task<bool> UpdatePasswordAsync(
         int userId,
         string previousHash,
@@ -157,6 +192,68 @@ public sealed class UserRepository : IUserRepository
 
         return Convert.ToInt32(
             await command.ExecuteScalarAsync()) == 1;
+    }
+
+    public async Task<IReadOnlyDictionary<int, string>> GetFullNamesByIdsAsync(
+    IReadOnlyCollection<int> userIds)
+    {
+        ArgumentNullException.ThrowIfNull(userIds);
+
+        var ids = userIds
+            .Where(id => id > 0)
+            .Distinct()
+            .ToArray();
+
+        if (ids.Length == 0)
+        {
+            return new Dictionary<int, string>();
+        }
+
+        await using var connection =
+            _connectionFactory.CreateConnection();
+
+        await using var command =
+            connection.CreateCommand();
+
+        var parameterNames = new string[ids.Length];
+
+        for (var index = 0; index < ids.Length; index++)
+        {
+            var parameterName = $"@UserId{index}";
+            parameterNames[index] = parameterName;
+
+            AddParameter(
+                command,
+                parameterName,
+                ids[index],
+                DbType.Int32);
+        }
+
+        command.CommandText = $"""
+            SELECT
+                UsuarioId,
+                NombreCompleto
+            FROM dbo.Usuario
+            WHERE UsuarioId IN ({string.Join(", ", parameterNames)});
+            """;
+
+        var result = new Dictionary<int, string>();
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            var userId = reader.GetInt32(
+                reader.GetOrdinal("UsuarioId"));
+
+            var fullName = reader.GetString(
+                reader.GetOrdinal("NombreCompleto"));
+
+            result[userId] = fullName;
+        }
+
+        return result;
     }
 
     private static User MapUser(DbDataReader reader)
@@ -283,5 +380,32 @@ public sealed class UserRepository : IUserRepository
         }
 
         command.Parameters.Add(parameter);
+    }
+
+    public async Task<bool> UsernameExistsAsync(string username)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(username);
+
+        await using var connection =
+            _connectionFactory.CreateConnection();
+
+        await using var command =
+            connection.CreateCommand();
+
+        command.CommandText = """
+            SELECT COUNT(1)
+            FROM dbo.Usuario
+            WHERE NombreUsuario = @Username;
+            """;
+
+        AddParameter(
+            command,
+            "@Username",
+            username.Trim(),
+            DbType.String,
+            50);
+
+        return Convert.ToInt32(
+            await command.ExecuteScalarAsync()) > 0;
     }
 }

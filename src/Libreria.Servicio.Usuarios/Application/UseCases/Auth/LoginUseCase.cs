@@ -7,8 +7,6 @@ namespace Libreria.Servicio.Usuarios.Application.UseCases.Auth;
 
 public sealed class LoginUseCase
 {
-    
-
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly LoginValidator _validator;
@@ -50,9 +48,9 @@ public sealed class LoginUseCase
         }
 
         await TryRehashPasswordAsync(
-             user.Id,
-             user.PasswordHash,
-             request.Password);
+            user.Id,
+            user.PasswordHash,
+            request.Password);
 
         return new AuthenticatedUserDto(
             user.Id,
@@ -63,9 +61,9 @@ public sealed class LoginUseCase
     }
 
     private async Task TryRehashPasswordAsync(
-    int userId,
-    string currentHash,
-    string password)
+        int userId,
+        string currentHash,
+        string password)
     {
         if (!_passwordHasher.RequiresRehash(currentHash))
         {
