@@ -24,10 +24,10 @@
 else
 {
     <div style="margin-bottom: 1.5rem; padding: 1.25rem; background-color: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-base); box-shadow: var(--shadow-sm);">
-        <h4 style="color: var(--color-primary); margin: 0;">Producto: @Model.NombreProducto</h4>
+        <h4 style="color: var(--color-primary); margin: 0;">Producto: @Model.Nombre</h4>
     </div>
 
-    @if (Model.Historial.Count == 0)
+    @if (Model.Historico.Count == 0)
     {
         <div style="text-align: center; color: var(--color-secondary); padding: 3rem 2rem; background-color: var(--color-surface); border-radius: var(--radius-base); border: 1px solid var(--color-border);">
             <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Este producto no tiene registros históricos de costo.</p>
@@ -50,7 +50,7 @@ else
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in Model.Historial)
+                    @foreach (var item in Model.Historico)
                     {
                         <tr>
                             <td>@item.FechaVigencia.ToString("dd/MM/yyyy HH:mm")</td>
@@ -128,7 +128,7 @@ else
     }
 
     <div style="margin-top: 2rem;">
-        @if (Model.ProductoActivo)
+        @if (Model.Activo)
         {
             <a asp-page="/Productos/Details" asp-route-id="@Model.PublicId" class="btn btn--secondary">Volver al producto</a>
         }

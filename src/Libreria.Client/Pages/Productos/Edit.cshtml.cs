@@ -1,27 +1,24 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-using Libreria.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 
 namespace Libreria.Client.Pages.Productos;
 
 public class EditModel : PageModel
 {
-    private readonly IProductoService _service;
-    private readonly ICrudRepository<Producto> _repository;
+    private readonly HttpClient _httpClient;
 
-    public EditModel(
-     IProductoService service,
-     CrudRepositoryFactory<Producto> factory)
+    public EditModel(IHttpClientFactory factory)
     {
-        _service = service;
-        _repository = factory.CrearRepositorio();
+        _httpClient = factory.CreateClient("VentasAPI");
     }
-    public Guid PublicId { get; private set; }
+
+    [BindProperty]
+    public Guid PublicId { get; set; }
 
     [BindProperty]
     public ProductoInput Input { get; set; } = new();
@@ -31,55 +28,63 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        var edicion = await _service.ObtenerEdicionAsync(id, _repository);
+        var response = await _httpClient.GetAsync($"/api/productos/{id}");
+        if (!response.IsSuccessStatusCode) return NotFound();
 
-        if (edicion is null)
-        {
-            return NotFound();
-        }
+        var producto = await response.Content.ReadFromJsonAsync<ProductoDetalle>();
+        if (producto == null) return NotFound();
 
         PublicId = id;
-        Input = edicion.Input;
-        Categorias = edicion.Categorias;
-        Marcas = edicion.Marcas;
+        Input = new ProductoInput
+        {
+            Codigo = producto.Codigo,
+            Nombre = producto.Nombre,
+            Descripcion = producto.Descripcion,
+            CategoriaId = producto.CategoriaId,
+            MarcaId = producto.MarcaId,
+            PrecioCompra = producto.PrecioCompra,
+            PrecioVenta = producto.PrecioVenta,
+            StockMinimo = producto.StockMinimo
+        };
 
+        await CargarOpcionesAsync();
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(Guid id)
     {
-        var resultado = await _service.ActualizarAsync(id, Input, _repository);
-        if (resultado.NoEncontrado)
+        if (!ModelState.IsValid)
         {
-            return NotFound();
+            PublicId = id;
+            await CargarOpcionesAsync();
+            return Page();
         }
 
-        if (!resultado.Exitoso)
+        var response = await _httpClient.PutAsJsonAsync($"/api/productos/{id}", Input);
+
+        if (!response.IsSuccessStatusCode)
         {
-            AgregarErrores(resultado.Errores);
+            if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                var errores = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                if (errores != null) AgregarErrores(errores);
+            }
             PublicId = id;
-            await CargarOpcionesAsync(id);
+            await CargarOpcionesAsync();
             return Page();
         }
 
         TempData["MensajeExito"] = "Producto actualizado correctamente.";
-
         return RedirectToPage("Details", new { id });
     }
 
-    private async Task CargarOpcionesAsync(Guid publicId)
+    private async Task CargarOpcionesAsync()
     {
-        var edicion = await _service.ObtenerEdicionAsync(publicId, _repository);
-        if (edicion is null)
-        {
-            return;
-        }
-
-        Categorias = edicion.Categorias;
-        Marcas = edicion.Marcas;
+        Categorias = await _httpClient.GetFromJsonAsync<List<CategoriaOption>>("/api/categorias/opciones") ?? new();
+        Marcas = await _httpClient.GetFromJsonAsync<List<MarcaOption>>("/api/marcas/opciones") ?? new();
     }
 
-    private void AgregarErrores(IReadOnlyDictionary<string, string> errores)
+    private void AgregarErrores(Dictionary<string, string> errores)
     {
         foreach (var error in errores)
         {

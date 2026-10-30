@@ -9,18 +9,29 @@ using Libreria.Servicio.Ventas.Application.Ports.Secondary;
 using Libreria.Servicio.Ventas.Application.Services;
 using Libreria.Servicio.Ventas.Application.Facades;
 using Libreria.Servicio.Ventas.Infrastructure;
-using Libreria.Servicio.Ventas.Infrastructure;
-using Libreria.Servicio.Ventas.Infrastructure;
 using Libreria.Servicio.Ventas.Infrastructure.Security;
 using Libreria.Servicio.Ventas.Domain;
 using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Configurar Controladores REST
+// 1. Configurar Swagger y CORS (US-83)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+// 2. Configurar Controladores REST
 builder.Services.AddControllers();
 
-// 2. Configurar la Cadena de Conexión y Factory de SQL
+// 3. Configurar la Cadena de Conexión y Factory de SQL
 var connectionString = builder.Configuration["DB_CONNECTION_STRING"] 
     ?? builder.Configuration.GetConnectionString("LibreriaDb")
     ?? "Server=localhost;Database=LibreriaDb;Integrated Security=True;TrustServerCertificate=True;";
@@ -31,17 +42,17 @@ connectionStringSingleton.Configurar(connectionString);
 builder.Services.AddSingleton(connectionStringSingleton);
 builder.Services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
 
-// 3. Registrar IHttpContextAccessor para poder recuperar al usuario autenticado
+// 4. Registrar IHttpContextAccessor
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUsuarioActual, UsuarioActual>();
 
-// 4. Inyección de Validadores (Hito A y B)
+// 5. Inyección de Validadores (Hito A y B)
 builder.Services.AddScoped<CategoriaValidator>();
 builder.Services.AddScoped<MarcaValidator>();
 builder.Services.AddScoped<ProductoValidator>();
 builder.Services.AddScoped<ClienteValidator>();
 
-// 5. Inyección de Factories y Puertos Secundarios (Infraestructura)
+// 6. Inyección de Factories y Puertos Secundarios (Infraestructura)
 builder.Services.AddScoped<CrudRepositoryFactory<Categoria>, CategoriaRepositoryFactory>();
 builder.Services.AddScoped<CrudRepositoryFactory<Marca>, MarcaRepositoryFactory>();
 builder.Services.AddScoped<CrudRepositoryFactory<Producto>, ProductoRepositoryFactory>();
@@ -53,7 +64,7 @@ builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<IVentaRepository, VentaRepository>();
 
-// 6. Inyección de Fachadas y Puertos Primarios (Aplicación)
+// 7. Inyección de Fachadas y Puertos Primarios (Aplicación)
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IStockFacade, StockFacade>();
 builder.Services.AddScoped<IVentaFacade, VentaFacade>();
@@ -61,14 +72,26 @@ builder.Services.AddScoped<IConsultaVentaService, ConsultaVentaService>();
 builder.Services.AddScoped<IComprobanteVentaService, ComprobanteVentaService>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 
+// Configuración del cliente para la API de Ventas (US-83)
+builder.Services.AddHttpClient("VentasAPI", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5101/");
+});
+
 var app = builder.Build();
 
+// 8. Configurar el Pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseRouting();
+
+// CORS debe ir entre UseRouting y UseAuthorization
+app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapControllers();
 

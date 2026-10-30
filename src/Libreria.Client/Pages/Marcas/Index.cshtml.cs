@@ -1,38 +1,43 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
+using Libreria.Application.Models;
 
 namespace Libreria.Client.Pages.Marcas;
 
 public class IndexModel : PageModel
 {
-    private readonly ICrudRepository<Marca> _repository;
+    private readonly HttpClient _httpClient;
 
-    public IndexModel(CrudRepositoryFactory<Marca> factory)
+    public IndexModel(IHttpClientFactory httpClientFactory)
     {
-        _repository = factory.CrearRepositorio();
+        _httpClient = httpClientFactory.CreateClient("VentasAPI");
     }
 
-    public IReadOnlyList<Marca> Marcas { get; private set; } = [];
+    public IReadOnlyList<MarcaDto> Marcas { get; private set; } = [];
     public IReadOnlySet<Guid> MarcasConProductosActivos { get; private set; } = new HashSet<Guid>();
     public string? NombreBusqueda { get; private set; }
 
     public async Task OnGetAsync(string? nombre)
     {
         NombreBusqueda = nombre?.Trim();
-        Marcas = await _repository.ObtenerActivasAsync(NombreBusqueda);
+        var url = string.IsNullOrWhiteSpace(NombreBusqueda) 
+            ? "/api/marcas" 
+            : $"/api/marcas?busqueda={NombreBusqueda}";
+
+        Marcas = await _httpClient.GetFromJsonAsync<List<MarcaDto>>(url) ?? new List<MarcaDto>();
 
         var marcasConProductos = new HashSet<Guid>();
         foreach (var marca in Marcas)
         {
-            if (await _repository.TieneRelacionesAsync(marca.PublicId))
+            var urlRelaciones = $"/api/marcas/{marca.PublicId}/tiene-relaciones";
+            var tieneRelaciones = await _httpClient.GetFromJsonAsync<bool>(urlRelaciones);
+            
+            if (tieneRelaciones)
             {
                 marcasConProductos.Add(marca.PublicId);
             }
@@ -42,7 +47,10 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostDarDeBajaAsync(Guid publicId)
     {
-        if (!await _repository.CambiarEstadoAsync(publicId, false))
+        var url = $"/api/marcas/{publicId}/estado?nuevoEstado=false";
+        var response = await _httpClient.PatchAsync(url, null);
+
+        if (!response.IsSuccessStatusCode)
         {
             return NotFound();
         }
@@ -51,3 +59,5 @@ public class IndexModel : PageModel
         return RedirectToPage("./Index");
     }
 }
+
+public record MarcaDto(Guid PublicId, string Nombre, string? Descripcion, string? PaisOrigen, string? SitioWeb, bool Activo);

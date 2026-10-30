@@ -21,8 +21,8 @@
     <div style="margin-bottom: 2rem; padding: 1.5rem; border: 1px solid var(--color-border); border-radius: var(--radius-base); background-color: var(--color-bg);">
         <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Código:</strong> @Model.Categoria?.Codigo</p>
         <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Nombre:</strong> @Model.Categoria?.Nombre</p>
-        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Descripción:</strong> @(string.IsNullOrEmpty(Model.Categoria?.Descripcion) ? "N/A" : Model.Categoria?.Descripcion)</p>
-        <p style="margin-bottom: 0; font-size: 0.95rem;"><strong>Ubicación:</strong> @Model.Categoria?.Ubicacion</p>
+        <p style="margin-bottom: 0.5rem; font-size: 0.95rem;"><strong>Descripción:</strong> @(string.IsNullOrEmpty(Model.Categoria?.Nombre) ? "N/A" : Model.Categoria?.Nombre)</p>
+        <p style="margin-bottom: 0; font-size: 0.95rem;"><strong>Ubicación:</strong> @Model.Categoria?.Nombre</p>
     </div>
    
     <form method="post" style="display: flex; gap: 1rem;">

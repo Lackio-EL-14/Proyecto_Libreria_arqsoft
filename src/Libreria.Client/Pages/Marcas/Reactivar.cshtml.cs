@@ -1,57 +1,37 @@
-using Libreria.Domain;
 using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 
 namespace Libreria.Client.Pages.Marcas;
 
 public class ReactivarModel : PageModel
 {
-    private readonly ICrudRepository<Marca> _repository;
+    private readonly HttpClient _httpClient;
+    public ReactivarModel(IHttpClientFactory factory) { _httpClient = factory.CreateClient("VentasAPI"); }
 
-    public ReactivarModel(CrudRepositoryFactory<Marca> factory)
-    {
-        _repository = factory.CrearRepositorio();
-    }
-
-    [BindProperty]
-    public Guid PublicId { get; set; }
-
-    public Marca? Marca { get; private set; }
+    public MarcaDtoBasico Marca { get; private set; } = null!;
+    public Guid PublicId { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        Marca = await _repository.ObtenerPorPublicIdAsync(
-            id,
-            estadoEsperado: false);
-
-        if (Marca is null)
-        {
-            return NotFound();
-        }
-
-        PublicId = Marca.PublicId;
-
+        PublicId = id;
+        var response = await _httpClient.GetAsync($"/api/marcas/{id}");
+        if (!response.IsSuccessStatusCode) return NotFound();
+        var mar = await response.Content.ReadFromJsonAsync<MarcaDtoBasico>();
+        if (mar == null) return NotFound();
+        Marca = mar;
         return Page();
     }
+}
 
-    public async Task<IActionResult> OnPostAsync()
-    {
-        var actualizada = await _repository.CambiarEstadoAsync(
-            PublicId,
-            true);
-
-        if (!actualizada)
-        {
-            return NotFound();
-        }
-
-        TempData["MensajeExito"] =
-            "Marca reactivada correctamente.";
-
-        return RedirectToPage("./Index");
-    }
+public class MarcaDtoBasico
+{
+    public string Nombre { get; set; } = "";
+    public string? Descripcion { get; set; }
+    public string? PaisOrigen { get; set; }
+    public string? SitioWeb { get; set; }
 }

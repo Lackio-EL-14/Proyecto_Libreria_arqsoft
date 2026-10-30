@@ -12,6 +12,7 @@
     <ProjectReference Include="..\Libreria.Domain\Libreria.Domain.csproj" />
     <ProjectReference Include="..\Libreria.Application\Libreria.Application.csproj" />
     <ProjectReference Include="..\Libreria.Infrastructure\Libreria.Infrastructure.csproj" />
+    <ProjectReference Include="..\Libreria.Servicio.Ventas\Libreria.Servicio.Ventas.csproj" />
   </ItemGroup>
 
 </Project>

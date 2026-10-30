@@ -61,10 +61,10 @@ else
                 @foreach (var categoria in Model.Categorias)
                 {
                     <tr>
-                        <td style="font-weight: 600;">@categoria.Codigo</td>
+                        <td style="font-weight: 600;">@categoria.Nombre</td>
                         <td>@categoria.Nombre</td>
                         <td>@(string.IsNullOrEmpty(categoria.Descripcion) ? "—" : categoria.Descripcion)</td>
-                        <td>@categoria.Ubicacion</td>
+                        <td>@categoria.Nombre</td>
                         <td>
                             <div class="table-actions">
                                 <!-- US-36: Uso del nuevo TagHelper asp-protected-id para cifrar la URL -->

@@ -1,28 +1,20 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-using Libreria.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 
 namespace Libreria.Client.Pages.Productos;
 
 public class IndexModel : PageModel
 {
-    private readonly IProductoService _service;
-    private readonly ICrudRepository<Producto> _repository;
+    private readonly HttpClient _httpClient;
 
-    public IndexModel(
-        IProductoService service,
-        CrudRepositoryFactory<Producto> factory)
+    public IndexModel(IHttpClientFactory factory)
     {
-        _service = service;
-        _repository = factory.CrearRepositorio();
+        _httpClient = factory.CreateClient("VentasAPI");
     }
 
     public IReadOnlyList<ProductoListItem> Productos { get; private set; } = [];
@@ -40,25 +32,25 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        var listado = await _service.ObtenerListadoAsync(
-            Busqueda,
-            CategoriaId,
-            MarcaId,
-            _repository);
+        Categorias = await _httpClient.GetFromJsonAsync<List<CategoriaOption>>("/api/categorias/opciones") ?? new();
+        Marcas = await _httpClient.GetFromJsonAsync<List<MarcaOption>>("/api/marcas/opciones") ?? new();
 
-        Productos = listado.Productos;
-        Categorias = listado.Categorias;
-        Marcas = listado.Marcas;
+        var query = new List<string>();
+        if (!string.IsNullOrWhiteSpace(Busqueda)) query.Add($"busqueda={Busqueda}");
+        if (CategoriaId.HasValue) query.Add($"categoriaId={CategoriaId}");
+        if (MarcaId.HasValue) query.Add($"marcaId={MarcaId}");
+
+        var queryString = query.Count > 0 ? "?" + string.Join("&", query) : "";
+        Productos = await _httpClient.GetFromJsonAsync<List<ProductoListItem>>($"/api/productos{queryString}") ?? new();
     }
 
     public async Task<IActionResult> OnPostDarDeBajaAsync(Guid publicId)
     {
-        if (!await _service.DarDeBajaAsync(publicId, _repository))
-        {
-            return NotFound();
-        }
+        var response = await _httpClient.PatchAsync($"/api/productos/{publicId}/estado?nuevoEstado=false", null);
+        if (!response.IsSuccessStatusCode) return NotFound();
 
         TempData["MensajeExito"] = "Producto dado de baja correctamente.";
         return RedirectToPage("./Index");
     }
 }
+

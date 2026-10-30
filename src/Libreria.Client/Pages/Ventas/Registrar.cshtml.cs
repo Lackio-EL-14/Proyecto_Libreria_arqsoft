@@ -1,105 +1,86 @@
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Primary;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 
 namespace Libreria.Client.Pages.Ventas;
 
 public class RegistrarModel : PageModel
 {
-    private readonly IConsultaVentaService _consulta;
-    private readonly IClienteService _clientes;
-    private readonly IVentaFacade _ventas;
-    private readonly ILogger<RegistrarModel> _logger;
+    private readonly HttpClient _httpClient;
 
-    public RegistrarModel(
-        IConsultaVentaService consulta,
-        IClienteService clientes,
-        IVentaFacade ventas,
-        ILogger<RegistrarModel> logger)
+    public RegistrarModel(IHttpClientFactory factory)
     {
-        _consulta = consulta;
-        _clientes = clientes;
-        _ventas = ventas;
-        _logger = logger;
+        _httpClient = factory.CreateClient("VentasAPI");
     }
 
     [BindProperty]
-    public ClienteInput Input { get; set; } = new();
+    public RegistrarVentaInput Input { get; set; } = new();
 
-    public void OnGet()
+    [BindProperty]
+    public ClienteInput NuevoCliente { get; set; } = new();
+
+    public async Task<IActionResult> OnGetAsync()
     {
+        return Page();
     }
 
-    public async Task<IActionResult> OnGetBuscarProductosAsync(string? nombre)
-    {
-        return new JsonResult(await _consulta.BuscarProductosAsync(nombre));
-    }
-
-    public async Task<IActionResult> OnGetBuscarClientesAsync(string? ciNit)
-    {
-        return new JsonResult(await _consulta.BuscarClientesAsync(ciNit));
-    }
-
-    public async Task<IActionResult> OnPostCrearClienteAsync()
+    public async Task<IActionResult> OnPostAsync()
     {
         if (!ModelState.IsValid)
         {
-            var errores = ModelState
-                .Where(campo => campo.Value?.Errors.Count > 0)
-                .ToDictionary(campo => campo.Key, _ => "Revise el valor ingresado.");
-            return new JsonResult(ClienteRegistroResult.Invalido(errores))
+            return Page();
+        }
+
+        var response = await _httpClient.PostAsJsonAsync("/api/ventas/registrar", Input);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
             {
-                StatusCode = StatusCodes.Status400BadRequest
-            };
+                var errores = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                if (errores != null) AgregarErrores(errores);
+            }
+            return Page();
         }
 
-        var resultado = await _clientes.RegistrarRapidoAsync(Input);
-        return new JsonResult(resultado)
-        {
-            StatusCode = resultado.Exitoso
-                ? StatusCodes.Status200OK
-                : StatusCodes.Status400BadRequest
-        };
+        var ventaId = await response.Content.ReadFromJsonAsync<int>();
+
+        TempData["MensajeExito"] = "Venta registrada exitosamente.";
+        return RedirectToPage("Comprobante", new { id = ventaId });
     }
 
-    public async Task<IActionResult> OnPostGuardarVentaAsync([FromBody] RegistrarVentaInput? venta)
+    private void AgregarErrores(Dictionary<string, string> errores)
     {
-        // Validar el formato de la petición; las reglas y la transacción pertenecen a la fachada.
-        if (!ModelState.IsValid || venta is null || venta.SolicitudId == Guid.Empty)
+        foreach (var error in errores)
         {
-            return ErrorVenta("Revise los datos de la venta e intente nuevamente.", false);
-        }
-
-        try
-        {
-            var registrada = await _ventas.RegistrarVentaAsync(venta);
-            return new JsonResult(new { exitoso = true, venta = registrada });
-        }
-        catch (VentaRegistroException error)
-        {
-            _logger.LogWarning(error, "No se completó la solicitud de venta {SolicitudId}.", venta.SolicitudId);
-            return ErrorVenta(error.Message, error.ResultadoIncierto);
-        }
-        catch (ArgumentException error)
-        {
-            _logger.LogWarning(error, "Datos inválidos en la solicitud de venta {SolicitudId}.", venta.SolicitudId);
-            return ErrorVenta("Seleccione un cliente y revise los productos y cantidades de la venta.", false);
-        }
-        catch (Exception error)
-        {
-            _logger.LogError(error, "No se pudo verificar el resultado de la solicitud de venta {SolicitudId}.", venta.SolicitudId);
-            return ErrorVenta(
-                "No se pudo confirmar el resultado de la venta. Reintente el guardado para comprobarlo sin duplicarla.",
-                true);
+            ModelState.AddModelError(error.Key, error.Value);
         }
     }
+}
 
-    private static JsonResult ErrorVenta(string mensaje, bool reintentarMismaSolicitud) =>
-        new(new { exitoso = false, mensaje, reintentarMismaSolicitud })
-        {
-            StatusCode = reintentarMismaSolicitud
-                ? StatusCodes.Status503ServiceUnavailable
-                : StatusCodes.Status400BadRequest
-        };
+// DTOs requeridos para la vista
+public class RegistrarVentaInput
+{
+    public int ClienteId { get; set; }
+    public decimal TotalVenta { get; set; }
+    public List<DetalleVentaInput> Detalles { get; set; } = new();
+}
+
+public class DetalleVentaInput
+{
+    public Guid ProductoPublicId { get; set; }
+    public int Cantidad { get; set; }
+    public decimal PrecioUnitario { get; set; }
+}
+
+public class ClienteInput 
+{
+    public string CiNit { get; set; } = string.Empty;
+    public string RazonSocial { get; set; } = string.Empty;
+    public string? Correo { get; set; }
+    public string TipoContacto { get; set; } = "Cliente";
 }

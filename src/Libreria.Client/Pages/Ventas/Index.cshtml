@@ -40,27 +40,27 @@
 <form method="get" id="formFiltros" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; background-color: var(--color-surface); padding: 1.25rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
     
     <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 160px;">
-        <label for="Filtro_Estado">Estado</label>
-        <select id="Filtro_Estado" name="Estado" class="form-control">
-            <option value="Todas" selected="@(string.IsNullOrEmpty(Model.Filtro.Estado) || Model.Filtro.Estado == "Todas")">Todas</option>
-            <option value="Activa" selected="@(Model.Filtro.Estado == "Activa")">Activa</option>
-            <option value="Anulada" selected="@(Model.Filtro.Estado == "Anulada")">Anulada</option>
+        <label for="Filtro_AnuladaVenta">AnuladaVenta</label>
+        <select id="Filtro_AnuladaVenta" name="AnuladaVenta" class="form-control">
+            <option value="Todas" selected="@(string.IsNullOrEmpty(Model.Filtro.AnuladaVenta) || Model.Filtro.AnuladaVenta == "Todas")">Todas</option>
+            <option value="Activa" selected="@(Model.Filtro.AnuladaVenta == "Activa")">Activa</option>
+            <option value="Anulada" selected="@(Model.Filtro.AnuladaVenta == "Anulada")">Anulada</option>
         </select>
     </div>
 
     <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 160px;">
-        <label for="Filtro_FechaDesde">Fecha desde</label>
-        <input type="date" id="Filtro_FechaDesde" name="FechaDesde" class="form-control" value="@(Model.Filtro.FechaDesde?.ToString("yyyy-MM-dd"))" />
+        <label for="Filtro_FechaInicio">Fecha desde</label>
+        <input type="date" id="Filtro_FechaInicio" name="FechaInicio" class="form-control" value="@(Model.Filtro.FechaInicio?.ToString("yyyy-MM-dd"))" />
     </div>
 
     <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 160px;">
-        <label for="Filtro_FechaHasta">Fecha hasta</label>
-        <input type="date" id="Filtro_FechaHasta" name="FechaHasta" class="form-control" value="@(Model.Filtro.FechaHasta?.ToString("yyyy-MM-dd"))" />
+        <label for="Filtro_FechaFin">Fecha hasta</label>
+        <input type="date" id="Filtro_FechaFin" name="FechaFin" class="form-control" value="@(Model.Filtro.FechaFin?.ToString("yyyy-MM-dd"))" />
     </div>
 
     <div style="display: flex; gap: 0.5rem;">
         <button type="submit" class="btn btn--secondary" id="btnFiltrar">Filtrar</button>
-        @if (!string.IsNullOrEmpty(Model.Filtro.Estado) && Model.Filtro.Estado != "Todas" || Model.Filtro.FechaDesde.HasValue || Model.Filtro.FechaHasta.HasValue)
+        @if (!string.IsNullOrEmpty(Model.Filtro.AnuladaVenta) && Model.Filtro.AnuladaVenta != "Todas" || Model.Filtro.FechaInicio.HasValue || Model.Filtro.FechaFin.HasValue)
         {
             <a asp-page="./Index" class="btn btn--secondary">Limpiar</a>
         }
@@ -90,7 +90,7 @@ else
                     <th>CI / NIT</th>
                     <th>Registrado por</th>
                     <th style="text-align: right;">Total</th>
-                    <th style="text-align: center;">Estado</th>
+                    <th style="text-align: center;">AnuladaVenta</th>
                     <th style="text-align: right;">Acciones</th>
                 </tr>
             </thead>
@@ -99,15 +99,15 @@ else
                 {
                     <tr>
                         <td style="white-space: nowrap;">
-                            <span style="font-weight: 500;">@venta.FechaCreacion.ToString("dd/MM/yyyy")</span>
-                            <span style="font-size: 0.8rem; color: var(--color-secondary); display: block;">@venta.FechaCreacion.ToString("HH:mm:ss")</span>
+                            <span style="font-weight: 500;">@venta.Fecha.ToString("dd/MM/yyyy")</span>
+                            <span style="font-size: 0.8rem; color: var(--color-secondary); display: block;">@venta.Fecha.ToString("HH:mm:ss")</span>
                         </td>
                         <td style="font-weight: 600;">@venta.ClienteNombre</td>
-                        <td style="color: var(--color-secondary); font-family: monospace;">@venta.ClienteCiNit</td>
-                        <td>@venta.CreadoPor</td>
+                        <td style="color: var(--color-secondary); font-family: monospace;">@venta.ClienteNombre</td>
+                        <td>@venta.UsuarioNombre</td>
                         <td style="text-align: right; font-weight: 600; white-space: nowrap;">Bs. @venta.Total.ToString("N2")</td>
                         <td style="text-align: center;">
-                            @if (venta.Estado == "Activa")
+                            @if (venta.AnuladaVenta == "Activa")
                             {
                                 <span class="badge badge--accent">Activa</span>
                             }
@@ -125,7 +125,7 @@ else
                                 👁️ Detalle
                             </button>
 
-                            @if (Model.EsAdministrador && venta.Estado == "Activa")
+                            @if (Model.EsAdministrador && venta.AnuladaVenta == "Activa")
                             {
                                 <button type="button"
                                         class="btn btn--danger"
@@ -173,19 +173,19 @@ else
                     </div>
                     <div>
                         <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">CI / NIT</strong>
-                        <span id="detalleClienteCiNit" style="font-family: monospace; color: var(--color-text);"></span>
+                        <span id="detalleClienteNombre" style="font-family: monospace; color: var(--color-text);"></span>
                     </div>
                     <div>
                         <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">Fecha de Registro</strong>
-                        <span id="detalleFechaCreacion" style="color: var(--color-text);"></span>
+                        <span id="detalleFecha" style="color: var(--color-text);"></span>
                     </div>
                     <div>
-                        <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">Estado</strong>
-                        <span id="detalleEstadoBadge"></span>
+                        <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">AnuladaVenta</strong>
+                        <span id="detalleAnuladaVentaBadge"></span>
                     </div>
                     <div>
                         <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">Registrado por</strong>
-                        <span id="detalleCreadoPor" style="color: var(--color-text);"></span>
+                        <span id="detalleUsuarioNombre" style="color: var(--color-text);"></span>
                     </div>
                     <div id="detalleAnulacionContainer" style="display: none;">
                         <strong style="color: var(--color-danger); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">Anulado por</strong>
@@ -310,39 +310,39 @@ else
         let temporizadorRefresco = null;
 
         const formFiltros = document.getElementById('formFiltros');
-        const inputFechaDesde = document.getElementById('Filtro_FechaDesde');
-        const inputFechaHasta = document.getElementById('Filtro_FechaHasta');
+        const inputFechaInicio = document.getElementById('Filtro_FechaInicio');
+        const inputFechaFin = document.getElementById('Filtro_FechaFin');
         const errorRangoFechas = document.getElementById('errorRangoFechas');
         const btnFiltrar = document.getElementById('btnFiltrar');
 
         function sincronizarLimitesFechas() {
-            if (!inputFechaDesde || !inputFechaHasta) return;
+            if (!inputFechaInicio || !inputFechaFin) return;
 
-            if (inputFechaDesde.value) {
-                inputFechaHasta.min = inputFechaDesde.value;
+            if (inputFechaInicio.value) {
+                inputFechaFin.min = inputFechaInicio.value;
             } else {
-                inputFechaHasta.removeAttribute('min');
+                inputFechaFin.removeAttribute('min');
             }
 
-            if (inputFechaHasta.value) {
-                inputFechaDesde.max = inputFechaHasta.value;
+            if (inputFechaFin.value) {
+                inputFechaInicio.max = inputFechaFin.value;
             } else {
-                inputFechaDesde.removeAttribute('max');
+                inputFechaInicio.removeAttribute('max');
             }
         }
 
         function validarFechasFiltro() {
-            if (!inputFechaDesde || !inputFechaHasta) return true;
+            if (!inputFechaInicio || !inputFechaFin) return true;
 
             sincronizarLimitesFechas();
 
-            const desde = inputFechaDesde.value;
-            const hasta = inputFechaHasta.value;
+            const desde = inputFechaInicio.value;
+            const hasta = inputFechaFin.value;
 
             if (desde && hasta && desde > hasta) {
                 if (errorRangoFechas) errorRangoFechas.style.display = 'flex';
-                inputFechaDesde.style.borderColor = 'var(--color-danger)';
-                inputFechaHasta.style.borderColor = 'var(--color-danger)';
+                inputFechaInicio.style.borderColor = 'var(--color-danger)';
+                inputFechaFin.style.borderColor = 'var(--color-danger)';
                 if (btnFiltrar) {
                     btnFiltrar.disabled = true;
                     btnFiltrar.style.opacity = '0.6';
@@ -352,8 +352,8 @@ else
             }
 
             if (errorRangoFechas) errorRangoFechas.style.display = 'none';
-            inputFechaDesde.style.borderColor = '';
-            inputFechaHasta.style.borderColor = '';
+            inputFechaInicio.style.borderColor = '';
+            inputFechaFin.style.borderColor = '';
             if (btnFiltrar) {
                 btnFiltrar.disabled = false;
                 btnFiltrar.style.opacity = '1';
@@ -362,11 +362,11 @@ else
             return true;
         }
 
-        if (inputFechaDesde && inputFechaHasta) {
-            inputFechaDesde.addEventListener('input', validarFechasFiltro);
-            inputFechaDesde.addEventListener('change', validarFechasFiltro);
-            inputFechaHasta.addEventListener('input', validarFechasFiltro);
-            inputFechaHasta.addEventListener('change', validarFechasFiltro);
+        if (inputFechaInicio && inputFechaFin) {
+            inputFechaInicio.addEventListener('input', validarFechasFiltro);
+            inputFechaInicio.addEventListener('change', validarFechasFiltro);
+            inputFechaFin.addEventListener('input', validarFechasFiltro);
+            inputFechaFin.addEventListener('change', validarFechasFiltro);
             validarFechasFiltro();
         }
 
@@ -374,8 +374,8 @@ else
             formFiltros.addEventListener('submit', (e) => {
                 if (!validarFechasFiltro()) {
                     e.preventDefault();
-                    if (inputFechaDesde.value > inputFechaHasta.value) {
-                        inputFechaDesde.focus();
+                    if (inputFechaInicio.value > inputFechaFin.value) {
+                        inputFechaInicio.focus();
                     }
                 }
             });
@@ -424,11 +424,11 @@ else
 
         function renderizarDetalle(data) {
             document.getElementById('detalleClienteNombre').textContent = data.clienteNombre || '-';
-            document.getElementById('detalleClienteCiNit').textContent = data.clienteCiNit || '-';
-            document.getElementById('detalleFechaCreacion').textContent = formatearFecha(data.fechaCreacion);
-            document.getElementById('detalleCreadoPor').textContent = data.creadoPor || '-';
+            document.getElementById('detalleClienteNombre').textContent = data.clienteCiNit || '-';
+            document.getElementById('detalleFecha').textContent = formatearFecha(data.fechaCreacion);
+            document.getElementById('detalleUsuarioNombre').textContent = data.creadoPor || '-';
 
-            const badgeContainer = document.getElementById('detalleEstadoBadge');
+            const badgeContainer = document.getElementById('detalleAnuladaVentaBadge');
             if (data.estado === 'Activa') {
                 badgeContainer.innerHTML = '<span class="badge badge--accent">Activa</span>';
             } else {

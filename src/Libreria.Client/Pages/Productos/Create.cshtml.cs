@@ -1,25 +1,19 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-using Libreria.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 
 namespace Libreria.Client.Pages.Productos;
 
 public class CreateModel : PageModel
 {
-    private readonly IProductoService _service;
-    private readonly ICrudRepository<Producto> _repository;
+    private readonly HttpClient _httpClient;
 
-    public CreateModel(
-        IProductoService service,
-        CrudRepositoryFactory<Producto> factory)
+    public CreateModel(IHttpClientFactory factory)
     {
-        _service = service;
-        _repository = factory.CrearRepositorio();
+        _httpClient = factory.CreateClient("VentasAPI");
     }
 
     [BindProperty]
@@ -28,18 +22,29 @@ public class CreateModel : PageModel
     public IReadOnlyList<CategoriaOption> Categorias { get; private set; } = [];
     public IReadOnlyList<MarcaOption> Marcas { get; private set; } = [];
 
-    public void OnGet()
+    public async Task OnGetAsync()
     {
-        CargarFormulario();
+        await CargarFormulario();
     }
+
     public async Task<IActionResult> OnPostAsync()
     {
-        var resultado = await _service.RegistrarAsync(Input, _repository);
-
-        if (!resultado.Exitoso)
+        if (!ModelState.IsValid)
         {
-            AgregarErrores(resultado.Errores);
-            CargarFormulario();
+            await CargarFormulario();
+            return Page();
+        }
+
+        var response = await _httpClient.PostAsJsonAsync("/api/productos", Input);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                var errores = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                if (errores != null) AgregarErrores(errores);
+            }
+            await CargarFormulario();
             return Page();
         }
 
@@ -47,14 +52,13 @@ public class CreateModel : PageModel
         return RedirectToPage("Index");
     }
 
-    private void CargarFormulario()
+    private async Task CargarFormulario()
     {
-        var formulario = _service.ObtenerFormulario();
-        Categorias = formulario.Categorias;
-        Marcas = formulario.Marcas;
+        Categorias = await _httpClient.GetFromJsonAsync<List<CategoriaOption>>("/api/categorias/opciones") ?? new();
+        Marcas = await _httpClient.GetFromJsonAsync<List<MarcaOption>>("/api/marcas/opciones") ?? new();
     }
 
-    private void AgregarErrores(IReadOnlyDictionary<string, string> errores)
+    private void AgregarErrores(Dictionary<string, string> errores)
     {
         foreach (var error in errores)
         {

@@ -39,12 +39,12 @@ else
     </article>
 
     <!-- Widget 2: Stock Crítico / Alerta -->
-    <article class="kpi-card @(Model.ProductosStockCritico > 0 ? "kpi-card--warning" : "")">
-        <div class="kpi-card__icon @(Model.ProductosStockCritico > 0 ? "kpi-card__icon--warning" : "kpi-card__icon--primary")">⚠️</div>
+    <article class="kpi-card @(Model.TotalProductos > 0 ? "kpi-card--warning" : "")">
+        <div class="kpi-card__icon @(Model.TotalProductos > 0 ? "kpi-card__icon--warning" : "kpi-card__icon--primary")">⚠️</div>
         <div class="kpi-card__info">
             <span class="kpi-card__label">Stock Crítico (≤ 5 un.)</span>
-            <span class="kpi-card__value @(Model.ProductosStockCritico > 0 ? "text-warning" : "")">@Model.ProductosStockCritico</span>
-            <span class="kpi-card__hint">@(Model.ProductosStockCritico > 0 ? "Requieren reposición urgente" : "Niveles de stock óptimos")</span>
+            <span class="kpi-card__value @(Model.TotalProductos > 0 ? "text-warning" : "")">@Model.TotalProductos</span>
+            <span class="kpi-card__hint">@(Model.TotalProductos > 0 ? "Requieren reposición urgente" : "Niveles de stock óptimos")</span>
         </div>
         <a asp-page="/Productos/Index" class="kpi-card__link" title="Consultar productos">Revisar stock →</a>
     </article>

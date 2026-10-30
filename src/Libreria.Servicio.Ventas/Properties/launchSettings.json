@@ -1,20 +1,9 @@
-﻿{
-  "$schema": "https://json.schemastore.org/launchsettings.json",
+{
   "profiles": {
-    "http": {
+    "Libreria.Servicio.Ventas": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
       "launchBrowser": false,
       "applicationUrl": "http://localhost:5101",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
-    },
-    "https": {
-      "commandName": "Project",
-      "dotnetRunMessages": true,
-      "launchBrowser": false,
-      "applicationUrl": ,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

@@ -39,16 +39,16 @@
                     <dl class="comprobante-datos">
                         <div class="comprobante-referencia">
                             <dt>Referencia de la venta</dt>
-                            <dd>@comprobante.PublicId</dd>
+                            <dd>@comprobante.NumeroCorrelativo</dd>
                         </div>
                         <div>
-                            <dt>Estado</dt>
-                            <dd>@comprobante.Estado</dd>
+                            <dt>TotalEnLetras</dt>
+                            <dd>@comprobante.TotalEnLetras</dd>
                         </div>
                         <div>
                             <dt>Fecha de registro de la venta</dt>
                             <dd>
-                                @if (comprobante.FechaVenta is { } fechaVenta)
+                                @if (comprobante.Fecha is { } fechaVenta)
                                 {
                                     <time datetime="@fechaVenta.ToString("O", CultureInfo.InvariantCulture)">@Fecha(fechaVenta)</time>
                                 }
@@ -66,11 +66,11 @@
                     <dl class="comprobante-datos">
                         <div>
                             <dt>Razón social</dt>
-                            <dd>@comprobante.RazonSocialCliente</dd>
+                            <dd>@comprobante.ClienteNombre</dd>
                         </div>
                         <div>
                             <dt>CI/NIT</dt>
-                            <dd>@comprobante.CiNitCliente</dd>
+                            <dd>@comprobante.ClienteDocumento</dd>
                         </div>
                     </dl>
                 </section>
@@ -95,7 +95,7 @@
                         @foreach (var detalle in comprobante.Detalles)
                         {
                             <tr>
-                                <td>@detalle.NombreProducto</td>
+                                <td>@detalle.Descripcion</td>
                                 <td class="comprobante-numero">@detalle.Cantidad</td>
                                 <td class="comprobante-numero">@Importe(detalle.PrecioUnitario)</td>
                                 <td class="comprobante-numero">@Importe(detalle.Importe)</td>
@@ -116,8 +116,8 @@
                         <div>
                             <dt>Fecha y hora de generación</dt>
                             <dd>
-                                <time datetime="@comprobante.GeneradoEl.ToString("O", CultureInfo.InvariantCulture)">
-                                    @Fecha(comprobante.GeneradoEl)
+                                <time datetime="@comprobante.Fecha.ToString("O", CultureInfo.InvariantCulture)">
+                                    @Fecha(comprobante.Fecha)
                                 </time>
                             </dd>
                         </div>
