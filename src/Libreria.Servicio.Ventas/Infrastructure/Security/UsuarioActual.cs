@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using System.Globalization;
 using Libreria.Servicio.Ventas.Application.Ports.Secondary;
 using Microsoft.AspNetCore.Http;
 
@@ -17,10 +17,16 @@ public class UsuarioActual : IUsuarioActual
     {
         get
         {
-            var valor = _httpContextAccessor.HttpContext?.User
-                .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var valor = _httpContextAccessor.HttpContext?.Request
+                .Headers["X-Usuario-Id"]
+                .FirstOrDefault();
 
-            return int.TryParse(valor, out var usuarioId)
+            return int.TryParse(
+                    valor,
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out var usuarioId) &&
+                usuarioId > 0
                 ? usuarioId
                 : null;
         }
