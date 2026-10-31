@@ -1,7 +1,19 @@
 using Libreria.Client.Clients.Common;
+using Libreria.Client.DTOs.Usuarios;
 
 namespace Libreria.Client.Clients.Usuarios;
 
 public interface IServicioUsuariosClient : IApiClient
 {
+    Task<AuthenticatedUserDto?> IniciarSesionAsync(
+        LoginRequestDto request,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> SesionActivaAsync(
+        int usuarioId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyDictionary<int, string>> ObtenerNombresAsync(
+        IEnumerable<int> usuarioIds,
+        CancellationToken cancellationToken = default);
 }

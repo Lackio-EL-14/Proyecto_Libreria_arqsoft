@@ -1,6 +1,8 @@
 using System.Security.Claims;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Primary;
+using System.Net;
+using Libreria.Client.Clients.Common;
+using Libreria.Client.Clients.Usuarios;
+using Libreria.Client.DTOs.Usuarios;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -12,15 +14,18 @@ namespace Libreria.Client.Pages.Cuenta;
 [AllowAnonymous]
 public class LoginModel : PageModel
 {
-    private readonly IAutenticacionService _autenticacionService;
+    private const string MensajeCredencialesInvalidas =
+        "Usuario o contraseña incorrectos.";
 
-    public LoginModel(IAutenticacionService autenticacionService)
+    private readonly IServicioUsuariosClient _usuariosClient;
+
+    public LoginModel(IServicioUsuariosClient usuariosClient)
     {
-        _autenticacionService = autenticacionService;
+        _usuariosClient = usuariosClient;
     }
 
     [BindProperty]
-    public LoginInput Input { get; set; } = new();
+    public LoginInputModel Input { get; set; } = new();
 
     [BindProperty(SupportsGet = true)]
     public string? ReturnUrl { get; set; }
@@ -37,22 +42,42 @@ public class LoginModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var resultado = await _autenticacionService.AutenticarAsync(Input);
-
-        if (!resultado.Exitoso || resultado.Usuario is null)
+        if (!ModelState.IsValid)
         {
-            foreach (var error in resultado.Errores)
-            {
-                ModelState.AddModelError(error.Key, error.Value);
-            }
+            Input.Contrasena = string.Empty;
+            return Page();
+        }
 
+        AuthenticatedUserDto? usuario;
+
+        try
+        {
+            usuario = await _usuariosClient.IniciarSesionAsync(
+                new LoginRequestDto(
+                    Input.NombreUsuario,
+                    Input.Contrasena),
+                HttpContext.RequestAborted);
+        }
+        catch (ApiClientException exception)
+            when (exception.StatusCode == HttpStatusCode.BadRequest)
+        {
+            ModelState.AddModelError(string.Empty, MensajeCredencialesInvalidas);
+            Input.Contrasena = string.Empty;
+            return Page();
+        }
+
+        if (usuario is null)
+        {
+            ModelState.AddModelError(string.Empty, MensajeCredencialesInvalidas);
             Input.Contrasena = string.Empty;
             return Page();
         }
 
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
-            CrearPrincipal(resultado.Usuario));
+            CrearPrincipal(usuario));
+
+        Input.Contrasena = string.Empty;
 
         if (!string.IsNullOrEmpty(ReturnUrl) && Url.IsLocalUrl(ReturnUrl))
         {
@@ -62,14 +87,15 @@ public class LoginModel : PageModel
         return RedirectToPage("/Index");
     }
 
-    private static ClaimsPrincipal CrearPrincipal(UsuarioAutenticado usuario)
+    private static ClaimsPrincipal CrearPrincipal(AuthenticatedUserDto usuario)
     {
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, usuario.UsuarioId.ToString()),
-            new(ClaimTypes.Name, usuario.NombreUsuario),
-            new(ClaimTypes.GivenName, usuario.NombreCompleto),
-            new(ClaimTypes.Role, usuario.Rol)
+            new(ClaimTypes.NameIdentifier, usuario.UserId.ToString()),
+            new(ClaimTypes.Name, usuario.Username),
+            new(ClaimTypes.GivenName, usuario.FullName),
+            new(ClaimTypes.Role, usuario.Role),
+            new("PublicId", usuario.PublicId.ToString())
         };
 
         var identidad = new ClaimsIdentity(
