@@ -25,20 +25,20 @@
 
         <p style="margin-bottom: 0.5rem; font-size: 0.95rem;">
             <strong>Descripción:</strong>
-            @(string.IsNullOrEmpty(Model.Marca?.Nombre)
+            @(string.IsNullOrEmpty(Model.Marca?.Descripcion)
                 ? "—"
-                : Model.Marca?.Nombre)
+                : Model.Marca?.Descripcion)
         </p>
 
         <p style="margin-bottom: 0.5rem; font-size: 0.95rem;">
-            <strong>País de origen:</strong> @Model.Marca?.Nombre
+            <strong>País de origen:</strong> @Model.Marca?.PaisOrigen
         </p>
 
         <p style="margin-bottom: 0; font-size: 0.95rem;">
             <strong>Sitio web:</strong>
-            @(string.IsNullOrEmpty(Model.Marca?.Nombre)
+            @(string.IsNullOrEmpty(Model.Marca?.SitioWeb)
                 ? "—"
-                : Model.Marca?.Nombre)
+                : Model.Marca?.SitioWeb)
         </p>
     </div>
 

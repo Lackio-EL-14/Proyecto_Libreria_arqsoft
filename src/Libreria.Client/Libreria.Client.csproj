@@ -8,11 +8,30 @@
     <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
   </PropertyGroup>
 
+  <!--
+    SBA: las páginas de Ventas (Registrar, Listado y Comprobante) todavía usan tipos del
+    monolito y se migran a REST en US-84 a US-90 (Gabriel y Mateo). Mientras tanto se
+    excluyen de la compilación para que el Front compile. Cada historia migra su página
+    y quita su línea. Cuando no quede ninguna, se elimina todo este bloque.
+    (DefaultItemExcludes se evalúa antes que los glob de Compile y Razor.)
+  -->
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Pages\Ventas\**;Pages\Shared\_ClienteAltaRapidaCampos.cshtml</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Pages\Ventas\**" />
+    <Content Remove="Pages\Ventas\**" />
+    <RazorGenerate Remove="Pages\Ventas\**" />
+    <Content Remove="Pages\Shared\_ClienteAltaRapidaCampos.cshtml" />
+    <RazorGenerate Remove="Pages\Shared\_ClienteAltaRapidaCampos.cshtml" />
+  </ItemGroup>
+
+  <!-- El Front NO referencia a Libreria.Servicio.Ventas: solo consume su API REST. -->
   <ItemGroup>
     <ProjectReference Include="..\Libreria.Domain\Libreria.Domain.csproj" />
     <ProjectReference Include="..\Libreria.Application\Libreria.Application.csproj" />
     <ProjectReference Include="..\Libreria.Infrastructure\Libreria.Infrastructure.csproj" />
-    <ProjectReference Include="..\Libreria.Servicio.Ventas\Libreria.Servicio.Ventas.csproj" />
   </ItemGroup>
 
 </Project>

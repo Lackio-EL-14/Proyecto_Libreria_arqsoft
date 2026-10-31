@@ -1,25 +1,42 @@
-using Microsoft.AspNetCore.Mvc;
+using Libreria.Servicio.Ventas.Application.Factories;
 using Libreria.Servicio.Ventas.Application.Ports.Secondary;
-using System;
+using Libreria.Servicio.Ventas.Controllers.Dtos;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Libreria.Servicio.Ventas.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/historico")]
 public class HistoricoController : ControllerBase
 {
-    private readonly IHistoricoCostoRepository _historicoRepository;
+    private readonly IHistoricoCostoRepository _repositorio;
 
-    public HistoricoController(IHistoricoCostoRepository historicoRepository)
+    // Factory Method específico del Histórico (HistoricoRepositoryFactory).
+    public HistoricoController(HistoricoRepositoryFactory fabrica)
     {
-        _historicoRepository = historicoRepository;
+        _repositorio = fabrica.CrearRepositorio();
     }
 
-    [HttpGet("{productoId:guid}")]
-    public IActionResult ObtenerPorProducto(Guid productoId)
+    [HttpGet("{publicId:guid}")]
+    public IActionResult ObtenerPorProducto(Guid publicId)
     {
-        var historico = _historicoRepository.ObtenerProducto(productoId);
-        if (historico == null) return NotFound();
-        return Ok(historico);
+        var producto = _repositorio.ObtenerProducto(publicId);
+        if (producto is null)
+        {
+            return NotFound();
+        }
+
+        var historial = _repositorio.ObtenerHistorico(producto.ProductoId)
+            .Select(item => new HistoricoCostoResponse(
+                item.FechaVigencia,
+                item.CostoNuevo,
+                item.CostoAnterior,
+                item.VariacionAbsoluta,
+                item.FechaVencimiento,
+                item.Motivo,
+                item.RegistradoPor))
+            .ToList();
+
+        return Ok(new HistoricoProductoResponse(publicId, producto.Nombre, producto.Estado, historial));
     }
 }

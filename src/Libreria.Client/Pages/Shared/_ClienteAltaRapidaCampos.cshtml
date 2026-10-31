@@ -1,27 +1,30 @@
-@model Libreria.Client.Pages.Ventas.ClienteInput
+@model Libreria.Application.Models.ClienteInput
 
-<div class="row g-3">
-    <div class="col-md-6">
-        <label asp-for="CiNit" class="form-label">CI / NIT <span class="text-danger">*</span></label>
-        <input asp-for="CiNit" class="form-control" required />
-        <span asp-validation-for="CiNit" class="text-danger"></span>
-    </div>
-    <div class="col-md-6">
-        <label asp-for="RazonSocial" class="form-label">Razón Social <span class="text-danger">*</span></label>
-        <input asp-for="RazonSocial" class="form-control" required />
-        <span asp-validation-for="RazonSocial" class="text-danger"></span>
-    </div>
-    <div class="col-md-6">
-        <label asp-for="Correo" class="form-label">Correo Electrónico</label>
-        <input asp-for="Correo" type="email" class="form-control" />
-        <span asp-validation-for="Correo" class="text-danger"></span>
-    </div>
-    <div class="col-md-6">
-        <label asp-for="TipoContacto" class="form-label">Tipo de Contacto</label>
-        <select asp-for="TipoContacto" class="form-select">
-            <option value="Cliente">Cliente Estándar</option>
-            <option value="Empresa">Empresa Corporativa</option>
-        </select>
-        <span asp-validation-for="TipoContacto" class="text-danger"></span>
-    </div>
+<p>Ingrese los datos del nuevo cliente.</p>
+<div id="alta-cliente-error" class="validation-summary-errors" role="alert" tabindex="-1" hidden></div>
+
+<div class="form-group">
+    <label for="alta-cliente-ci-nit">CI/NIT <span class="text-danger">*</span></label>
+    <input id="alta-cliente-ci-nit" name="Input.CiNit" value="@Model.CiNit"
+           class="form-control" type="text" maxlength="30" required
+           aria-describedby="alta-cliente-ci-nit-error" />
+    <span id="alta-cliente-ci-nit-error" class="field-validation-error" data-cliente-error="Input.CiNit"></span>
 </div>
+
+<div class="form-group">
+    <label for="alta-cliente-razon-social">Razón social <span class="text-danger">*</span></label>
+    <input id="alta-cliente-razon-social" name="Input.RazonSocial" value="@Model.RazonSocial"
+           class="form-control" type="text" maxlength="200" required
+           aria-describedby="alta-cliente-razon-social-error" />
+    <span id="alta-cliente-razon-social-error" class="field-validation-error" data-cliente-error="Input.RazonSocial"></span>
+</div>
+
+<div class="form-group">
+    <label for="alta-cliente-correo">Correo (opcional)</label>
+    <input id="alta-cliente-correo" name="Input.Correo" value="@Model.Correo"
+           class="form-control" type="email" maxlength="254"
+           aria-describedby="alta-cliente-correo-error" />
+    <span id="alta-cliente-correo-error" class="field-validation-error" data-cliente-error="Input.Correo"></span>
+</div>
+
+<p id="alta-cliente-estado" role="status" aria-live="polite"></p>

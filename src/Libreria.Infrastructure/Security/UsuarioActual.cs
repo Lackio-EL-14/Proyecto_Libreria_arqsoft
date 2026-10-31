@@ -1,9 +1,11 @@
 using System.Security.Claims;
-using Libreria.Servicio.Ventas.Application.Ports.Secondary;
+using Libreria.Application.Ports.Secondary;
 using Microsoft.AspNetCore.Http;
 
-namespace Libreria.Servicio.Ventas.Infrastructure.Security;
+namespace Libreria.Infrastructure.Security;
 
+// TEMPORAL (puente): lee el usuario desde los claims de la cookie para el módulo
+// de Usuarios que aún vive en el Front. Se elimina con US-92/US-93.
 public class UsuarioActual : IUsuarioActual
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -25,4 +27,7 @@ public class UsuarioActual : IUsuarioActual
                 : null;
         }
     }
+
+    public string Nombre =>
+        _httpContextAccessor.HttpContext?.User.Identity?.Name ?? string.Empty;
 }

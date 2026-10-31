@@ -1,13 +1,7 @@
-using Libreria.Domain;
 using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-using Libreria.Application.Ports.Primary; 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-using Libreria.Application.Validators;
+using Libreria.Application.Ports.Primary;
+using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Ventas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -15,19 +9,16 @@ namespace Libreria.Client.Pages.Categorias;
 
 public class EditModel : PageModel
 {
-    private readonly ICrudRepository<Categoria> _repository;
-    private readonly CategoriaValidator _validator;
-    private readonly IUrlProtector _urlProtector; 
+    private readonly IVentasApiClient _ventas;
+    private readonly IUrlProtector _urlProtector;
     private readonly IAuditoriaService _auditoriaService;
 
     public EditModel(
-        CrudRepositoryFactory<Categoria> factory,
-        CategoriaValidator validator,
+        IVentasApiClient ventas,
         IUrlProtector urlProtector,
-        IAuditoriaService auditoriaService) 
+        IAuditoriaService auditoriaService)
     {
-        _repository = factory.CrearRepositorio();
-        _validator = validator;
+        _ventas = ventas;
         _urlProtector = urlProtector;
         _auditoriaService = auditoriaService;
     }
@@ -38,20 +29,19 @@ public class EditModel : PageModel
     [BindProperty]
     public CategoriaInput Input { get; set; } = new();
 
-    public IReadOnlyList<string> Ubicaciones => UbicacionesCategoria.Todas;
+    public IReadOnlyList<string> Ubicaciones { get; private set; } = [];
 
     public AuditoriaRegistro? Auditoria { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(string id)
     {
         var publicIdDescifrado = _urlProtector.Descifrar(id);
-        
-        if (publicIdDescifrado == null)
+        if (publicIdDescifrado is null)
         {
             return NotFound();
         }
 
-        var categoria = await _repository.ObtenerPorPublicIdAsync(publicIdDescifrado.Value, true);
+        var categoria = await _ventas.ObtenerCategoriaAsync(publicIdDescifrado.Value, true);
         if (categoria is null)
         {
             return NotFound();
@@ -65,49 +55,39 @@ public class EditModel : PageModel
             Descripcion = categoria.Descripcion,
             Ubicacion = categoria.Ubicacion
         };
+
         Auditoria = await _auditoriaService.ObtenerAsync(
             categoria.UsuarioCreacionId,
             categoria.FechaCreacion,
             categoria.UsuarioModificacionId,
             categoria.FechaModificacion);
+
+        await CargarUbicacionesAsync();
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var categoriaOriginal = await _repository.ObtenerPorPublicIdAsync(PublicId, true);
-        if (categoriaOriginal is null)
+        var resultado = await _ventas.ActualizarCategoriaAsync(PublicId, Input);
+        if (resultado.NoEncontrado)
         {
             return NotFound();
         }
 
-        Input.Codigo = categoriaOriginal.Codigo;
-
-        _validator.Normalizar(Input);
-        var errores = await _validator.ValidarEdicionAsync(Input, PublicId);
-        AgregarErrores(errores);
-
-        if (!ModelState.IsValid)
+        if (!resultado.Exitoso)
         {
+            AgregarErrores(resultado.Errores);
+            await CargarUbicacionesAsync();
             return Page();
-        }
-
-        var actualizada = await _repository.ActualizarAsync(new Categoria
-        {
-            PublicId = PublicId,
-            Codigo = categoriaOriginal.Codigo,
-            Nombre = Input.Nombre,
-            Descripcion = Input.Descripcion,
-            Ubicacion = Input.Ubicacion
-        });
-
-        if (!actualizada)
-        {
-            return NotFound();
         }
 
         TempData["MensajeExito"] = "Categoría actualizada correctamente.";
         return RedirectToPage("./Index");
+    }
+
+    private async Task CargarUbicacionesAsync()
+    {
+        Ubicaciones = await _ventas.ObtenerUbicacionesCategoriaAsync();
     }
 
     private void AgregarErrores(IReadOnlyDictionary<string, string> errores)

@@ -1,11 +1,5 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-using Libreria.Application.Validators;
+using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Ventas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -13,42 +7,40 @@ namespace Libreria.Client.Pages.Categorias;
 
 public class CreateModel : PageModel
 {
-    private readonly ICrudRepository<Categoria> _repository;
-    private readonly CategoriaValidator _validator;
+    private readonly IVentasApiClient _ventas;
 
-    public CreateModel(
-        CrudRepositoryFactory<Categoria> factory,
-        CategoriaValidator validator)
+    public CreateModel(IVentasApiClient ventas)
     {
-        _repository = factory.CrearRepositorio();
-        _validator = validator;
+        _ventas = ventas;
     }
 
     [BindProperty]
     public CategoriaInput Input { get; set; } = new();
 
-    public IReadOnlyList<string> Ubicaciones => UbicacionesCategoria.Todas;
+    public IReadOnlyList<string> Ubicaciones { get; private set; } = [];
+
+    public async Task OnGetAsync()
+    {
+        await CargarUbicacionesAsync();
+    }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        _validator.Normalizar(Input);
-        var errores = await _validator.ValidarCreacionAsync(Input);
-        AgregarErrores(errores);
-
-        if (!ModelState.IsValid)
+        var resultado = await _ventas.CrearCategoriaAsync(Input);
+        if (!resultado.Exitoso)
         {
+            AgregarErrores(resultado.Errores);
+            await CargarUbicacionesAsync();
             return Page();
         }
 
-        await _repository.CrearAsync(new Categoria
-        {
-            Nombre = Input.Nombre,
-            Descripcion = Input.Descripcion,
-            Ubicacion = Input.Ubicacion
-        });
-
         TempData["MensajeExito"] = "Categoría registrada exitosamente.";
         return RedirectToPage("./Index");
+    }
+
+    private async Task CargarUbicacionesAsync()
+    {
+        Ubicaciones = await _ventas.ObtenerUbicacionesCategoriaAsync();
     }
 
     private void AgregarErrores(IReadOnlyDictionary<string, string> errores)

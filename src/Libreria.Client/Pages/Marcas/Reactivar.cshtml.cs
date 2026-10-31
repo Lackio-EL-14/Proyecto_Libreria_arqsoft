@@ -1,37 +1,45 @@
-using Libreria.Application.Models;
+using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Ventas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Threading.Tasks;
 
 namespace Libreria.Client.Pages.Marcas;
 
 public class ReactivarModel : PageModel
 {
-    private readonly HttpClient _httpClient;
-    public ReactivarModel(IHttpClientFactory factory) { _httpClient = factory.CreateClient("VentasAPI"); }
+    private readonly IVentasApiClient _ventas;
 
-    public MarcaDtoBasico Marca { get; private set; } = null!;
-    public Guid PublicId { get; private set; }
+    public ReactivarModel(IVentasApiClient ventas)
+    {
+        _ventas = ventas;
+    }
+
+    [BindProperty]
+    public Guid PublicId { get; set; }
+
+    public MarcaDto? Marca { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        PublicId = id;
-        var response = await _httpClient.GetAsync($"/api/marcas/{id}");
-        if (!response.IsSuccessStatusCode) return NotFound();
-        var mar = await response.Content.ReadFromJsonAsync<MarcaDtoBasico>();
-        if (mar == null) return NotFound();
-        Marca = mar;
+        Marca = await _ventas.ObtenerMarcaAsync(id, false);
+        if (Marca is null)
+        {
+            return NotFound();
+        }
+
+        PublicId = Marca.PublicId;
         return Page();
     }
-}
 
-public class MarcaDtoBasico
-{
-    public string Nombre { get; set; } = "";
-    public string? Descripcion { get; set; }
-    public string? PaisOrigen { get; set; }
-    public string? SitioWeb { get; set; }
+    public async Task<IActionResult> OnPostAsync()
+    {
+        var resultado = await _ventas.CambiarEstadoMarcaAsync(PublicId, true);
+        if (!resultado.Exitoso)
+        {
+            return NotFound();
+        }
+
+        TempData["MensajeExito"] = "Marca reactivada correctamente.";
+        return RedirectToPage("./Index");
+    }
 }

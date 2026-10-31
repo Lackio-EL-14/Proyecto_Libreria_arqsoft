@@ -1,12 +1,11 @@
-using Libreria.Servicio.Ventas.Domain;
-using Libreria.Servicio.Ventas.Application.Models;
-using Libreria.Servicio.Ventas.Application.Ports.Secondary;
-using Libreria.Servicio.Ventas.Application.Factories;
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace Libreria.Servicio.Ventas.Application.Models;
+namespace Libreria.Client.Binding;
 
+// Enlace de datos de formularios HTML: el navegador envía los decimales con
+// punto. Es una preocupación de la interfaz, por eso vive en el Front y no en
+// el núcleo de Ventas.
 public class DecimalInvariantModelBinder : IModelBinder
 {
     public Task BindModelAsync(ModelBindingContext bindingContext)

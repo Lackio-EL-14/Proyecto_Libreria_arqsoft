@@ -1,80 +1,100 @@
-using Microsoft.AspNetCore.Mvc;
-using Libreria.Servicio.Ventas.Application.Ports.Secondary;
+using Libreria.Servicio.Ventas.Application.Factories;
 using Libreria.Servicio.Ventas.Application.Models;
+using Libreria.Servicio.Ventas.Application.Ports.Secondary;
 using Libreria.Servicio.Ventas.Application.Validators;
+using Libreria.Servicio.Ventas.Controllers.Dtos;
 using Libreria.Servicio.Ventas.Domain;
-using System;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Libreria.Servicio.Ventas.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/marcas")]
 public class MarcasController : ControllerBase
 {
-    private readonly ICrudRepository<Marca> _marcaRepository;
-    private readonly MarcaValidator _validator;
+    private readonly ICrudRepository<Marca> _repositorio;
+    private readonly MarcaValidator _validador;
 
     public MarcasController(
-        ICrudRepository<Marca> marcaRepository,
-        MarcaValidator validator)
+        CrudRepositoryFactory<Marca> fabrica,
+        MarcaValidator validador)
     {
-        _marcaRepository = marcaRepository;
-        _validator = validator;
+        _repositorio = fabrica.CrearRepositorio();
+        _validador = validador;
     }
 
     [HttpGet]
-    public async Task<IActionResult> ObtenerTodas([FromQuery] string? busqueda = null)
+    public async Task<IActionResult> Listar([FromQuery] string? nombre)
     {
-        var listado = await _marcaRepository.ObtenerActivasAsync(busqueda);
-        return Ok(listado);
+        var marcas = await _repositorio.ObtenerActivasAsync(nombre?.Trim());
+
+        var respuesta = new List<MarcaResponse>(marcas.Count);
+        foreach (var marca in marcas)
+        {
+            var tieneProductos = await _repositorio.TieneRelacionesAsync(marca.PublicId);
+            respuesta.Add(Mapear(marca, tieneProductos));
+        }
+
+        return Ok(respuesta);
+    }
+
+    [HttpGet("paises")]
+    public IActionResult ObtenerPaises()
+    {
+        return Ok(PaisesMarca.Todos);
     }
 
     [HttpGet("{publicId:guid}")]
     public async Task<IActionResult> ObtenerPorId(Guid publicId, [FromQuery] bool estadoEsperado = true)
     {
-        var marca = await _marcaRepository.ObtenerPorPublicIdAsync(publicId, estadoEsperado);
-        if (marca == null) return NotFound();
-        return Ok(marca);
-    }
+        var marca = await _repositorio.ObtenerPorPublicIdAsync(publicId, estadoEsperado);
+        if (marca is null)
+        {
+            return NotFound();
+        }
 
-    [HttpGet("{publicId:guid}/tiene-relaciones")]
-    public async Task<IActionResult> TieneRelaciones(Guid publicId)
-    {
-        var tiene = await _marcaRepository.TieneRelacionesAsync(publicId);
-        return Ok(tiene);
+        var tieneProductos = await _repositorio.TieneRelacionesAsync(publicId);
+        return Ok(Mapear(marca, tieneProductos));
     }
 
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] MarcaInput input)
     {
-        _validator.Normalizar(input);
-        var errores = await _validator.ValidarAsync(input);
-        if (errores.Count > 0) return BadRequest(errores);
+        _validador.Normalizar(input);
+        var errores = await _validador.ValidarAsync(input);
+        if (errores.Count > 0)
+        {
+            return BadRequest(errores);
+        }
 
-        var marca = new Marca
+        await _repositorio.CrearAsync(new Marca
         {
             Nombre = input.Nombre,
             Descripcion = input.Descripcion,
             PaisOrigen = input.PaisOrigen,
             SitioWeb = input.SitioWeb
-        };
-        
-        await _marcaRepository.CrearAsync(marca);
-        return Ok();
+        });
+
+        return StatusCode(201);
     }
 
     [HttpPut("{publicId:guid}")]
     public async Task<IActionResult> Actualizar(Guid publicId, [FromBody] MarcaInput input)
     {
-        var marcaOriginal = await _marcaRepository.ObtenerPorPublicIdAsync(publicId, true);
-        if (marcaOriginal == null) return NotFound();
+        var original = await _repositorio.ObtenerPorPublicIdAsync(publicId, true);
+        if (original is null)
+        {
+            return NotFound();
+        }
 
-        _validator.Normalizar(input);
-        var errores = await _validator.ValidarAsync(input, publicId);
-        if (errores.Count > 0) return BadRequest(errores);
+        _validador.Normalizar(input);
+        var errores = await _validador.ValidarAsync(input, publicId);
+        if (errores.Count > 0)
+        {
+            return BadRequest(errores);
+        }
 
-        var actualizada = await _marcaRepository.ActualizarAsync(new Marca
+        var actualizada = await _repositorio.ActualizarAsync(new Marca
         {
             PublicId = publicId,
             Nombre = input.Nombre,
@@ -83,15 +103,27 @@ public class MarcasController : ControllerBase
             SitioWeb = input.SitioWeb
         });
 
-        if (!actualizada) return NotFound();
-        return Ok();
+        return actualizada ? NoContent() : NotFound();
     }
 
     [HttpPatch("{publicId:guid}/estado")]
     public async Task<IActionResult> CambiarEstado(Guid publicId, [FromQuery] bool nuevoEstado)
     {
-        var resultado = await _marcaRepository.CambiarEstadoAsync(publicId, nuevoEstado);
-        if (!resultado) return NotFound();
-        return Ok();
+        var cambiado = await _repositorio.CambiarEstadoAsync(publicId, nuevoEstado);
+        return cambiado ? NoContent() : NotFound();
+    }
+
+    private static MarcaResponse Mapear(Marca marca, bool tieneProductosActivos)
+    {
+        return new MarcaResponse(
+            marca.PublicId,
+            marca.Nombre,
+            marca.Descripcion,
+            marca.PaisOrigen,
+            marca.SitioWeb,
+            marca.Estado,
+            marca.UsuarioCreacionId,
+            marca.UsuarioModificacionId,
+            tieneProductosActivos);
     }
 }

@@ -35,7 +35,7 @@
             <select asp-for="Input.PaisOrigen" class="form-control">
             <option value="">Seleccione un país</option>
 
-            @foreach (var pais in PaisesMarca.Todos)
+            @foreach (var pais in Model.Paises)
             {
                 <option value="@pais">@pais</option>
             }
