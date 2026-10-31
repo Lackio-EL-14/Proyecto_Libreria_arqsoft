@@ -40,6 +40,10 @@ builder.Services
     .AddServicioUsuarios(builder.Configuration)
     .AddServicioReportes(builder.Configuration);
 
+builder.Services.AddMemoryCache();
+builder.Services.Configure<SesionActivaOptions>(
+    builder.Configuration.GetSection(SesionActivaOptions.SectionName));
+
 builder.Services.AddUsuariosModule();
 
 builder.Services.AddScoped<UsuarioRepositoryFactory, SqlUsuarioRepositoryFactory>();
@@ -71,6 +75,8 @@ builder.Services
         options.Cookie.Name = "Libreria.Sesion";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.IsEssential = true;
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
         options.EventsType = typeof(ValidarEstadoUsuarioCookieEvents);
