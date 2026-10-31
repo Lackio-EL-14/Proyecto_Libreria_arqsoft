@@ -1,5 +1,4 @@
-@model Libreria.Application.Models.AuditoriaRegistro
-@* US-40: bloque reutilizable de trazabilidad (quién creó / modificó). *@
+@model Libreria.Client.DTOs.Common.AuditoriaRegistroDto
 
 <section class="auditoria-info" aria-label="Trazabilidad del registro">
     <span class="auditoria-info__titulo">Trazabilidad</span>
@@ -24,5 +23,18 @@
                 }
             </dd>
         </div>
+        @if (Model.AnuladoPor is not null)
+        {
+            <div>
+                <dt>Anulado por</dt>
+                <dd>
+                    @Model.AnuladoPor
+                    @if (Model.FechaAnulacion.HasValue)
+                    {
+                        <small>@Model.FechaAnulacion.Value.ToString("dd/MM/yyyy HH:mm")</small>
+                    }
+                </dd>
+            </div>
+        }
     </dl>
 </section>
