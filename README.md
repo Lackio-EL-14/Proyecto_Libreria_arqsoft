@@ -56,6 +56,44 @@ docker exec libreria-db bash -c 'for f in /scripts/*.sql; do echo "Ejecutando $f
 
 Los scripts son idempotentes y pueden actualizar una base existente. No uses `docker compose down -v` para una actualización normal porque elimina el volumen y sus datos.
 
+## Configuración obligatoria de Usuarios
+
+El Servicio de Usuarios no guarda contraseñas ni cadenas de conexión en Git. Cada integrante debe ejecutar una vez:
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:LibreriaDb" "Server=localhost,1433;Database=LibreriaDb;User Id=sa;Password=Libreria2026!;TrustServerCertificate=True;" --project src/Libreria.Servicio.Usuarios
+```
+
+Comprueba que quedó configurado:
+
+```powershell
+dotnet user-secrets list --project src/Libreria.Servicio.Usuarios
+```
+
+Visual Studio y `dotnet run` leen automáticamente ese secreto cuando el ambiente es `Development`. Un archivo `.env` de la raíz solo es leído automáticamente por Docker Compose; las aplicaciones .NET no lo cargan por sí solas.
+
+### Correo de activación en desarrollo
+
+En Development no hace falta una cuenta de Gmail. S2 usa `PickupDirectory` y guarda cada correo como archivo `.eml` dentro de:
+
+```text
+src/Libreria.Servicio.Usuarios/bin/Development/mail
+```
+
+Abre el archivo generado y usa el enlace de activación. Esto permite demostrar el flujo sin internet ni contraseña SMTP.
+
+Para enviar correos reales con Gmail, configura secretos y usa una contraseña de aplicación de Google, no la contraseña normal de la cuenta:
+
+```powershell
+dotnet user-secrets set "EMAIL_DELIVERY_MODE" "Smtp" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_HOST" "smtp.gmail.com" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_PORT" "587" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_USER" "correo@gmail.com" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_PASS" "contraseña-de-aplicación" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_FROM" "correo@gmail.com" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "BASE_URL" "http://localhost:5000" --project src/Libreria.Servicio.Usuarios
+```
+
 ## Ejecutar desde Visual Studio
 
 1. Abre `LibreriaSystem.slnx`.
@@ -126,12 +164,14 @@ AddServicioUsuarios(configuration)
 AddServicioReportes(configuration)
 ```
 
-Cada solicitud realizada por esos clientes envía:
+Cada solicitud autenticada realizada por esos clientes envía:
 
 - `X-Usuario-Id`
 - `X-Usuario-Nombre`
 
-El valor procede de los claims del usuario autenticado. Solo en ambiente Development se permite el usuario fijo configurado en `appsettings.Development.json` mientras se completa el login distribuido.
+El valor procede exclusivamente de los claims reales de la cookie. No existe usuario fijo de desarrollo. El login del Front llama a `POST api/auth/login` de S2 y la vigencia de la cookie se revisa mediante `GET api/usuarios/{id}/sesion-activa`, con una caché local de 20 segundos.
+
+`AuditoriaService` vive en el Front y convierte los identificadores de auditoría en nombres mediante `GET api/usuarios/nombres`. Ventas y Reportes no deben consultar directamente la tabla `Usuario`.
 
 Si un servicio no responde, el Front redirige a una pantalla uniforme de servicio no disponible. Las respuestas HTTP con error se convierten en `ApiClientException`, conservando el código de estado y el mensaje de `ProblemDetails`.
 
@@ -146,13 +186,14 @@ Si un servicio no responde, el Front redirige a una pantalla uniforme de servici
 - Las fechas se envían en ISO 8601 y los decimales como números JSON.
 - Las URLs y credenciales se obtienen de configuración; no se escriben secretos en el repositorio.
 
-Las páginas antiguas de Ventas, Productos, Categorías, Marcas e Histórico permanecen versionadas como referencia, pero están temporalmente excluidas de la compilación. US-83 debe migrarlas a los clientes HTTP y retirar esas exclusiones del archivo `Libreria.Client.csproj`. Usuarios continúa usando el módulo local hasta que US-92 y US-93 completen su traslado y el login contra el servicio.
+Las páginas antiguas de Ventas, Productos, Categorías, Marcas e Histórico permanecen versionadas como referencia, pero están temporalmente excluidas de la compilación. US-83 debe migrarlas a los clientes HTTP y retirar esas exclusiones del archivo `Libreria.Client.csproj`. El login ya consume S2; las demás páginas de Usuarios se migran en US-95 a US-98.
 
 ## Validación
 
 ```powershell
 dotnet build LibreriaSystem.slnx
 dotnet test tests/Libreria.Application.Tests/Libreria.Application.Tests.csproj
+dotnet test tests/Libreria.Servicio.Usuarios.Tests/Libreria.Servicio.Usuarios.Tests.csproj
 ```
 
 Usuarios de datos semilla:
