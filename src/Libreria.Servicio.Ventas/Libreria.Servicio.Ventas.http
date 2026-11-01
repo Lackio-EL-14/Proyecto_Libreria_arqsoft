@@ -1,6 +1,42 @@
-@Libreria.Servicio.Ventas_HostAddress = http://localhost:5054
+@host = http://localhost:5101
+@usuario = 1
 
-GET {{Libreria.Servicio.Ventas_HostAddress}}/weatherforecast/
-Accept: application/json
+### Estado del servicio
+GET {{host}}/api/ventas/ping
 
+### ---------- Categorías ----------
+GET {{host}}/api/categorias
 ###
+GET {{host}}/api/categorias?busqueda=libros
+###
+GET {{host}}/api/categorias/ubicaciones
+###
+POST {{host}}/api/categorias
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{ "nombre": "Útiles de prueba", "descripcion": "Creada desde .http", "ubicacion": "Bodega" }
+
+### ---------- Marcas ----------
+GET {{host}}/api/marcas
+###
+GET {{host}}/api/marcas/paises
+###
+POST {{host}}/api/marcas
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{ "nombre": "Marca de prueba", "descripcion": null, "paisOrigen": "Bolivia", "sitioWeb": null }
+
+### ---------- Productos ----------
+GET {{host}}/api/productos
+###
+GET {{host}}/api/productos?busqueda=lapiz
+###
+GET {{host}}/api/productos/formulario
+
+### ---------- Histórico (reemplazar el GUID de un producto) ----------
+GET {{host}}/api/historico/00000000-0000-0000-0000-000000000000
+
+### ---------- Clientes ----------
+GET {{host}}/api/clientes/buscar?ciNit=123

@@ -1,45 +1,38 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-using Libreria.Application.Services;
+using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Ventas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-
 
 namespace Libreria.Client.Pages.Productos;
 
 public class CreateModel : PageModel
 {
-    private readonly IProductoService _service;
-    private readonly ICrudRepository<Producto> _repository;
+    private readonly IVentasApiClient _ventas;
 
-    public CreateModel(
-        IProductoService service,
-        CrudRepositoryFactory<Producto> factory)
+    public CreateModel(IVentasApiClient ventas)
     {
-        _service = service;
-        _repository = factory.CrearRepositorio();
+        _ventas = ventas;
     }
 
     [BindProperty]
     public ProductoInput Input { get; set; } = new();
 
-    public IReadOnlyList<CategoriaOption> Categorias { get; private set; } = [];
-    public IReadOnlyList<MarcaOption> Marcas { get; private set; } = [];
+    public IReadOnlyList<CategoriaOptionDto> Categorias { get; private set; } = [];
+    public IReadOnlyList<MarcaOptionDto> Marcas { get; private set; } = [];
 
-    public void OnGet()
+    public async Task OnGetAsync()
     {
-        CargarFormulario();
+        await CargarFormularioAsync();
     }
+
     public async Task<IActionResult> OnPostAsync()
     {
-        var resultado = await _service.RegistrarAsync(Input, _repository);
+        var resultado = await _ventas.RegistrarProductoAsync(Input);
 
         if (!resultado.Exitoso)
         {
             AgregarErrores(resultado.Errores);
-            CargarFormulario();
+            await CargarFormularioAsync();
             return Page();
         }
 
@@ -47,9 +40,9 @@ public class CreateModel : PageModel
         return RedirectToPage("Index");
     }
 
-    private void CargarFormulario()
+    private async Task CargarFormularioAsync()
     {
-        var formulario = _service.ObtenerFormulario();
+        var formulario = await _ventas.ObtenerFormularioProductoAsync();
         Categorias = formulario.Categorias;
         Marcas = formulario.Marcas;
     }

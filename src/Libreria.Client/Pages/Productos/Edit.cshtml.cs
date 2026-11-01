@@ -1,38 +1,30 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-using Libreria.Application.Services;
+using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Ventas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-
 
 namespace Libreria.Client.Pages.Productos;
 
 public class EditModel : PageModel
 {
-    private readonly IProductoService _service;
-    private readonly ICrudRepository<Producto> _repository;
+    private readonly IVentasApiClient _ventas;
 
-    public EditModel(
-     IProductoService service,
-     CrudRepositoryFactory<Producto> factory)
+    public EditModel(IVentasApiClient ventas)
     {
-        _service = service;
-        _repository = factory.CrearRepositorio();
+        _ventas = ventas;
     }
+
     public Guid PublicId { get; private set; }
 
     [BindProperty]
     public ProductoInput Input { get; set; } = new();
 
-    public IReadOnlyList<CategoriaOption> Categorias { get; private set; } = [];
-    public IReadOnlyList<MarcaOption> Marcas { get; private set; } = [];
+    public IReadOnlyList<CategoriaOptionDto> Categorias { get; private set; } = [];
+    public IReadOnlyList<MarcaOptionDto> Marcas { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        var edicion = await _service.ObtenerEdicionAsync(id, _repository);
-
+        var edicion = await _ventas.ObtenerProductoParaEdicionAsync(id);
         if (edicion is null)
         {
             return NotFound();
@@ -48,7 +40,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(Guid id)
     {
-        var resultado = await _service.ActualizarAsync(id, Input, _repository);
+        var resultado = await _ventas.ActualizarProductoAsync(id, Input);
         if (resultado.NoEncontrado)
         {
             return NotFound();
@@ -69,7 +61,7 @@ public class EditModel : PageModel
 
     private async Task CargarOpcionesAsync(Guid publicId)
     {
-        var edicion = await _service.ObtenerEdicionAsync(publicId, _repository);
+        var edicion = await _ventas.ObtenerProductoParaEdicionAsync(publicId);
         if (edicion is null)
         {
             return;

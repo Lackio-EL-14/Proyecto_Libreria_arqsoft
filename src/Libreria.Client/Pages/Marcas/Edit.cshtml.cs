@@ -1,10 +1,7 @@
-using Libreria.Domain;
 using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-using Libreria.Application.Validators;
 using Libreria.Application.Ports.Primary;
-
+using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Ventas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -12,17 +9,14 @@ namespace Libreria.Client.Pages.Marcas;
 
 public class EditModel : PageModel
 {
-    private readonly ICrudRepository<Marca> _repository;
-    private readonly MarcaValidator _validator;
+    private readonly IVentasApiClient _ventas;
     private readonly IAuditoriaService _auditoriaService;
 
     public EditModel(
-        CrudRepositoryFactory<Marca> factory,
-        MarcaValidator validator,
+        IVentasApiClient ventas,
         IAuditoriaService auditoriaService)
     {
-        _repository = factory.CrearRepositorio();
-        _validator = validator;
+        _ventas = ventas;
         _auditoriaService = auditoriaService;
     }
 
@@ -32,14 +26,13 @@ public class EditModel : PageModel
     [BindProperty]
     public MarcaInput Input { get; set; } = new();
 
+    public IReadOnlyList<string> Paises { get; private set; } = [];
+
     public AuditoriaRegistro? Auditoria { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        var marca = await _repository.ObtenerPorPublicIdAsync(
-            id,
-            estadoEsperado: true);
-
+        var marca = await _ventas.ObtenerMarcaAsync(id, true);
         if (marca is null)
         {
             return NotFound();
@@ -61,53 +54,39 @@ public class EditModel : PageModel
             marca.UsuarioModificacionId,
             null);
 
+        await CargarPaisesAsync();
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        _validator.Normalizar(Input);
-
-        var errores = await _validator.ValidarAsync(
-            Input,
-            PublicId);
-
-        AgregarErrores(errores);
-
-        if (!ModelState.IsValid)
-        {
-            return Page();
-        }
-
-        var actualizada = await _repository.ActualizarAsync(
-            new Marca
-            {
-                PublicId = PublicId,
-                Nombre = Input.Nombre,
-                Descripcion = Input.Descripcion,
-                PaisOrigen = Input.PaisOrigen,
-                SitioWeb = Input.SitioWeb
-            });
-
-        if (!actualizada)
+        var resultado = await _ventas.ActualizarMarcaAsync(PublicId, Input);
+        if (resultado.NoEncontrado)
         {
             return NotFound();
         }
 
-        TempData["MensajeExito"] =
-            "Marca actualizada correctamente.";
+        if (!resultado.Exitoso)
+        {
+            AgregarErrores(resultado.Errores);
+            await CargarPaisesAsync();
+            return Page();
+        }
 
+        TempData["MensajeExito"] = "Marca actualizada correctamente.";
         return RedirectToPage("./Index");
     }
 
-    private void AgregarErrores(
-        IReadOnlyDictionary<string, string> errores)
+    private async Task CargarPaisesAsync()
+    {
+        Paises = await _ventas.ObtenerPaisesMarcaAsync();
+    }
+
+    private void AgregarErrores(IReadOnlyDictionary<string, string> errores)
     {
         foreach (var error in errores)
         {
-            ModelState.AddModelError(
-                error.Key,
-                error.Value);
+            ModelState.AddModelError(error.Key, error.Value);
         }
     }
 }

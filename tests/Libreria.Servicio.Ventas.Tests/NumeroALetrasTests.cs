@@ -1,6 +1,6 @@
 using Libreria.Servicio.Ventas.Application.Services;
 
-namespace Libreria.Application.Tests;
+namespace Libreria.Servicio.Ventas.Tests;
 
 public class NumeroALetrasTests
 {

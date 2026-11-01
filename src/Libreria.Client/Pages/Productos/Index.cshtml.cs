@@ -1,12 +1,5 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-using Libreria.Application.Services;
+using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Ventas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -14,20 +7,16 @@ namespace Libreria.Client.Pages.Productos;
 
 public class IndexModel : PageModel
 {
-    private readonly IProductoService _service;
-    private readonly ICrudRepository<Producto> _repository;
+    private readonly IVentasApiClient _ventas;
 
-    public IndexModel(
-        IProductoService service,
-        CrudRepositoryFactory<Producto> factory)
+    public IndexModel(IVentasApiClient ventas)
     {
-        _service = service;
-        _repository = factory.CrearRepositorio();
+        _ventas = ventas;
     }
 
-    public IReadOnlyList<ProductoListItem> Productos { get; private set; } = [];
-    public IReadOnlyList<CategoriaOption> Categorias { get; private set; } = [];
-    public IReadOnlyList<MarcaOption> Marcas { get; private set; } = [];
+    public IReadOnlyList<ProductoListItemDto> Productos { get; private set; } = [];
+    public IReadOnlyList<CategoriaOptionDto> Categorias { get; private set; } = [];
+    public IReadOnlyList<MarcaOptionDto> Marcas { get; private set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public string? Busqueda { get; set; }
@@ -40,11 +29,7 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        var listado = await _service.ObtenerListadoAsync(
-            Busqueda,
-            CategoriaId,
-            MarcaId,
-            _repository);
+        var listado = await _ventas.ObtenerProductosAsync(Busqueda, CategoriaId, MarcaId);
 
         Productos = listado.Productos;
         Categorias = listado.Categorias;
@@ -53,7 +38,8 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostDarDeBajaAsync(Guid publicId)
     {
-        if (!await _service.DarDeBajaAsync(publicId, _repository))
+        var resultado = await _ventas.DarDeBajaProductoAsync(publicId);
+        if (!resultado.Exitoso)
         {
             return NotFound();
         }

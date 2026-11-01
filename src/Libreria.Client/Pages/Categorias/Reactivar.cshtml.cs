@@ -1,10 +1,5 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-using System;
-using System.Threading.Tasks;
-
+using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Ventas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -12,21 +7,21 @@ namespace Libreria.Client.Pages.Categorias;
 
 public class ReactivarModel : PageModel
 {
-    private readonly ICrudRepository<Categoria> _repository;
+    private readonly IVentasApiClient _ventas;
 
-    public ReactivarModel(CrudRepositoryFactory<Categoria> factory)
+    public ReactivarModel(IVentasApiClient ventas)
     {
-        _repository = factory.CrearRepositorio();
+        _ventas = ventas;
     }
 
     [BindProperty]
     public Guid PublicId { get; set; }
 
-    public Categoria? Categoria { get; private set; }
+    public CategoriaDto? Categoria { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        Categoria = await _repository.ObtenerPorPublicIdAsync(id, false);
+        Categoria = await _ventas.ObtenerCategoriaAsync(id, false);
         if (Categoria is null)
         {
             return NotFound();
@@ -38,7 +33,8 @@ public class ReactivarModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!await _repository.CambiarEstadoAsync(PublicId, true))
+        var resultado = await _ventas.CambiarEstadoCategoriaAsync(PublicId, true);
+        if (!resultado.Exitoso)
         {
             return NotFound();
         }

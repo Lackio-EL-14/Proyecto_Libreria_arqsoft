@@ -1,8 +1,5 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-
+using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Ventas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -10,48 +7,39 @@ namespace Libreria.Client.Pages.Marcas;
 
 public class ReactivarModel : PageModel
 {
-    private readonly ICrudRepository<Marca> _repository;
+    private readonly IVentasApiClient _ventas;
 
-    public ReactivarModel(CrudRepositoryFactory<Marca> factory)
+    public ReactivarModel(IVentasApiClient ventas)
     {
-        _repository = factory.CrearRepositorio();
+        _ventas = ventas;
     }
 
     [BindProperty]
     public Guid PublicId { get; set; }
 
-    public Marca? Marca { get; private set; }
+    public MarcaDto? Marca { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        Marca = await _repository.ObtenerPorPublicIdAsync(
-            id,
-            estadoEsperado: false);
-
+        Marca = await _ventas.ObtenerMarcaAsync(id, false);
         if (Marca is null)
         {
             return NotFound();
         }
 
         PublicId = Marca.PublicId;
-
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var actualizada = await _repository.CambiarEstadoAsync(
-            PublicId,
-            true);
-
-        if (!actualizada)
+        var resultado = await _ventas.CambiarEstadoMarcaAsync(PublicId, true);
+        if (!resultado.Exitoso)
         {
             return NotFound();
         }
 
-        TempData["MensajeExito"] =
-            "Marca reactivada correctamente.";
-
+        TempData["MensajeExito"] = "Marca reactivada correctamente.";
         return RedirectToPage("./Index");
     }
 }

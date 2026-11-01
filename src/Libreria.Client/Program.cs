@@ -1,18 +1,19 @@
-using Libreria.Domain;
-using Libreria.Application.Ports.Secondary;
 using Libreria.Application.Factories;
-using Libreria.Infrastructure;
-using Libreria.Application.Validators;
-using Libreria.Application.Services;
 using Libreria.Application.Ports.Primary;
-using Libreria.Client.Seguridad;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.DataProtection;
-using Libreria.Infrastructure.Email;
-using Libreria.Infrastructure.Configuration;
+using Libreria.Application.Ports.Secondary;
+using Libreria.Application.Services;
+using Libreria.Application.Validators;
+using Libreria.Client.Clients;
 using Libreria.Client.Clients.Common;
 using Libreria.Client.Clients.DependencyInjection;
+using Libreria.Client.Seguridad;
 using Libreria.Client.Services.Auditoria;
+using Libreria.Domain;
+using Libreria.Infrastructure;
+using Libreria.Infrastructure.Configuration;
+using Libreria.Infrastructure.Email;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,7 @@ builder.Services
 builder.Services
     .AddContextoUsuarioServicios()
     .AddServicioVentas(builder.Configuration)
+    .AddVentasApiClient(builder.Configuration)
     .AddServicioUsuarios(builder.Configuration)
     .AddServicioReportes(builder.Configuration);
 
@@ -45,13 +47,17 @@ builder.Services.AddMemoryCache();
 builder.Services.Configure<SesionActivaOptions>(
     builder.Configuration.GetSection(SesionActivaOptions.SectionName));
 
+
+// ---------------------------------------------------------------------------
+// TEMPORAL: módulo de Usuarios y Cuenta.
+// Sigue funcionando con las bibliotecas antiguas hasta que Grupo 2 lo migre a
+// Libreria.Servicio.Usuarios (US-92/US-93). Entonces se elimina todo este bloque.
+// ---------------------------------------------------------------------------
 builder.Services.AddUsuariosModule();
 
 builder.Services.AddScoped<UsuarioRepositoryFactory, SqlUsuarioRepositoryFactory>();
-
 builder.Services.AddScoped<LoginValidator>();
 builder.Services.AddScoped<PasswordPolicyValidator>();
-
 builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
 
 // Seguridad y Auditoría
@@ -67,7 +73,6 @@ builder.Services.AddScoped<
     Libreria.Client.Services.Auditoria.IAuditoriaService,
     Libreria.Client.Services.Auditoria.AuditoriaService>();
 
-// US-38: Autenticación por cookie de ASP.NET Core
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -85,7 +90,6 @@ builder.Services
         options.EventsType = typeof(ValidarEstadoUsuarioCookieEvents);
     });
 
-
 // US-39: Políticas de autorización por rol
 builder.Services.AddAuthorization(options =>
 {
@@ -98,7 +102,8 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddScoped<ValidarEstadoUsuarioCookieEvents>();
 
-var connectionString = builder.Configuration["DB_CONNECTION_STRING"] 
+// Cadena de conexión que usa el módulo de Usuarios mientras viva en el Front.
+var connectionString = builder.Configuration["DB_CONNECTION_STRING"]
     ?? builder.Configuration.GetConnectionString("LibreriaDb")
     ?? throw new InvalidOperationException("Falta la cadena de conexión");
 
@@ -141,5 +146,4 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-
 }

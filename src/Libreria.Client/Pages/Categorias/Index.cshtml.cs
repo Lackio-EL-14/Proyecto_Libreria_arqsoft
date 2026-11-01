@@ -1,11 +1,5 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
+using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Ventas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -13,14 +7,14 @@ namespace Libreria.Client.Pages.Categorias;
 
 public class IndexModel : PageModel
 {
-    private readonly ICrudRepository<Categoria> _repository;
+    private readonly IVentasApiClient _ventas;
 
-    public IndexModel(CrudRepositoryFactory<Categoria> factory)
+    public IndexModel(IVentasApiClient ventas)
     {
-        _repository = factory.CrearRepositorio();
+        _ventas = ventas;
     }
 
-    public IReadOnlyList<Categoria> Categorias { get; private set; } = [];
+    public IReadOnlyList<CategoriaDto> Categorias { get; private set; } = [];
     public IReadOnlySet<Guid> CategoriasConProductosActivos { get; private set; } = new HashSet<Guid>();
 
     [BindProperty(SupportsGet = true)]
@@ -28,23 +22,18 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        Categorias = await _repository.ObtenerActivasAsync(Busqueda);
+        Categorias = await _ventas.ObtenerCategoriasAsync(Busqueda);
 
-        var categoriasConProductosActivos = new HashSet<Guid>();
-        foreach (var categoria in Categorias)
-        {
-            if (await _repository.TieneRelacionesAsync(categoria.PublicId))
-            {
-                categoriasConProductosActivos.Add(categoria.PublicId);
-            }
-        }
-
-        CategoriasConProductosActivos = categoriasConProductosActivos;
+        CategoriasConProductosActivos = Categorias
+            .Where(categoria => categoria.TieneProductosActivos)
+            .Select(categoria => categoria.PublicId)
+            .ToHashSet();
     }
 
     public async Task<IActionResult> OnPostDarDeBajaAsync(Guid publicId)
     {
-        if (!await _repository.CambiarEstadoAsync(publicId, false))
+        var resultado = await _ventas.CambiarEstadoCategoriaAsync(publicId, false);
+        if (!resultado.Exitoso)
         {
             return NotFound();
         }

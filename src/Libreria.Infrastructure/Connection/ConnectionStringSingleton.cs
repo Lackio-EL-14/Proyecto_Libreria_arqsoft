@@ -1,5 +1,11 @@
+using System;
+using System.Threading;
+
 namespace Libreria.Infrastructure;
 
+// TEMPORAL (puente): el módulo de Usuarios sigue viviendo en estas bibliotecas
+// hasta que pase a Libreria.Servicio.Usuarios (US-92). Cuando eso ocurra,
+// esta carpeta Connection se elimina junto con las bibliotecas antiguas.
 public sealed class ConnectionStringSingleton
 {
     private static readonly Lazy<ConnectionStringSingleton> LazyInstance =

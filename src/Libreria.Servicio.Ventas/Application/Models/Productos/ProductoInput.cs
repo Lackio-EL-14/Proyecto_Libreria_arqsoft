@@ -1,11 +1,8 @@
-using Libreria.Servicio.Ventas.Domain;
-using Libreria.Servicio.Ventas.Application.Models;
-using Libreria.Servicio.Ventas.Application.Ports.Secondary;
-using Libreria.Servicio.Ventas.Application.Factories;
-using Microsoft.AspNetCore.Mvc;
-
 namespace Libreria.Servicio.Ventas.Application.Models;
 
+// Entrada del caso de uso de producto. Es un modelo puro: el enlace de datos
+// (decimales con punto o coma) es responsabilidad de cada adaptador de entrada,
+// no del núcleo de la aplicación.
 public class ProductoInput
 {
     public string Nombre { get; set; } = string.Empty;
@@ -17,10 +14,8 @@ public class ProductoInput
 
     public int Stock { get; set; }
 
-    [ModelBinder(BinderType = typeof(DecimalInvariantModelBinder))]
     public decimal PrecioVenta { get; set; }
 
-    [ModelBinder(BinderType = typeof(DecimalInvariantModelBinder))]
     public decimal CostoAdquisicion { get; set; }
 
     public int CategoriaId { get; set; }

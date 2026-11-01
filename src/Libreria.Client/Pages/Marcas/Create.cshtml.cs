@@ -1,9 +1,5 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
-using Libreria.Application.Validators;
-
+using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Ventas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -11,54 +7,47 @@ namespace Libreria.Client.Pages.Marcas;
 
 public class CreateModel : PageModel
 {
-    private readonly ICrudRepository<Marca> _repository;
-    private readonly MarcaValidator _validator;
+    private readonly IVentasApiClient _ventas;
 
-    public CreateModel(
-        CrudRepositoryFactory<Marca> factory,
-        MarcaValidator validator)
+    public CreateModel(IVentasApiClient ventas)
     {
-        _repository = factory.CrearRepositorio();
-        _validator = validator;
+        _ventas = ventas;
     }
 
     [BindProperty]
     public MarcaInput Input { get; set; } = new();
 
+    public IReadOnlyList<string> Paises { get; private set; } = [];
+
+    public async Task OnGetAsync()
+    {
+        await CargarPaisesAsync();
+    }
+
     public async Task<IActionResult> OnPostAsync()
     {
-        _validator.Normalizar(Input);
-
-        var errores = await _validator.ValidarAsync(Input);
-        AgregarErrores(errores);
-
-        if (!ModelState.IsValid)
+        var resultado = await _ventas.CrearMarcaAsync(Input);
+        if (!resultado.Exitoso)
         {
+            AgregarErrores(resultado.Errores);
+            await CargarPaisesAsync();
             return Page();
         }
 
-        await _repository.CrearAsync(new Marca
-        {
-            Nombre = Input.Nombre,
-            Descripcion = Input.Descripcion,
-            PaisOrigen = Input.PaisOrigen,
-            SitioWeb = Input.SitioWeb
-        });
-
-        TempData["MensajeExito"] =
-            "Marca registrada correctamente.";
-
+        TempData["MensajeExito"] = "Marca registrada correctamente.";
         return RedirectToPage("./Index");
     }
 
-    private void AgregarErrores(
-        IReadOnlyDictionary<string, string> errores)
+    private async Task CargarPaisesAsync()
+    {
+        Paises = await _ventas.ObtenerPaisesMarcaAsync();
+    }
+
+    private void AgregarErrores(IReadOnlyDictionary<string, string> errores)
     {
         foreach (var error in errores)
         {
-            ModelState.AddModelError(
-                error.Key,
-                error.Value);
+            ModelState.AddModelError(error.Key, error.Value);
         }
     }
 }

@@ -1,7 +1,5 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
+using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Ventas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -9,20 +7,20 @@ namespace Libreria.Client.Pages.Historico;
 
 public class IndexModel : PageModel
 {
-    private readonly IHistoricoCostoRepository _repository;
+    private readonly IVentasApiClient _ventas;
 
-    public IndexModel(IHistoricoCostoRepository repository)
+    public IndexModel(IVentasApiClient ventas)
     {
-        _repository = repository;
+        _ventas = ventas;
     }
 
     public Guid PublicId { get; private set; }
     public string? NombreProducto { get; private set; }
     public bool ProductoActivo { get; private set; }
-    public IReadOnlyList<HistoricoCostoItem> Historial { get; private set; } = [];
+    public IReadOnlyList<HistoricoCostoDto> Historial { get; private set; } = [];
     public string? MensajeError { get; private set; }
 
-    public IActionResult OnGet(Guid? publicId)
+    public async Task<IActionResult> OnGetAsync(Guid? publicId)
     {
         if (!publicId.HasValue || publicId.Value == Guid.Empty)
         {
@@ -30,18 +28,17 @@ public class IndexModel : PageModel
             return Page();
         }
 
-        var producto = _repository.ObtenerProducto(publicId.Value);
-
-        if (producto is null)
+        var historico = await _ventas.ObtenerHistoricoAsync(publicId.Value);
+        if (historico is null)
         {
             MensajeError = "El producto solicitado no fue encontrado o no está disponible.";
             return Page();
         }
 
         PublicId = publicId.Value;
-        NombreProducto = producto.Nombre;
-        ProductoActivo = producto.Estado;
-        Historial = _repository.ObtenerHistorico(producto.ProductoId);
+        NombreProducto = historico.Nombre;
+        ProductoActivo = historico.Activo;
+        Historial = historico.Historial;
 
         return Page();
     }
