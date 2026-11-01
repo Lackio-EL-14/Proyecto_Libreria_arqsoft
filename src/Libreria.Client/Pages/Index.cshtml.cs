@@ -2,6 +2,9 @@ using Libreria.Client.Clients;
 using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Libreria.Client.Pages;
 
@@ -20,12 +23,13 @@ public class IndexModel : PageModel
         _authorizationService = authorizationService;
     }
 
-    public int TotalProductos { get; private set; }
-    public int ProductosStockCritico { get; private set; }
-    public int TotalCategorias { get; private set; }
-    public int TotalMarcas { get; private set; }
-    public int TotalPerecederos { get; private set; }
     public bool EsAdministrador { get; private set; }
+    
+    public int TotalProductos { get; set; }
+    public int ProductosStockCritico { get; set; }
+    public int TotalPerecederos { get; set; }
+    public int TotalCategorias { get; set; }
+    public int TotalMarcas { get; set; }
 
     public async Task OnGetAsync()
     {

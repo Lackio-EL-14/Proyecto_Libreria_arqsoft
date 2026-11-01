@@ -1,9 +1,13 @@
 using Libreria.Application.Models;
-using Libreria.Application.Ports.Primary;
 using Libreria.Client.Clients;
 using Libreria.Client.DTOs.Ventas;
+using Libreria.Client.Seguridad;
+using Libreria.Client.Services.Auditoria;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Libreria.Client.Pages.Categorias;
 

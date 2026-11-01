@@ -1,3 +1,6 @@
+using System;
+using System.Threading;
+
 namespace Libreria.Infrastructure;
 
 // TEMPORAL (puente): el módulo de Usuarios sigue viviendo en estas bibliotecas
@@ -8,7 +11,7 @@ public sealed class ConnectionStringSingleton
     private static readonly Lazy<ConnectionStringSingleton> LazyInstance =
         new(() => new ConnectionStringSingleton(), LazyThreadSafetyMode.ExecutionAndPublication);
 
-    private readonly object _bloqueo = new();
+    private readonly object _lock = new();
     private string? _libreriaDb;
 
     private ConnectionStringSingleton()
@@ -27,10 +30,10 @@ public sealed class ConnectionStringSingleton
             throw new ArgumentException("La cadena de conexión no puede estar vacía.", nameof(cadenaConexion));
         }
 
-        lock (_bloqueo)
+        lock (_lock)
         {
-            if (_libreriaDb is not null
-                && !string.Equals(_libreriaDb, cadenaConexion, StringComparison.Ordinal))
+            if (_libreriaDb is not null &&
+                !string.Equals(_libreriaDb, cadenaConexion, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException("La cadena de conexión ya fue configurada.");
             }

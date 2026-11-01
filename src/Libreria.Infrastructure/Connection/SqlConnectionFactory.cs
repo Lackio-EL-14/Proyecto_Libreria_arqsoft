@@ -5,7 +5,7 @@ using Microsoft.Data.SqlClient;
 namespace Libreria.Infrastructure;
 
 // TEMPORAL (puente): ver ConnectionStringSingleton.
-public class SqlConnectionFactory : IDbConnectionFactory
+public sealed class SqlConnectionFactory : IDbConnectionFactory
 {
     private readonly ConnectionStringSingleton _connectionStrings;
 

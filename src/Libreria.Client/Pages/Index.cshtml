@@ -9,111 +9,36 @@
     <img src="~/images/icono.svg" alt="Logotipo Librería" class="home-hero__logo" />
     <div>
         <h1>Sistema de Gestión de Librería</h1>
-        <p>Panel de control operativo, catálogo de inventario, métricas clave y auditoría de costos.</p>
+        <p>Acceso central a los servicios de ventas, usuarios y reportes.</p>
     </div>
 </header>
 
-@if (!Model.EsAdministrador)
-{
-    @* US-39: el Vendedor no ve indicadores ni accesos de inventario *@
-    <section class="dashboard-panel">
-        <div class="dashboard-panel__header">
-            <h2>Bienvenido, @(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity?.Name)</h2>
-            <p>Use la sección <strong>Ventas</strong> del menú para registrar y consultar ventas.</p>
-        </div>
-    </section>
-}
-else
-{
-@* Sección de Indicadores Clave (KPIs / Widgets) *@
-<section class="kpi-grid" aria-label="Indicadores clave del sistema">
-    <!-- Widget 1: Total Productos Activos -->
-    <article class="kpi-card">
-        <div class="kpi-card__icon kpi-card__icon--primary">📦</div>
-        <div class="kpi-card__info">
-            <span class="kpi-card__label">Total Productos Activos</span>
-            <span class="kpi-card__value">@Model.TotalProductos</span>
-            <span class="kpi-card__hint">@(Model.TotalPerecederos) perecederos registrados</span>
-        </div>
-        <a asp-page="/Productos/Index" class="kpi-card__link" title="Ver catálogo de productos">Ir al catálogo →</a>
-    </article>
-
-    <!-- Widget 2: Stock Crítico / Alerta -->
-    <article class="kpi-card @(Model.ProductosStockCritico > 0 ? "kpi-card--warning" : "")">
-        <div class="kpi-card__icon @(Model.ProductosStockCritico > 0 ? "kpi-card__icon--warning" : "kpi-card__icon--primary")">⚠️</div>
-        <div class="kpi-card__info">
-            <span class="kpi-card__label">Stock Crítico (≤ 5 un.)</span>
-            <span class="kpi-card__value @(Model.ProductosStockCritico > 0 ? "text-warning" : "")">@Model.ProductosStockCritico</span>
-            <span class="kpi-card__hint">@(Model.ProductosStockCritico > 0 ? "Requieren reposición urgente" : "Niveles de stock óptimos")</span>
-        </div>
-        <a asp-page="/Productos/Index" class="kpi-card__link" title="Consultar productos">Revisar stock →</a>
-    </article>
-
-    <!-- Widget 3: Categorías Activas -->
-    <article class="kpi-card">
-        <div class="kpi-card__icon kpi-card__icon--accent">🏷️</div>
-        <div class="kpi-card__info">
-            <span class="kpi-card__label">Categorías Activas</span>
-            <span class="kpi-card__value">@Model.TotalCategorias</span>
-            <span class="kpi-card__hint">Organización y ubicaciones</span>
-        </div>
-        <a asp-page="/Categorias/Index" class="kpi-card__link" title="Gestionar categorías">Ver categorías →</a>
-    </article>
-
-    <!-- Widget 4: Marcas Registradas -->
-    <article class="kpi-card">
-        <div class="kpi-card__icon kpi-card__icon--primary">🏢</div>
-        <div class="kpi-card__info">
-            <span class="kpi-card__label">Marcas Registradas</span>
-            <span class="kpi-card__value">@Model.TotalMarcas</span>
-            <span class="kpi-card__hint">Fabricantes y proveedores</span>
-        </div>
-        <a asp-page="/Marcas/Index" class="kpi-card__link" title="Gestionar marcas">Ver marcas →</a>
-    </article>
-</section>
-
-@* Accesos Rápidos del Catálogo e Histórico *@
 <section class="dashboard-panel">
     <div class="dashboard-panel__header">
-        <h2>⚡ Acciones Operativas Rápidas</h2>
-        <p>Acceso directo a las tareas frecuentes del catálogo e inventario.</p>
+        <h2>Bienvenido, @(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity?.Name)</h2>
+        <p>El Front está preparado para consumir los módulos mediante sus APIs independientes.</p>
     </div>
     <div class="quick-actions-grid">
-        <a asp-page="/Productos/Create" class="quick-action-item">
-            <span class="quick-action-item__icon">➕</span>
+        <div class="quick-action-item">
+            <span class="quick-action-item__icon">🧾</span>
             <div>
-                <strong>Registrar Producto</strong>
-                <p>Alta de nuevo artículo en catálogo</p>
+                <strong>Servicio de Ventas</strong>
+                <p>Puerto configurado en http://localhost:5101</p>
             </div>
-        </a>
-        <a asp-page="/Productos/Index" class="quick-action-item">
-            <span class="quick-action-item__icon">🔍</span>
+        </div>
+        <div class="quick-action-item">
+            <span class="quick-action-item__icon">👤</span>
             <div>
-                <strong>Consultar Inventario</strong>
-                <p>Búsqueda y filtros por categoría/marca</p>
+                <strong>Servicio de Usuarios</strong>
+                <p>Puerto configurado en http://localhost:5102</p>
             </div>
-        </a>
-        <a asp-page="/Categorias/Create" class="quick-action-item">
-            <span class="quick-action-item__icon">🏷️</span>
-            <div>
-                <strong>Nueva Categoría</strong>
-                <p>Asignación de ubicación en almacén</p>
-            </div>
-        </a>
-        <a asp-page="/Marcas/Create" class="quick-action-item">
-            <span class="quick-action-item__icon">🏢</span>
-            <div>
-                <strong>Nueva Marca</strong>
-                <p>Registro de proveedor o fabricante</p>
-            </div>
-        </a>
-        <a asp-page="/Historico/Index" class="quick-action-item">
+        </div>
+        <div class="quick-action-item">
             <span class="quick-action-item__icon">📈</span>
             <div>
-                <strong>Histórico de Costos</strong>
-                <p>Auditoría de variaciones de precios</p>
+                <strong>Servicio de Reportes</strong>
+                <p>Puerto configurado en http://localhost:5103</p>
             </div>
-        </a>
+        </div>
     </div>
 </section>
-}

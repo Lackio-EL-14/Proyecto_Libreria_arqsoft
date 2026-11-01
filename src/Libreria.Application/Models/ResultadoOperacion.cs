@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace Libreria.Application.Models;
 
-public record ResultadoOperacion(
+public sealed record ResultadoOperacion(
     bool Exitoso,
     bool NoEncontrado,
     IReadOnlyDictionary<string, string> Errores)

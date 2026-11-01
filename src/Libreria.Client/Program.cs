@@ -4,7 +4,10 @@ using Libreria.Application.Ports.Secondary;
 using Libreria.Application.Services;
 using Libreria.Application.Validators;
 using Libreria.Client.Clients;
+using Libreria.Client.Clients.Common;
+using Libreria.Client.Clients.DependencyInjection;
 using Libreria.Client.Seguridad;
+using Libreria.Client.Services.Auditoria;
 using Libreria.Domain;
 using Libreria.Infrastructure;
 using Libreria.Infrastructure.Configuration;
@@ -23,17 +26,27 @@ builder.Services
         options.Conventions.AuthorizeFolder("/Marcas", PoliticasAcceso.SoloAdministrador);
         options.Conventions.AuthorizeFolder("/Productos", PoliticasAcceso.SoloAdministrador);
         options.Conventions.AuthorizeFolder("/Historico", PoliticasAcceso.SoloAdministrador);
+        options.Conventions.AuthorizeFolder("/Reportes", PoliticasAcceso.SoloAdministrador);
 
         options.Conventions.AuthorizeFolder("/Ventas", PoliticasAcceso.Ventas);
     })
     .AddMvcOptions(options =>
-        options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
+    {
+        options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+        options.Filters.Add<ServicioNoDisponibleFilter>();
+    });
 
-// ---------------------------------------------------------------------------
-// SBA: el Front consume el Servicio de Ventas por REST (US-83).
-// La URL se configura en appsettings: Servicios:Ventas:BaseUrl
-// ---------------------------------------------------------------------------
-builder.Services.AddServicioVentas(builder.Configuration);
+builder.Services
+    .AddContextoUsuarioServicios()
+    .AddServicioVentas(builder.Configuration)
+    .AddVentasApiClient(builder.Configuration)
+    .AddServicioUsuarios(builder.Configuration)
+    .AddServicioReportes(builder.Configuration);
+
+builder.Services.AddMemoryCache();
+builder.Services.Configure<SesionActivaOptions>(
+    builder.Configuration.GetSection(SesionActivaOptions.SectionName));
+
 
 // ---------------------------------------------------------------------------
 // TEMPORAL: módulo de Usuarios y Cuenta.
@@ -41,20 +54,24 @@ builder.Services.AddServicioVentas(builder.Configuration);
 // Libreria.Servicio.Usuarios (US-92/US-93). Entonces se elimina todo este bloque.
 // ---------------------------------------------------------------------------
 builder.Services.AddUsuariosModule();
+
 builder.Services.AddScoped<UsuarioRepositoryFactory, SqlUsuarioRepositoryFactory>();
 builder.Services.AddScoped<LoginValidator>();
 builder.Services.AddScoped<PasswordPolicyValidator>();
 builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
 
+// Seguridad y Auditoría
 builder.Services.AddDataProtection()
-    .SetApplicationName("Libreria");
+    .SetApplicationName("Libreria.Client");
 
-builder.Services.AddScoped<IUrlProtector, Libreria.Infrastructure.Security.UrlProtector>();
+builder.Services.AddScoped<IUrlProtector, UrlProtector>();
 builder.Services.AddScoped<IContrasenaHasher, Libreria.Infrastructure.Security.ContrasenaHasher>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUsuarioActual, Libreria.Infrastructure.Security.UsuarioActual>();
-builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
+builder.Services.AddScoped<
+    Libreria.Client.Services.Auditoria.IAuditoriaService,
+    Libreria.Client.Services.Auditoria.AuditoriaService>();
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -66,6 +83,8 @@ builder.Services
         options.Cookie.Name = "Libreria.Sesion";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.IsEssential = true;
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
         options.EventsType = typeof(ValidarEstadoUsuarioCookieEvents);

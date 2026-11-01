@@ -1,251 +1,204 @@
-```markdown
-# Sistema de inventario y ventas — Librería (Escalado Horizontalmente)
+# Sistema de inventario y ventas — Librería
 
-Proyecto académico: Razor Pages + C# + ADO.NET sobre .NET 10, escalado horizontalmente con Nginx, Redis y SQL Server usando Docker Compose. Aplica Arquitectura Hexagonal (Puertos y Adaptadores), Clean Code y principios SOLID.
+Solución académica en C# y .NET 10 que separa el sistema en un Front Razor Pages y tres servicios HTTP. SQL Server es compartido durante esta etapa del proyecto.
 
-## Estructura del repo
+## Arquitectura actual
 
-```text
-Proyecto_Libreria_arqsoft/
-├── docker-compose.yml       # Orquestador del clúster (Nginx, 4x Apps, Redis, BD)
-├── nginx.conf               # Configuración del proxy inverso y balanceador
-├── .env.example             # Plantilla de variables de entorno seguras
-├── db/
-│   └── init/                # Scripts SQL de inicialización numerados (ej. 00_schema.sql)
-└── src/
-    ├── Libreria.Client/         # Adaptador Primario (UI - Razor Pages)
-    ├── Libreria.Application/    # Núcleo: Casos de uso, Puertos, Fachadas, Validadores
-    ├── Libreria.Infrastructure/ # Adaptador Secundario: ADO.NET, Redis, DataProtection
-    └── Libreria.Domain/         # Núcleo Puro: Entidades y reglas de dominio
+| Proceso | Proyecto | Puerto |
+| --- | --- | --- |
+| Front | `src/Libreria.Client` | 5000 |
+| Ventas e inventario | `src/Libreria.Servicio.Ventas` | 5101 |
+| Usuarios y autenticación | `src/Libreria.Servicio.Usuarios` | 5102 |
+| Reportes | `src/Libreria.Servicio.Reportes` | 5103 |
+| SQL Server | `docker-compose.yml` | 1433 |
 
+Docker Compose levanta únicamente SQL Server. El Front y los servicios se ejecutan como proyectos .NET independientes. En este sprint no se usan Nginx, Redis ni réplicas de la aplicación.
+
+El Front no debe agregar referencias de proyecto a los servicios. La comunicación se realiza por HTTP, con DTOs propios del Front y clientes registrados mediante `IHttpClientFactory`.
+
+## Requisitos
+
+- .NET 10 SDK.
+- Docker Desktop abierto.
+- Git.
+- Visual Studio con la carga de trabajo ASP.NET y desarrollo web.
+
+Comprueba la instalación:
+
+```powershell
+dotnet --version
+docker --version
+docker compose version
 ```
 
-## 1. Requisitos previos (instalar una sola vez)
+## Preparar el repositorio
 
-* [Docker Desktop](https://www.docker.com/products/docker-desktop/) — verificar con `docker --version`
-* [Docker Compose](https://docs.docker.com/compose/) — verificar con `docker compose version`
-* Git
-* Editor: Visual Studio, VS Code (con la extensión C# Dev Kit) o Rider.
-
-## 2. Clonar el repositorio y configuración inicial
-
-```bash
-git clone [https://github.com/Lackio-EL-14/Proyecto_Libreria_arqsoft.git](https://github.com/Lackio-EL-14/Proyecto_Libreria_arqsoft.git)
-cd Proyecto_Libreria_arqsoft
+```powershell
 git switch develop
 git pull origin develop
-
+dotnet restore LibreriaSystem.slnx
 ```
 
-Antes de compilar, debes configurar las variables de entorno para que los contenedores puedan comunicarse:
+## Levantar SQL Server
 
-```bash
-cp .env.example .env
+Desde la raíz del repositorio:
 
-```
-
-*(Opcional: Edita el archivo `.env` si necesitas cambiar la contraseña de SQL Server o configurar las credenciales SMTP para la activación de usuarios).*
-
-## 3. Levantar la Aplicación (El Clúster)
-
-Abre **Docker Desktop manualmente** y espera hasta que indique que el motor está en ejecución. Construye la imagen optimizada y levanta los 7 contenedores en segundo plano:
-
-```bash
-docker compose up -d --build
-
-```
-
-El clúster incluye:
-
-* 1 Proxy Inverso (Nginx) balanceando en Round-Robin.
-* 4 Réplicas de la aplicación web (`app1`, `app2`, `app3`, `app4`).
-* 1 Base de datos SQL Server.
-* 1 Servidor Redis para caché distribuida.
-
-Verifica que todos estén saludables (`Up` o `Healthy`):
-
-```bash
+```powershell
+docker compose up -d
 docker compose ps
-
 ```
 
-## 4. Inicializar la Base de Datos
+Espera hasta que `libreria-db` aparezca como `healthy`. Después ejecuta los scripts versionados en orden:
 
-En la primera ejecución (o si destruyes los volúmenes), la base de datos nace vacía. Inyecta el esquema y los datos semilla ejecutando este comando, el cual leerá todos los scripts de la carpeta `db/init/` en orden:
-
-```bash
-docker exec -it libreria-db bash -c 'for f in /scripts/*.sql; do echo "Ejecutando $f..."; /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Libreria2026!" -C -i "$f"; done'
-
+```powershell
+docker exec libreria-db bash -c 'for f in /scripts/*.sql; do echo "Ejecutando $f..."; /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Libreria2026!" -C -b -i "$f" || exit 1; done'
 ```
 
-*(Asegúrate de que la contraseña coincida con la que pusiste en tu archivo `.env`).*
+Los scripts son idempotentes y pueden actualizar una base existente. No uses `docker compose down -v` para una actualización normal porque elimina el volumen y sus datos.
 
-## 5. Acceso y Uso
+## Configuración obligatoria de Usuarios
 
-* **Aplicación Web:** Navega a [http://localhost:3000](http://localhost:3000). Nginx recibirá tu petición y la enviará a una de las réplicas disponibles.
-* **Sesiones compartidas:** La cookie contiene una referencia protegida y el ticket autenticado se almacena en Redis. Cualquier réplica puede recuperarlo. El volumen de Data Protection comparte las claves que protegen la cookie y Redis comparte la sesión.
+El Servicio de Usuarios no guarda contraseñas ni cadenas de conexión en Git. Cada integrante debe ejecutar una vez:
 
-### Usuarios de prueba
+```powershell
+dotnet user-secrets set "ConnectionStrings:LibreriaDb" "Server=localhost,1433;Database=LibreriaDb;User Id=sa;Password=Libreria2026!;TrustServerCertificate=True;" --project src/Libreria.Servicio.Usuarios
+```
+
+Comprueba que quedó configurado:
+
+```powershell
+dotnet user-secrets list --project src/Libreria.Servicio.Usuarios
+```
+
+Visual Studio y `dotnet run` leen automáticamente ese secreto cuando el ambiente es `Development`. Un archivo `.env` de la raíz solo es leído automáticamente por Docker Compose; las aplicaciones .NET no lo cargan por sí solas.
+
+### Correo de activación en desarrollo
+
+En Development no hace falta una cuenta de Gmail. S2 usa `PickupDirectory` y guarda cada correo como archivo `.eml` dentro de:
+
+```text
+src/Libreria.Servicio.Usuarios/bin/Development/mail
+```
+
+Abre el archivo generado y usa el enlace de activación. Esto permite demostrar el flujo sin internet ni contraseña SMTP.
+
+Para enviar correos reales con Gmail, configura secretos y usa una contraseña de aplicación de Google, no la contraseña normal de la cuenta:
+
+```powershell
+dotnet user-secrets set "EMAIL_DELIVERY_MODE" "Smtp" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_HOST" "smtp.gmail.com" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_PORT" "587" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_USER" "correo@gmail.com" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_PASS" "contraseña-de-aplicación" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_FROM" "correo@gmail.com" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "BASE_URL" "http://localhost:5000" --project src/Libreria.Servicio.Usuarios
+```
+
+## Ejecutar desde Visual Studio
+
+1. Abre `LibreriaSystem.slnx`.
+2. En las propiedades de la solución, selecciona varios proyectos de inicio.
+3. Configura con acción **Iniciar**:
+   - `Libreria.Servicio.Ventas`
+   - `Libreria.Servicio.Usuarios`
+   - `Libreria.Servicio.Reportes`
+   - `Libreria.Client`
+4. Inicia sin depuración o con depuración.
+5. Abre `http://localhost:5000`.
+
+## Ejecutar manualmente
+
+Abre cuatro terminales en la raíz del repositorio.
+
+Terminal 1:
+
+```powershell
+dotnet run --project src/Libreria.Servicio.Ventas --launch-profile http
+```
+
+Terminal 2:
+
+```powershell
+dotnet run --project src/Libreria.Servicio.Usuarios --launch-profile http
+```
+
+Terminal 3:
+
+```powershell
+dotnet run --project src/Libreria.Servicio.Reportes --launch-profile http
+```
+
+Terminal 4:
+
+```powershell
+dotnet run --project src/Libreria.Client --launch-profile Libreria.Client
+```
+
+## Base compartida del Front — US-80
+
+La estructura preparada para cada módulo es:
+
+```text
+src/Libreria.Client/
+├── Clients/
+│   ├── Ventas/
+│   ├── Usuarios/
+│   ├── Reportes/
+│   ├── Common/
+│   └── DependencyInjection/
+├── DTOs/
+│   ├── Ventas/
+│   ├── Usuarios/
+│   └── Reportes/
+└── Pages/
+    ├── Ventas/
+    ├── Usuarios/
+    └── Reportes/
+```
+
+Los endpoints base viven en `src/Libreria.Client/appsettings.json`. `Program.cs` registra cada módulo mediante:
+
+```csharp
+AddServicioVentas(configuration)
+AddServicioUsuarios(configuration)
+AddServicioReportes(configuration)
+```
+
+Cada solicitud autenticada realizada por esos clientes envía:
+
+- `X-Usuario-Id`
+- `X-Usuario-Nombre`
+
+El valor procede exclusivamente de los claims reales de la cookie. No existe usuario fijo de desarrollo. El login del Front llama a `POST api/auth/login` de S2 y la vigencia de la cookie se revisa mediante `GET api/usuarios/{id}/sesion-activa`, con una caché local de 20 segundos.
+
+`AuditoriaService` vive en el Front y convierte los identificadores de auditoría en nombres mediante `GET api/usuarios/nombres`. Ventas y Reportes no deben consultar directamente la tabla `Usuario`.
+
+Si un servicio no responde, el Front redirige a una pantalla uniforme de servicio no disponible. Las respuestas HTTP con error se convierten en `ApiClientException`, conservando el código de estado y el mensaje de `ProblemDetails`.
+
+## Reglas para continuar el sprint
+
+- Cada módulo coloca sus DTOs y clientes en su carpeta; no modifica las carpetas de otro grupo.
+- No se comparten entidades de dominio entre Front y servicios.
+- Los servicios exponen JSON mediante rutas `api/<recurso>`.
+- Se usan `Guid PublicId` en los contratos HTTP; no se exponen identificadores internos.
+- Los códigos esperados son 200, 201, 400, 404 y 409.
+- Los errores de API usan `ProblemDetails`.
+- Las fechas se envían en ISO 8601 y los decimales como números JSON.
+- Las URLs y credenciales se obtienen de configuración; no se escriben secretos en el repositorio.
+
+Las páginas antiguas de Ventas, Productos, Categorías, Marcas e Histórico permanecen versionadas como referencia, pero están temporalmente excluidas de la compilación. US-83 debe migrarlas a los clientes HTTP y retirar esas exclusiones del archivo `Libreria.Client.csproj`. El login ya consume S2; las demás páginas de Usuarios se migran en US-95 a US-98.
+
+## Validación
+
+```powershell
+dotnet build LibreriaSystem.slnx
+dotnet test tests/Libreria.Application.Tests/Libreria.Application.Tests.csproj
+dotnet test tests/Libreria.Servicio.Usuarios.Tests/Libreria.Servicio.Usuarios.Tests.csproj
+```
+
+Usuarios de datos semilla:
 
 | Usuario | Contraseña | Rol |
 | --- | --- | --- |
 | `admin` | `Admin2026!` | Administrador |
 | `vendedor` | `Vendedor2026!` | Vendedor |
-
-## 6. Comandos Útiles de Mantenimiento
-
-**Ver logs en tiempo real (de todo el clúster):**
-
-```bash
-docker compose logs -f
-
-```
-
-**Comprobar la caché distribuida de productos activos:**
-
-La clave lógica `productos:activos` usa el prefijo configurado `libreria:`, por lo que Redis la almacena como `libreria:productos:activos` durante cinco minutos.
-
-```bash
-docker exec libreria-redis redis-cli TYPE libreria:productos:activos
-docker exec libreria-redis redis-cli TTL libreria:productos:activos
-docker exec libreria-redis redis-cli HGET libreria:productos:activos data
-docker compose logs app1 app2 app3 app4
-```
-
-**Comprobar las sesiones distribuidas:**
-
-```bash
-docker exec libreria-redis redis-cli SCAN 0 MATCH "libreria:sesiones:*" COUNT 100
-docker exec libreria-redis redis-cli TYPE <clave-de-sesion>
-docker exec libreria-redis redis-cli TTL <clave-de-sesion>
-docker compose logs app1 app2 app3 app4
-```
-
-No muestres el campo `data` de una sesión: contiene el ticket autenticado serializado. `SCAN` y `TTL` son suficientes para demostrar que la sesión vive en Redis y es compartida entre réplicas.
-
-### Visor de diagnóstico Redis (US-64)
-
-1. Inicia sesión como `admin`.
-2. Abre [http://localhost:3000/Diagnostico/Cache](http://localhost:3000/Diagnostico/Cache). La vista se actualiza cada dos segundos.
-3. En otra pestaña abre **Productos**. La primera consulta después de eliminar o expirar la clave muestra `MISS` con origen `SQL`; la siguiente muestra `HIT` con origen `Redis`.
-4. Compara la réplica de cada resultado para demostrar que la caché es compartida entre los contenedores.
-
-La entrada de `IDistributedCache` es un `hash` de Redis. Por eso `GET` informa `WRONGTYPE` y el JSON se inspecciona con `HGET ... data`:
-
-```bash
-docker exec libreria-redis redis-cli SCAN 0 MATCH "libreria:*" COUNT 100
-docker exec libreria-redis redis-cli TYPE libreria:productos:activos
-docker exec libreria-redis redis-cli GET libreria:productos:activos
-docker exec libreria-redis redis-cli HGET libreria:productos:activos data
-docker exec libreria-redis redis-cli TTL libreria:productos:activos
-docker exec libreria-redis redis-cli DEL libreria:productos:activos
-```
-
-Para observar los eventos estructurados en tiempo real:
-
-```bash
-docker compose logs -f app1 app2 app3 app4
-```
-
-Los eventos `Sesion Redis CREADA`, `Sesion Redis LECTURA` y `Sesion Redis ELIMINADA` incluyen la réplica y la duración. Las operaciones normales deben tardar muy por debajo de un segundo. La conexión es única y compartida por las sesiones, la caché de consultas y el diagnóstico; no se crea una conexión nueva por petición. La resolución DNS explícita está desactivada y los timeouts de conexión y operación son configurables, con un valor predeterminado de 1000 ms.
-
-Para revisar Redis cuando se sospeche una demora:
-
-```bash
-docker exec libreria-redis redis-cli PING
-docker exec libreria-redis redis-cli LATENCY LATEST
-docker exec libreria-redis redis-cli SLOWLOG GET 10
-docker exec libreria-app1 getent hosts redis
-docker compose logs --since=5m app1 app2 app3 app4 redis
-```
-
-No agregues `family=InterNetwork` a la cadena de conexión: esa palabra clave no está soportada. El hostname correcto dentro de Docker es `redis:6379`, no `localhost:6379`.
-
-**Reiniciar sistema con Base de Datos limpia (Destructivo):**
-
-```bash
-docker compose down -v
-docker build -t libreria-app .
-docker compose up -d
-docker exec libreria-db bash -c 'for f in /scripts/*.sql; do echo "Ejecutando $f..."; /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Libreria2026!" -C -b -i "$f" || exit 1; done'
-
-```
-
-**Prueba de Alta Disponibilidad (Failover):**
-
-```bash
-docker compose stop app2  # Detiene un nodo; Nginx redireccionará el tráfico
-docker compose start app2 # Recupera el nodo
-
-```
-
-## 7. Componente Compartido: Modal de Confirmación (US-28)
-
-Para realizar bajas lógicas o acciones críticas sin redirigir a páginas completas, se utiliza el componente compartido `_ConfirmModal.cshtml`.
-
-### Cómo invocar el Modal desde cualquier vista Razor
-
-1. **Importar el namespace de modelos:**
-```cshtml
-@using Libreria.Client.Pages.Shared.Models
-
-```
-
-
-2. **Crear el botón disparador en la tabla o interfaz:**
-```cshtml
-<button
-    type="button"
-    class="btn-table btn-table--danger"
-    data-confirm-trigger
-    data-modal-target="mi-modal-id"
-    data-entity-id="@item.PublicId"
-    data-entity-name="@item.Nombre"
-    data-has-warning="false">
-    Dar de baja
-</button>
-
-```
-
-
-3. **Renderizar la vista parcial al final del archivo `.cshtml`:**
-```cshtml
-@await Html.PartialAsync(
-    "_ConfirmModal",
-    new ConfirmModalModel
-    {
-        Id = "mi-modal-id",
-        Titulo = "Confirmar baja de registro",
-        MensajePrincipal = "¿Está seguro de dar de baja el registro",
-        Handler = "DarDeBaja",
-        CampoIdentificador = "publicId",
-        TextoBotonConfirmar = "Confirmar baja",
-        TextoBotonCancelar = "Cancelar",
-        MensajeAdvertencia = "Esta acción desactivará el elemento del catálogo activo."
-    })
-
-```
-
-
-4. **Recibir la petición en el `PageModel` (`.cshtml.cs`):**
-```csharp
-public async Task<IActionResult> OnPostDarDeBajaAsync(string publicId)
-{
-    // Lógica de descifrado US-36 y baja...
-    TempData["MensajeExito"] = "Registro dado de baja correctamente.";
-    return RedirectToPage("./Index");
-}
-
-```
-
-
-
-## 8. Notas de diseño y Arquitectura
-
-* **Escalamiento Horizontal:** El estado de la aplicación no reside en la memoria del contenedor. Las sesiones, tokens Antiforgery y criptografía están centralizados, permitiendo balanceo dinámico sin pérdida de datos.
-* **Inversión de Dependencias (SOLID):** El núcleo de la aplicación (`Libreria.Application` y `Libreria.Domain`) no contiene referencias a Entity Framework, SQL Server, Redis o Nginx.
-* **Patrón Facade:** Operaciones complejas transaccionales como la Venta se orquestan a través de interfaces (`IVentaFacade`), ocultando la complejidad a la capa de UI.
-
-```
-
-```

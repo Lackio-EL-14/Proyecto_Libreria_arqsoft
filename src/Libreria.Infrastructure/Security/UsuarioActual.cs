@@ -1,12 +1,13 @@
-using System.Security.Claims;
+using System.Globalization;
+using System.Linq;
 using Libreria.Application.Ports.Secondary;
 using Microsoft.AspNetCore.Http;
 
 namespace Libreria.Infrastructure.Security;
 
-// TEMPORAL (puente): lee el usuario desde los claims de la cookie para el módulo
+// TEMPORAL (puente): lee el usuario desde el header HTTP para el módulo
 // de Usuarios que aún vive en el Front. Se elimina con US-92/US-93.
-public class UsuarioActual : IUsuarioActual
+public sealed class UsuarioActual : IUsuarioActual
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -19,13 +20,18 @@ public class UsuarioActual : IUsuarioActual
     {
         get
         {
-            var valor = _httpContextAccessor.HttpContext?.User
-                .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var valor = _httpContextAccessor.HttpContext?.Request
+                .Headers["X-Usuario-Id"]
+                .FirstOrDefault();
 
-            return int.TryParse(valor, out var usuarioId)
+            return int.TryParse(
+                    valor,
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out var usuarioId) &&
+                usuarioId > 0
                 ? usuarioId
                 : null;
         }
     }
-
 }

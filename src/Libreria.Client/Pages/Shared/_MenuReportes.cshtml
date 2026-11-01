@@ -1,0 +1,12 @@
+@model Libreria.Client.Pages.Shared.Models.MenuModuleViewModel
+
+@if (Model.EsAdministrador)
+{
+    <div class="sidebar-section">
+        <span class="sidebar-section__title">Reportes</span>
+        <a class="sidebar-link @Model.ActiveClass("/Reportes")" asp-page="/Reportes/Index" title="Reportes del sistema">
+            <span class="sidebar-link__icon" aria-hidden="true">📈</span>
+            <span class="sidebar-link__text">Reportes</span>
+        </a>
+    </div>
+}

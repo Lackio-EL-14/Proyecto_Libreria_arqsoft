@@ -1,7 +1,3 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
