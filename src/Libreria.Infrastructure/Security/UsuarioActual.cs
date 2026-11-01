@@ -28,6 +28,4 @@ public class UsuarioActual : IUsuarioActual
         }
     }
 
-    public string Nombre =>
-        _httpContextAccessor.HttpContext?.User.Identity?.Name ?? string.Empty;
 }
