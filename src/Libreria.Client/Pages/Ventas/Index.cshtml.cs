@@ -1,7 +1,7 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Primary;
+using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Ventas;
 using Libreria.Client.Seguridad;
+using Libreria.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,17 +10,17 @@ namespace Libreria.Client.Pages.Ventas;
 
 public class IndexModel : PageModel
 {
-    private readonly IVentaFacade _ventaFacade;
+    private readonly IVentasApiClient _ventasApiClient;
 
-    public IndexModel(IVentaFacade ventaFacade)
+    public IndexModel(IVentasApiClient ventasApiClient)
     {
-        _ventaFacade = ventaFacade;
+        _ventasApiClient = ventasApiClient;
     }
 
     [BindProperty(SupportsGet = true)]
-    public FiltroVentasInput Filtro { get; set; } = new();
+    public FiltroVentasModel Filtro { get; set; } = new();
 
-    public IReadOnlyList<VentaListItemModel> Ventas { get; private set; } = new List<VentaListItemModel>();
+    public IReadOnlyList<VentaListItemDto> Ventas { get; private set; } = new List<VentaListItemDto>();
 
     public bool EsAdministrador => User.IsInRole(RolesSistema.Administrador);
 
@@ -35,11 +35,14 @@ public class IndexModel : PageModel
         if (Filtro.FechaDesde.HasValue && Filtro.FechaHasta.HasValue && Filtro.FechaDesde.Value > Filtro.FechaHasta.Value)
         {
             MensajeError = "La 'Fecha desde' debe ser anterior o igual a la 'Fecha hasta'.";
-            Ventas = new List<VentaListItemModel>();
+            Ventas = new List<VentaListItemDto>();
             return;
         }
 
-        Ventas = await _ventaFacade.ObtenerListadoAsync(Filtro);
+        Ventas = await _ventasApiClient.ObtenerVentasAsync(
+            Filtro.Estado,
+            Filtro.FechaDesde,
+            Filtro.FechaHasta);
     }
 
     public async Task<IActionResult> OnGetDetalleAsync(Guid publicId)
@@ -49,7 +52,7 @@ public class IndexModel : PageModel
             return BadRequest(new { mensaje = "Identificador de venta inválido." });
         }
 
-        var detalle = await _ventaFacade.ObtenerDetalleCompletoAsync(publicId, EsAdministrador);
+        var detalle = await _ventasApiClient.ObtenerDetalleVentaAsync(publicId, EsAdministrador);
 
         if (detalle is null)
         {
@@ -72,26 +75,28 @@ public class IndexModel : PageModel
             return RedirectToPage(ObtenerValoresRutaFiltro());
         }
 
-        try
+        if (string.IsNullOrWhiteSpace(motivoAnulacion) || motivoAnulacion.Trim().Length < 10 || motivoAnulacion.Trim().Length > 250)
         {
-            await _ventaFacade.AnularVentaAsync(publicId, motivoAnulacion);
+            MensajeError = "El motivo de la anulación debe tener entre 10 y 250 caracteres.";
+            return RedirectToPage(ObtenerValoresRutaFiltro());
+        }
+
+        var resultado = await _ventasApiClient.AnularVentaAsync(publicId, motivoAnulacion.Trim());
+
+        if (resultado.Exitoso)
+        {
             MensajeExito = "La venta fue anulada exitosamente y el stock ha sido restaurado.";
         }
-        catch (ArgumentException ex)
+        else if (resultado.NoEncontrado)
         {
-            MensajeError = ex.Message;
+            MensajeError = "La venta especificada no existe.";
         }
-        catch (InvalidOperationException ex)
+        else
         {
-            MensajeError = ex.Message;
-        }
-        catch (KeyNotFoundException ex)
-        {
-            MensajeError = ex.Message;
-        }
-        catch (Exception)
-        {
-            MensajeError = "Ocurrió un error inesperado al intentar anular la venta.";
+            var primerError = resultado.Errores.Values.FirstOrDefault();
+            MensajeError = !string.IsNullOrWhiteSpace(primerError)
+                ? primerError
+                : "No se pudo anular la venta. Intente nuevamente.";
         }
 
         return RedirectToPage(ObtenerValoresRutaFiltro());

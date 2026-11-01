@@ -2,8 +2,6 @@ using Libreria.Client.DTOs.Ventas;
 
 namespace Libreria.Client.Clients;
 
-// Puerto del Front hacia el Servicio de Ventas (SBA). Las páginas dependen de
-// esta interfaz y no de HttpClient: así se pueden probar y reemplazar.
 public interface IVentasApiClient
 {
     // Categorías
@@ -33,4 +31,9 @@ public interface IVentasApiClient
 
     // Histórico de costos
     Task<HistoricoProductoDto?> ObtenerHistoricoAsync(Guid productoPublicId, CancellationToken ct = default);
+
+    // Ventas
+    Task<IReadOnlyList<VentaListItemDto>> ObtenerVentasAsync(string? estado, DateOnly? fechaDesde, DateOnly? fechaHasta, CancellationToken ct = default);
+    Task<VentaDetalleDto?> ObtenerDetalleVentaAsync(Guid publicId, bool esAdministrador, CancellationToken ct = default);
+    Task<ResultadoApi> AnularVentaAsync(Guid publicId, string motivo, CancellationToken ct = default);
 }

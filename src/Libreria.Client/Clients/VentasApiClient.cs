@@ -5,10 +5,6 @@ using Libreria.Client.DTOs.Ventas;
 
 namespace Libreria.Client.Clients;
 
-// Cliente HTTP tipado del Servicio de Ventas (Libreria.Servicio.Ventas).
-// Convierte las respuestas REST en DTOs y los errores de validación (400 con
-// { "Input.Nombre": "mensaje" }) en ResultadoApi para que las páginas los
-// muestren igual que antes.
 public class VentasApiClient : IVentasApiClient
 {
     private const string MensajeSinConexion =
@@ -148,6 +144,32 @@ public class VentasApiClient : IVentasApiClient
         return LeerOpcionalAsync<HistoricoProductoDto>($"api/historico/{productoPublicId}", ct);
     }
 
+    // ---------- Ventas ----------
+
+    public async Task<IReadOnlyList<VentaListItemDto>> ObtenerVentasAsync(
+        string? estado, DateOnly? fechaDesde, DateOnly? fechaHasta, CancellationToken ct = default)
+    {
+        var url = "api/ventas" + Consulta(
+            ("estado", estado),
+            ("fechaDesde", fechaDesde?.ToString("yyyy-MM-dd")),
+            ("fechaHasta", fechaHasta?.ToString("yyyy-MM-dd")));
+
+        return await LeerAsync<List<VentaListItemDto>>(url, ct) ?? new List<VentaListItemDto>();
+    }
+
+    public Task<VentaDetalleDto?> ObtenerDetalleVentaAsync(
+        Guid publicId, bool esAdministrador, CancellationToken ct = default)
+    {
+        return LeerOpcionalAsync<VentaDetalleDto>(
+            $"api/ventas/{publicId}?esAdministrador={Booleano(esAdministrador)}", ct);
+    }
+
+    public Task<ResultadoApi> AnularVentaAsync(Guid publicId, string motivo, CancellationToken ct = default)
+    {
+        return EnviarAsync(
+            () => _http.PostAsJsonAsync($"api/ventas/{publicId}/anular", new { motivo }, ct), ct);
+    }
+
     // ---------- Ayudantes ----------
 
     private async Task<T?> LeerAsync<T>(string url, CancellationToken ct) where T : class
@@ -192,7 +214,17 @@ public class VentasApiClient : IVentasApiClient
 
         if (respuesta.StatusCode == HttpStatusCode.NotFound)
         {
-            return ResultadoApi.NoExiste();
+            var mensajeNotFound = await ExtraerMensajeAsync(respuesta, ct);
+            return !string.IsNullOrWhiteSpace(mensajeNotFound)
+                ? ResultadoApi.Invalido(mensajeNotFound)
+                : ResultadoApi.NoExiste();
+        }
+
+        if (respuesta.StatusCode == HttpStatusCode.Conflict)
+        {
+            var mensajeConflict = await ExtraerMensajeAsync(respuesta, ct);
+            return ResultadoApi.Invalido(
+                !string.IsNullOrWhiteSpace(mensajeConflict) ? mensajeConflict : "La operación entra en conflicto con el estado actual.");
         }
 
         if (respuesta.StatusCode == HttpStatusCode.BadRequest)
@@ -202,10 +234,38 @@ public class VentasApiClient : IVentasApiClient
             {
                 return ResultadoApi.Invalido(errores);
             }
+
+            var mensajeBadRequest = await ExtraerMensajeAsync(respuesta, ct);
+            if (!string.IsNullOrWhiteSpace(mensajeBadRequest))
+            {
+                return ResultadoApi.Invalido(mensajeBadRequest);
+            }
         }
 
         return ResultadoApi.Invalido(
             $"El servicio de Ventas no pudo completar la operación (HTTP {(int)respuesta.StatusCode}).");
+    }
+
+    private static async Task<string?> ExtraerMensajeAsync(HttpResponseMessage respuesta, CancellationToken ct)
+    {
+        try
+        {
+            using var doc = await JsonDocument.ParseAsync(
+                await respuesta.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+            if (doc.RootElement.TryGetProperty("mensaje", out var propMensaje))
+            {
+                return propMensaje.GetString();
+            }
+            if (doc.RootElement.TryGetProperty("detail", out var propDetail))
+            {
+                return propDetail.GetString();
+            }
+        }
+        catch
+        {
+        }
+
+        return null;
     }
 
     private static async Task<IReadOnlyDictionary<string, string>> LeerErroresAsync(
@@ -220,7 +280,6 @@ public class VentasApiClient : IVentasApiClient
         }
         catch (JsonException)
         {
-            // 400 automático de ASP.NET (ProblemDetails): no es un diccionario simple.
             return new Dictionary<string, string>();
         }
     }

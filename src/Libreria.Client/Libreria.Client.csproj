@@ -8,21 +8,17 @@
     <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
   </PropertyGroup>
 
-  <!--
-    SBA: las páginas de Ventas (Registrar, Listado y Comprobante) todavía usan tipos del
-    monolito y se migran a REST en US-84 a US-90 (Gabriel y Mateo). Mientras tanto se
-    excluyen de la compilación para que el Front compile. Cada historia migra su página
-    y quita su línea. Cuando no quede ninguna, se elimina todo este bloque.
-    (DefaultItemExcludes se evalúa antes que los glob de Compile y Razor.)
-  -->
   <PropertyGroup>
-    <DefaultItemExcludes>$(DefaultItemExcludes);Pages\Ventas\**;Pages\Shared\_ClienteAltaRapidaCampos.cshtml</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Pages\Ventas\Registrar*;Pages\Ventas\Comprobante*;Pages\Shared\_ClienteAltaRapidaCampos.cshtml</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Pages\Ventas\**" />
-    <Content Remove="Pages\Ventas\**" />
-    <RazorGenerate Remove="Pages\Ventas\**" />
+    <Compile Remove="Pages\Ventas\Registrar*" />
+    <Compile Remove="Pages\Ventas\Comprobante*" />
+    <Content Remove="Pages\Ventas\Registrar*" />
+    <Content Remove="Pages\Ventas\Comprobante*" />
+    <RazorGenerate Remove="Pages\Ventas\Registrar*" />
+    <RazorGenerate Remove="Pages\Ventas\Comprobante*" />
     <Content Remove="Pages\Shared\_ClienteAltaRapidaCampos.cshtml" />
     <RazorGenerate Remove="Pages\Shared\_ClienteAltaRapidaCampos.cshtml" />
   </ItemGroup>
@@ -39,18 +35,21 @@
     <Compile Remove="Pages\Historico\**\*.cs" />
     <Compile Remove="Pages\Marcas\**\*.cs" />
     <Compile Remove="Pages\Productos\**\*.cs" />
-    <Compile Remove="Pages\Ventas\**\*.cs" />
+    <Compile Remove="Pages\Ventas\Registrar*.cs" />
+    <Compile Remove="Pages\Ventas\Comprobante*.cs" />
     <Content Remove="Pages\Categorias\**\*.cshtml" />
     <Content Remove="Pages\Historico\**\*.cshtml" />
     <Content Remove="Pages\Marcas\**\*.cshtml" />
     <Content Remove="Pages\Productos\**\*.cshtml" />
-    <Content Remove="Pages\Ventas\**\*.cshtml" />
+    <Content Remove="Pages\Ventas\Registrar*.cshtml" />
+    <Content Remove="Pages\Ventas\Comprobante*.cshtml" />
     <Content Remove="Pages\Shared\_ClienteAltaRapidaCampos.cshtml" />
     <None Include="Pages\Categorias\**\*" />
     <None Include="Pages\Historico\**\*" />
     <None Include="Pages\Marcas\**\*" />
     <None Include="Pages\Productos\**\*" />
-    <None Include="Pages\Ventas\**\*" />
+    <None Include="Pages\Ventas\Registrar*" />
+    <None Include="Pages\Ventas\Comprobante*" />
     <None Include="Pages\Shared\_ClienteAltaRapidaCampos.cshtml" />
   </ItemGroup>
 
