@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using Microsoft.Extensions.Options;
 
 namespace Libreria.Client.Clients.Common;
 
@@ -9,33 +8,33 @@ public sealed class UsuarioActualDelegatingHandler : DelegatingHandler
     public const string UsuarioNombreHeader = "X-Usuario-Nombre";
 
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IHostEnvironment _environment;
-    private readonly UsuarioDesarrolloOptions _usuarioDesarrollo;
 
-    public UsuarioActualDelegatingHandler(
-        IHttpContextAccessor httpContextAccessor,
-        IHostEnvironment environment,
-        IOptions<UsuarioDesarrolloOptions> usuarioDesarrollo)
+    public UsuarioActualDelegatingHandler(IHttpContextAccessor httpContextAccessor)
     {
         _httpContextAccessor = httpContextAccessor;
-        _environment = environment;
-        _usuarioDesarrollo = usuarioDesarrollo.Value;
     }
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var principal = _httpContextAccessor.HttpContext?.User;
-        var usuarioId = principal?.FindFirstValue(ClaimTypes.NameIdentifier);
-        var usuarioNombre = principal?.FindFirstValue(ClaimTypes.Name) ?? principal?.Identity?.Name;
 
-        if ((!principal?.Identity?.IsAuthenticated ?? true) && _environment.IsDevelopment())
+        if (principal?.Identity?.IsAuthenticated == true)
         {
-            usuarioId = _usuarioDesarrollo.Id;
-            usuarioNombre = _usuarioDesarrollo.Nombre;
-        }
+            var usuarioId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            var usuarioNombre = principal.FindFirstValue(ClaimTypes.Name)
+                ?? principal.Identity.Name;
 
-        AddHeader(request, UsuarioIdHeader, usuarioId);
-        AddHeader(request, UsuarioNombreHeader, usuarioNombre);
+            if (!int.TryParse(usuarioId, out var id) ||
+                id <= 0 ||
+                string.IsNullOrWhiteSpace(usuarioNombre))
+            {
+                throw new InvalidOperationException(
+                    "La sesión autenticada no contiene los claims requeridos para la auditoría.");
+            }
+
+            AddHeader(request, UsuarioIdHeader, id.ToString());
+            AddHeader(request, UsuarioNombreHeader, usuarioNombre);
+        }
 
         return base.SendAsync(request, cancellationToken);
     }

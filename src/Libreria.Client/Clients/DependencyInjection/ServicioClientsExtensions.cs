@@ -11,11 +11,9 @@ public static class ServicioClientsExtensions
     private const string ServiciosSection = "Servicios";
 
     public static IServiceCollection AddContextoUsuarioServicios(
-        this IServiceCollection services,
-        IConfiguration configuration)
+        this IServiceCollection services)
     {
         services.AddHttpContextAccessor();
-        services.Configure<UsuarioDesarrolloOptions>(configuration.GetSection(UsuarioDesarrolloOptions.SectionName));
         services.AddTransient<UsuarioActualDelegatingHandler>();
         return services;
     }

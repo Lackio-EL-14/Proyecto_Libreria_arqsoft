@@ -12,6 +12,7 @@ using Libreria.Infrastructure.Email;
 using Libreria.Infrastructure.Configuration;
 using Libreria.Client.Clients.Common;
 using Libreria.Client.Clients.DependencyInjection;
+using Libreria.Client.Services.Auditoria;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,10 +36,14 @@ builder.Services
     });
 
 builder.Services
-    .AddContextoUsuarioServicios(builder.Configuration)
+    .AddContextoUsuarioServicios()
     .AddServicioVentas(builder.Configuration)
     .AddServicioUsuarios(builder.Configuration)
     .AddServicioReportes(builder.Configuration);
+
+builder.Services.AddMemoryCache();
+builder.Services.Configure<SesionActivaOptions>(
+    builder.Configuration.GetSection(SesionActivaOptions.SectionName));
 
 builder.Services.AddUsuariosModule();
 
@@ -58,7 +63,9 @@ builder.Services.AddScoped<IContrasenaHasher, Libreria.Infrastructure.Security.C
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUsuarioActual, Libreria.Infrastructure.Security.UsuarioActual>();
-builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
+builder.Services.AddScoped<
+    Libreria.Client.Services.Auditoria.IAuditoriaService,
+    Libreria.Client.Services.Auditoria.AuditoriaService>();
 
 // US-38: Autenticación por cookie de ASP.NET Core
 builder.Services
@@ -71,6 +78,8 @@ builder.Services
         options.Cookie.Name = "Libreria.Sesion";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.IsEssential = true;
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
         options.EventsType = typeof(ValidarEstadoUsuarioCookieEvents);
