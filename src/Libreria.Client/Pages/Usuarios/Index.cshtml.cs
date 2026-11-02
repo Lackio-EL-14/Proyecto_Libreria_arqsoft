@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+using Libreria.Client.Clients.Usuarios;
+using Libreria.Client.DTOs.Usuarios;
+
 namespace Libreria.Client.Pages.Usuarios;
 
 [Authorize(Policy = PoliticasAcceso.SoloAdministrador)]
@@ -15,21 +18,22 @@ public class IndexModel : PageModel
     private readonly IAuthorizationService _authorizationService;
     private readonly IUsuarioSeguridadService _seguridad;
     private readonly IUrlProtector _protector;
-
+    private readonly IServicioUsuariosClient _usuariosClient;
     public IndexModel(IConsultaUsuarioService consulta, IAuthorizationService authorizationService,
-        IUsuarioSeguridadService seguridad, IUrlProtector protector)
+        IUsuarioSeguridadService seguridad, IUrlProtector protector,IServicioUsuariosClient usuariosClient)
     {
         _consulta = consulta;
         _authorizationService = authorizationService;
         _seguridad = seguridad;
         _protector = protector;
+        _usuariosClient = usuariosClient;
     }
 
     [BindProperty(SupportsGet = true)]
     public string? Estado { get; set; }
 
     public IReadOnlyList<string> Estados => EstadosUsuario.Todos;
-    public IReadOnlyList<UsuarioListItemModel> Usuarios { get; private set; } = [];
+    public IReadOnlyList<UserListItemDto> Usuarios { get; private set; } = [];
 
     public string ProtegerId(Guid publicId) => _protector.Cifrar(publicId);
 
@@ -71,7 +75,7 @@ public class IndexModel : PageModel
 
         try
         {
-            Usuarios = await _consulta.ObtenerListadoAsync(Estado);
+            Usuarios = await _usuariosClient.ObtenerUsuariosAsync(Estado);
         }
         catch (ArgumentException error)
         {

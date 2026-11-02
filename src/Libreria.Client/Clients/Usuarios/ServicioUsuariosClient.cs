@@ -54,4 +54,18 @@ public sealed class ServicioUsuariosClient : ApiClientBase, IServicioUsuariosCli
                    cancellationToken)
                ?? new Dictionary<int, string>();
     }
+
+    public async Task<IReadOnlyList<UserListItemDto>> ObtenerUsuariosAsync(
+    string? estado = null,
+    CancellationToken cancellationToken = default)
+    {
+        var query = string.IsNullOrWhiteSpace(estado)
+            ? "api/usuarios"
+            : $"api/usuarios?estado={Uri.EscapeDataString(estado.Trim())}";
+
+        return await GetAsync<List<UserListItemDto>>(
+                query,
+                cancellationToken)
+            ?? [];
+    }
 }

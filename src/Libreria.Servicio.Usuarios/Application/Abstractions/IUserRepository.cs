@@ -1,4 +1,5 @@
 using Libreria.Servicio.Usuarios.Domain.Entities;
+using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 
 namespace Libreria.Servicio.Usuarios.Application.Abstractions;
 
@@ -19,4 +20,9 @@ public interface IUserRepository
     IReadOnlyCollection<int> userIds);
 
     Task<bool> UsernameExistsAsync(string username);
+
+    Task<bool> IsActiveAdministratorAsync(int userId);
+
+    Task<IReadOnlyList<UserListItemDto>> GetListAsync(
+        string? status = null);
 }
