@@ -14,10 +14,14 @@ namespace Libreria.Servicio.Ventas.Controllers;
 public class VentasController : ControllerBase
 {
     private readonly IVentaFacade _ventaFacade;
+    private readonly IComprobanteVentaService? _comprobanteVentaService;
 
-    public VentasController(IVentaFacade ventaFacade)
+    public VentasController(
+        IVentaFacade ventaFacade,
+        IComprobanteVentaService? comprobanteVentaService = null)
     {
         _ventaFacade = ventaFacade;
+        _comprobanteVentaService = comprobanteVentaService;
     }
 
     [HttpGet("ping")]
@@ -93,6 +97,53 @@ public class VentasController : ControllerBase
             lineas);
 
         return Ok(respuesta);
+    }
+
+    [HttpGet("{publicId:guid}/comprobante")]
+    public async Task<IActionResult> ObtenerComprobante(Guid publicId)
+    {
+        if (publicId == Guid.Empty)
+        {
+            return BadRequest(new { mensaje = "El identificador de la venta es inválido." });
+        }
+
+        if (_comprobanteVentaService is null)
+        {
+            return StatusCode(500, new { mensaje = "El servicio de comprobantes no está configurado." });
+        }
+
+        try
+        {
+            var comprobante = await _comprobanteVentaService.ObtenerAsync(publicId);
+            if (comprobante is null)
+            {
+                return NotFound(new { mensaje = "La venta solicitada no fue encontrada para el comprobante." });
+            }
+
+            var detalles = comprobante.Detalles.Select(d => new DetalleComprobanteResponse(
+                d.NombreProducto,
+                d.Cantidad,
+                d.PrecioUnitario,
+                d.Importe)).ToList();
+
+            var respuesta = new ComprobanteResponse(
+                comprobante.PublicId,
+                comprobante.Estado,
+                comprobante.CiNitCliente,
+                comprobante.RazonSocialCliente,
+                detalles,
+                comprobante.Total,
+                comprobante.TotalEnLetras,
+                comprobante.FechaVenta,
+                comprobante.GeneradoEl,
+                comprobante.GeneradoPor);
+
+            return Ok(respuesta);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Unauthorized(new { mensaje = ex.Message });
+        }
     }
 
     [HttpPost("{publicId:guid}/anular")]

@@ -26,7 +26,7 @@
         <article class="comprobante-documento" aria-labelledby="comprobante-titulo">
             <header class="comprobante-encabezado">
                 <div class="comprobante-marca">
-                    <img src="~/images/icono.svg" alt="Logo de Librería" width="68" height="68" />
+                    <img src="~/images/logo-libreria.svg" alt="Logo de Librería" width="68" height="68" />
                     <span>Librería</span>
                 </div>
                 <h1 id="comprobante-titulo">Comprobante de venta</h1>
@@ -121,6 +121,10 @@
                                 </time>
                             </dd>
                         </div>
+                        <div>
+                            <dt>Generado por</dt>
+                            <dd>@comprobante.GeneradoPor</dd>
+                        </div>
                     </dl>
                     <p class="comprobante-zona">Fechas y horas expresadas en la hora de Bolivia (UTC−04:00).</p>
                 </footer>
@@ -131,7 +135,7 @@
                     <h2>Comprobante no disponible</h2>
                     <p>@Model.MensajeError</p>
                     <div class="comprobante-acciones">
-                        <a asp-page="/Ventas/Registrar" class="btn btn--primary">Volver a ventas</a>
+                        <a asp-page="/Ventas/Index" class="btn btn--primary">Volver a ventas</a>
                     </div>
                 </section>
             }

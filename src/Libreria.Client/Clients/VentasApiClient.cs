@@ -17,8 +17,6 @@ public class VentasApiClient : IVentasApiClient
         _http = http;
     }
 
-    // ---------- Categorías ----------
-
     public async Task<IReadOnlyList<CategoriaDto>> ObtenerCategoriasAsync(string? busqueda, CancellationToken ct = default)
     {
         var url = "api/categorias" + Consulta(("busqueda", busqueda));
@@ -52,8 +50,6 @@ public class VentasApiClient : IVentasApiClient
             () => _http.PatchAsync($"api/categorias/{publicId}/estado?nuevoEstado={Booleano(activa)}", null, ct), ct);
     }
 
-    // ---------- Marcas ----------
-
     public async Task<IReadOnlyList<MarcaDto>> ObtenerMarcasAsync(string? nombre, CancellationToken ct = default)
     {
         var url = "api/marcas" + Consulta(("nombre", nombre));
@@ -86,8 +82,6 @@ public class VentasApiClient : IVentasApiClient
         return EnviarAsync(
             () => _http.PatchAsync($"api/marcas/{publicId}/estado?nuevoEstado={Booleano(activa)}", null, ct), ct);
     }
-
-    // ---------- Productos ----------
 
     public async Task<ProductoListadoDto> ObtenerProductosAsync(
         string? busqueda, int? categoriaId, int? marcaId, CancellationToken ct = default)
@@ -137,14 +131,10 @@ public class VentasApiClient : IVentasApiClient
         return EnviarAsync(() => _http.PatchAsync($"api/productos/{publicId}/baja", null, ct), ct);
     }
 
-    // ---------- Histórico ----------
-
     public Task<HistoricoProductoDto?> ObtenerHistoricoAsync(Guid productoPublicId, CancellationToken ct = default)
     {
         return LeerOpcionalAsync<HistoricoProductoDto>($"api/historico/{productoPublicId}", ct);
     }
-
-    // ---------- Ventas ----------
 
     public async Task<IReadOnlyList<VentaListItemDto>> ObtenerVentasAsync(
         string? estado, DateOnly? fechaDesde, DateOnly? fechaHasta, CancellationToken ct = default)
@@ -170,7 +160,10 @@ public class VentasApiClient : IVentasApiClient
             () => _http.PostAsJsonAsync($"api/ventas/{publicId}/anular", new { motivo }, ct), ct);
     }
 
-    // ---------- Ayudantes ----------
+    public Task<ComprobanteVentaDto?> ObtenerComprobanteAsync(Guid publicId, CancellationToken ct = default)
+    {
+        return LeerOpcionalAsync<ComprobanteVentaDto>($"api/ventas/{publicId}/comprobante", ct);
+    }
 
     private async Task<T?> LeerAsync<T>(string url, CancellationToken ct) where T : class
     {

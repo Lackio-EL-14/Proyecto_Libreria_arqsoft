@@ -32,6 +32,24 @@ public record VentaLineaDto(
     decimal Subtotal,
     decimal? Ganancia);
 
+public record ComprobanteVentaDto(
+    Guid PublicId,
+    string Estado,
+    string CiNitCliente,
+    string RazonSocialCliente,
+    IReadOnlyList<DetalleComprobanteDto> Detalles,
+    decimal Total,
+    string TotalEnLetras,
+    DateTimeOffset? FechaVenta,
+    DateTimeOffset GeneradoEl,
+    string GeneradoPor);
+
+public record DetalleComprobanteDto(
+    string NombreProducto,
+    int Cantidad,
+    decimal PrecioUnitario,
+    decimal Importe);
+
 public class FiltroVentasModel
 {
     public string? Estado { get; set; }

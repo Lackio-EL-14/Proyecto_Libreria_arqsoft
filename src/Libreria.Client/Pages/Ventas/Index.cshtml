@@ -129,6 +129,15 @@ else
                                 👁️ Detalle
                             </button>
 
+                            <a asp-page="Comprobante"
+                               asp-route-publicId="@venta.PublicId"
+                               target="_blank"
+                               class="btn btn--secondary"
+                               style="padding: 0.35rem 0.65rem; font-size: 0.82rem; margin-left: 0.25rem;"
+                               title="Ver comprobante de venta">
+                                Comprobante
+                            </a>
+
                             @if (Model.EsAdministrador && venta.Estado == "Activa")
                             {
                                 <button type="button"
@@ -243,7 +252,8 @@ else
             </div>
         </div>
 
-        <footer class="confirmation-modal__actions" style="justify-content: flex-end; padding: 1.25rem 1.75rem;">
+        <footer class="confirmation-modal__actions" style="justify-content: space-between; padding: 1.25rem 1.75rem;">
+            <a id="btnComprobanteModal" href="#" target="_blank" class="btn btn--secondary" style="font-size: 0.85rem;">Ver Comprobante</a>
             <button type="button" class="btn btn--secondary" onclick="cerrarModalDetalle()">Cerrar</button>
         </footer>
     </div>
@@ -411,6 +421,11 @@ else
             document.getElementById('detalleContenido').style.display = 'none';
             document.getElementById('detallePublicId').textContent = publicId;
 
+            const btnComprobanteModal = document.getElementById('btnComprobanteModal');
+            if (btnComprobanteModal) {
+                btnComprobanteModal.href = '/Ventas/Comprobante?publicId=' + encodeURIComponent(publicId);
+            }
+
             modalDetalle.showModal();
 
             try {
@@ -502,7 +517,7 @@ else
             if (longitud < 10) {
                 contadorMotivo.style.color = 'var(--color-danger)';
             } else if (longitud > 240) {
-                contadorMotivo.style.color = '#B45309'; // ámbar advertencia
+                contadorMotivo.style.color = '#B45309';
             } else {
                 contadorMotivo.style.color = 'var(--color-secondary)';
             }

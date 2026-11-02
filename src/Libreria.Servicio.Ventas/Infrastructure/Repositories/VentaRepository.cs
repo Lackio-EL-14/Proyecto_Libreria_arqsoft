@@ -462,7 +462,7 @@ public class VentaRepository : IVentaRepository
         await using var command = connection.CreateCommand();
 
         command.CommandText = @"
-            SELECT v.PublicId, v.Estado, v.Total,
+            SELECT v.PublicId, v.Estado, v.Total, v.FechaCreacion,
                    c.CiNit AS CiNitCliente, c.RazonSocial AS RazonSocialCliente,
                    p.Nombre AS NombreProducto,
                    d.Cantidad, d.PrecioUnitarioVenta, d.Importe
@@ -484,6 +484,9 @@ public class VentaRepository : IVentaRepository
         var referencia = reader.GetGuid(reader.GetOrdinal("PublicId"));
         var estado = reader.GetString(reader.GetOrdinal("Estado"));
         var total = reader.GetDecimal(reader.GetOrdinal("Total"));
+        DateTimeOffset? fechaVenta = reader.IsDBNull(reader.GetOrdinal("FechaCreacion"))
+            ? null
+            : new DateTimeOffset(DateTime.SpecifyKind(reader.GetDateTime(reader.GetOrdinal("FechaCreacion")), DateTimeKind.Utc));
         var ciNit = reader.GetString(reader.GetOrdinal("CiNitCliente"));
         var razonSocial = reader.GetString(reader.GetOrdinal("RazonSocialCliente"));
         var detalles = new List<DetalleComprobanteVenta>();
@@ -505,7 +508,8 @@ public class VentaRepository : IVentaRepository
             CiNitCliente = ciNit,
             RazonSocialCliente = razonSocial,
             Detalles = detalles.ToArray(),
-            Total = total
+            Total = total,
+            FechaVenta = fechaVenta
         };
     }
 

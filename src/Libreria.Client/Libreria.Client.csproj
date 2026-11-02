@@ -9,21 +9,17 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultItemExcludes>$(DefaultItemExcludes);Pages\Ventas\Registrar*;Pages\Ventas\Comprobante*;Pages\Shared\_ClienteAltaRapidaCampos.cshtml</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Pages\Ventas\Registrar*;Pages\Shared\_ClienteAltaRapidaCampos.cshtml</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="Pages\Ventas\Registrar*" />
-    <Compile Remove="Pages\Ventas\Comprobante*" />
     <Content Remove="Pages\Ventas\Registrar*" />
-    <Content Remove="Pages\Ventas\Comprobante*" />
     <RazorGenerate Remove="Pages\Ventas\Registrar*" />
-    <RazorGenerate Remove="Pages\Ventas\Comprobante*" />
     <Content Remove="Pages\Shared\_ClienteAltaRapidaCampos.cshtml" />
     <RazorGenerate Remove="Pages\Shared\_ClienteAltaRapidaCampos.cshtml" />
   </ItemGroup>
 
-  <!-- El Front NO referencia a Libreria.Servicio.Ventas: solo consume su API REST. -->
   <ItemGroup>
     <ProjectReference Include="..\Libreria.Domain\Libreria.Domain.csproj" />
     <ProjectReference Include="..\Libreria.Application\Libreria.Application.csproj" />
@@ -36,20 +32,17 @@
     <Compile Remove="Pages\Marcas\**\*.cs" />
     <Compile Remove="Pages\Productos\**\*.cs" />
     <Compile Remove="Pages\Ventas\Registrar*.cs" />
-    <Compile Remove="Pages\Ventas\Comprobante*.cs" />
     <Content Remove="Pages\Categorias\**\*.cshtml" />
     <Content Remove="Pages\Historico\**\*.cshtml" />
     <Content Remove="Pages\Marcas\**\*.cshtml" />
     <Content Remove="Pages\Productos\**\*.cshtml" />
     <Content Remove="Pages\Ventas\Registrar*.cshtml" />
-    <Content Remove="Pages\Ventas\Comprobante*.cshtml" />
     <Content Remove="Pages\Shared\_ClienteAltaRapidaCampos.cshtml" />
     <None Include="Pages\Categorias\**\*" />
     <None Include="Pages\Historico\**\*" />
     <None Include="Pages\Marcas\**\*" />
     <None Include="Pages\Productos\**\*" />
     <None Include="Pages\Ventas\Registrar*" />
-    <None Include="Pages\Ventas\Comprobante*" />
     <None Include="Pages\Shared\_ClienteAltaRapidaCampos.cshtml" />
   </ItemGroup>
 

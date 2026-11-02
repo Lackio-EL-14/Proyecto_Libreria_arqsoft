@@ -31,3 +31,21 @@ public record VentaLineaResponse(
     decimal PrecioUnitario,
     decimal Subtotal,
     decimal? Ganancia);
+
+public record ComprobanteResponse(
+    Guid PublicId,
+    string Estado,
+    string CiNitCliente,
+    string RazonSocialCliente,
+    IReadOnlyList<DetalleComprobanteResponse> Detalles,
+    decimal Total,
+    string TotalEnLetras,
+    DateTimeOffset? FechaVenta,
+    DateTimeOffset GeneradoEl,
+    string GeneradoPor);
+
+public record DetalleComprobanteResponse(
+    string NombreProducto,
+    int Cantidad,
+    decimal PrecioUnitario,
+    decimal Importe);
