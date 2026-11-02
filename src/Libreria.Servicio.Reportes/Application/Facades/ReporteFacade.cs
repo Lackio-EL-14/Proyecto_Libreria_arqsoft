@@ -7,8 +7,20 @@ namespace Libreria.Servicio.Reportes.Application.Facades;
 
 public sealed class ReporteFacade(
     ReadExampleReportUseCase readExample, IReportChartRenderer chartRenderer,
-    IEnumerable<ReportGeneratorFactory> factories, ReadProductReportUseCase readProducts)
+    IEnumerable<ReportGeneratorFactory> factories, ReadProductReportUseCase readProducts,
+    ReadSalesReportUseCase readSales)
 {
+    public Task<SalesReportResult> ReadSalesAsync(SalesReportFilter filter, CancellationToken cancellationToken) =>
+        readSales.ExecuteAsync(filter, cancellationToken);
+
+    public async Task<ExportedReport> ExportSalesPdfAsync(SalesReportFilter filter, CancellationToken cancellationToken)
+    {
+        var factory = FindFactory(ReportFormat.Pdf);
+        var result = await ReadSalesAsync(filter, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        return factory.CreateGenerator().Generate(result.ToDocument(), []) with { FileName = "reporte-ventas.pdf" };
+    }
+
     public async Task<ExportedReport> ExportExampleAsync(
         ReportFormat format, CancellationToken cancellationToken)
     {

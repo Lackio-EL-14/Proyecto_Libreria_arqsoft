@@ -8,4 +8,5 @@ public sealed record ReportDocument(
     public IReadOnlyList<string>? Columns { get; init; }
     public IReadOnlyList<IReadOnlyList<object?>>? Values { get; init; }
     public IReadOnlyList<string> Summary { get; init; } = [];
+    public string? Subtitle { get; init; }
 }

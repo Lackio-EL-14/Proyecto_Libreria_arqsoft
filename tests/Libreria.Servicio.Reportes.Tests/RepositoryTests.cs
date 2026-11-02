@@ -92,7 +92,7 @@ public sealed class RepositoryTests
         Assert.All(rows, row => Assert.False(string.IsNullOrWhiteSpace(row.Name)));
     }
 
-    private sealed class RecordingConnectionFactory(RecordingConnection connection) : IDbConnectionFactory
+    internal sealed class RecordingConnectionFactory(RecordingConnection connection) : IDbConnectionFactory
     {
         public Task<DbConnection> OpenConnectionAsync(CancellationToken cancellationToken)
         {
@@ -101,7 +101,7 @@ public sealed class RepositoryTests
         }
     }
 
-    private sealed class RecordingConnection : DbConnection
+    internal sealed class RecordingConnection : DbConnection
     {
         internal RecordingCommand Command { get; } = new();
         internal bool WasDisposed { get; private set; }
@@ -118,7 +118,7 @@ public sealed class RepositoryTests
         protected override void Dispose(bool disposing) { WasDisposed = true; base.Dispose(disposing); }
     }
 
-    private sealed class RecordingCommand : DbCommand
+    internal sealed class RecordingCommand : DbCommand
     {
         private readonly SqlCommand _parameterContainer = new();
         internal string Sql { get; private set; } = "";
@@ -142,6 +142,15 @@ public sealed class RepositoryTests
             foreach (DbParameter parameter in Parameters)
                 Arguments.Add(parameter.ParameterName, (parameter.DbType, parameter.Value!));
             var table = new DataTable();
+            if (Sql.Contains("FROM dbo.Venta v"))
+            {
+                table.Columns.Add("Product", typeof(string));
+                table.Columns.Add("Category", typeof(string));
+                table.Columns.Add("Quantity", typeof(long));
+                table.Columns.Add("Amount", typeof(decimal));
+                table.Rows.Add("Cuaderno", "Papelería", 5L, 65m);
+                return table.CreateDataReader();
+            }
             table.Columns.Add("Nombre", typeof(string));
             table.Columns.Add("PrecioVenta", typeof(decimal));
             if (Sql.Contains("INNER JOIN"))

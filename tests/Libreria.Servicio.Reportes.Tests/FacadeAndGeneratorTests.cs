@@ -17,6 +17,8 @@ public sealed class FacadeAndGeneratorTests
 {
     private static ReadProductReportUseCase CreateProductUseCase() =>
         new(new ProductSampleRepository(), new TestUser(), new FixedClock());
+    private static ReadSalesReportUseCase CreateSalesUseCase() =>
+        new(new SalesSampleRepository(), new ProductSampleRepository(), new TestUser(), new FixedClock());
 
     [Fact]
     public async Task FacadeCoordinatesReadPreparationFactoryAndExport()
@@ -25,7 +27,7 @@ public sealed class FacadeAndGeneratorTests
         var repository = new SampleRepository(() => calls.Add("query"));
         var factory = new RecordingFactory(calls);
         var facade = new ReporteFacade(new ReadExampleReportUseCase(repository, new TestUser(), new FixedClock()),
-            new RecordingChart(calls), [factory], CreateProductUseCase());
+            new RecordingChart(calls), [factory], CreateProductUseCase(), CreateSalesUseCase());
 
         var result = await facade.ExportExampleAsync(ReportFormat.Pdf, CancellationToken.None);
 
@@ -43,7 +45,7 @@ public sealed class FacadeAndGeneratorTests
         var calls = new List<string>();
         var readExample = new ReadExampleReportUseCase(new SampleRepository(() => calls.Add("query")),
             new TestUser(), new FixedClock());
-        var facade = new ReporteFacade(readExample, new RecordingChart(calls), [], CreateProductUseCase());
+        var facade = new ReporteFacade(readExample, new RecordingChart(calls), [], CreateProductUseCase(), CreateSalesUseCase());
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
             facade.ExportExampleAsync((ReportFormat)999, CancellationToken.None));
         Assert.Empty(calls);
@@ -55,7 +57,7 @@ public sealed class FacadeAndGeneratorTests
         var calls = new List<string>();
         var readExample = new ReadExampleReportUseCase(new SampleRepository(() => calls.Add("query")),
             new TestUser(null, null), new FixedClock());
-        var facade = new ReporteFacade(readExample, new RecordingChart(calls), [new PdfReportGeneratorFactory()], CreateProductUseCase());
+        var facade = new ReporteFacade(readExample, new RecordingChart(calls), [new PdfReportGeneratorFactory()], CreateProductUseCase(), CreateSalesUseCase());
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => facade.ExportExampleAsync(ReportFormat.Pdf, CancellationToken.None));
         Assert.Empty(calls);
     }

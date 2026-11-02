@@ -21,6 +21,8 @@ public sealed class PdfReportGenerator : IReportGenerator
             page.Content().PaddingVertical(15).Column(column =>
             {
                 column.Spacing(10);
+                if (!string.IsNullOrWhiteSpace(document.Subtitle))
+                    column.Item().Text(document.Subtitle).FontColor(ReportTemplate.Primary);
                 column.Item().Table(table =>
                 {
                     table.ColumnsDefinition(definition =>

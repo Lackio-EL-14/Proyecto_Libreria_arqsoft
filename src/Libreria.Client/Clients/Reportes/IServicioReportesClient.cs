@@ -8,4 +8,6 @@ public interface IServicioReportesClient : IApiClient
     Task<IReadOnlyList<ReportCategoryDto>> GetCategoriesAsync(CancellationToken cancellationToken = default);
     Task<ProductReportDto?> GetProductsAsync(ProductReportFilterDto filter, CancellationToken cancellationToken = default);
     Task<ReportFileDto> DownloadProductsAsync(ProductReportFilterDto filter, string format, CancellationToken cancellationToken = default);
+    Task<SalesReportDto?> GetSalesAsync(SalesReportFilterDto filter, CancellationToken cancellationToken = default);
+    Task<ReportFileDto> DownloadSalesPdfAsync(SalesReportFilterDto filter, CancellationToken cancellationToken = default);
 }

@@ -138,7 +138,8 @@ public sealed class HttpReportTests
 }
 
 internal sealed class ReportTestApplication(
-    IExampleReportRepository? repository = null, IProductReportRepository? products = null)
+    IExampleReportRepository? repository = null, IProductReportRepository? products = null,
+    ISalesReportRepository? sales = null)
     : WebApplicationFactory<Libreria.Servicio.Reportes.Presentation.Controllers.ReportesController>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -150,6 +151,8 @@ internal sealed class ReportTestApplication(
             services.AddScoped<IExampleReportRepository>(_ => repository ?? new SampleRepository());
             services.RemoveAll<IProductReportRepository>();
             services.AddScoped<IProductReportRepository>(_ => products ?? new ProductSampleRepository());
+            services.RemoveAll<ISalesReportRepository>();
+            services.AddScoped<ISalesReportRepository>(_ => sales ?? new SalesSampleRepository());
         });
     }
 }

@@ -12,6 +12,19 @@ namespace Libreria.Servicio.Reportes.Presentation.Controllers;
 [Route("api/reportes")]
 public sealed class ReportesController : ControllerBase
 {
+    [HttpGet("ventas")]
+    public async Task<ActionResult<SalesReportResult>> ReadSales(
+        [FromQuery] SalesReportFilter filter, [FromServices] ReporteFacade facade, CancellationToken cancellationToken) =>
+        Ok(await facade.ReadSalesAsync(filter, cancellationToken));
+
+    [HttpGet("ventas/pdf")]
+    public async Task<IActionResult> ExportSalesPdf(
+        [FromQuery] SalesReportFilter filter, [FromServices] ReporteFacade facade, CancellationToken cancellationToken)
+    {
+        var result = await facade.ExportSalesPdfAsync(filter, cancellationToken);
+        return File(result.Content, result.ContentType, result.FileName);
+    }
+
     [HttpGet("categorias")]
     public async Task<ActionResult<IReadOnlyList<ReportCategory>>> ReadCategories(
         [FromServices] IProductReportRepository repository, CancellationToken cancellationToken) =>
