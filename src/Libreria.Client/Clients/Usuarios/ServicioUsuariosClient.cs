@@ -93,4 +93,20 @@ public sealed class ServicioUsuariosClient : ApiClientBase, IServicioUsuariosCli
         "api/usuarios/activar",
         request,
         cancellationToken);
+
+    public Task DarDeBajaUsuarioAsync(
+        Guid publicId,
+        CancellationToken cancellationToken = default)
+    {
+        if (publicId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "El identificador del usuario es obligatorio.",
+                nameof(publicId));
+        }
+
+        return DeleteAsync(
+            $"api/usuarios/{publicId:D}",
+            cancellationToken);
+    }
 }

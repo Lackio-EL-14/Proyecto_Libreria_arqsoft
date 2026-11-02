@@ -832,4 +832,101 @@ public sealed class UserRepository : IUserRepository
 
         return await command.ExecuteNonQueryAsync() == 1;
     }
+    public async Task<IReadOnlyList<UserDeactivationData>>
+        GetUsersForDeactivationAsync()
+    {
+        await using var connection =
+            _connectionFactory.CreateConnection();
+
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
+
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = """
+            SELECT
+                u.UsuarioId,
+                u.PublicId,
+                u.Estado,
+                r.Nombre AS Rol,
+                r.Estado AS RolActivo
+            FROM dbo.Usuario u WITH (TABLOCKX, HOLDLOCK)
+            INNER JOIN dbo.Rol r WITH (HOLDLOCK)
+                ON r.RolId = u.RolId;
+            """;
+
+        var users =
+            new List<UserDeactivationData>();
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            users.Add(
+                new UserDeactivationData(
+                    reader.GetInt32(
+                        reader.GetOrdinal("UsuarioId")),
+                    reader.GetGuid(
+                        reader.GetOrdinal("PublicId")),
+                    reader.GetString(
+                        reader.GetOrdinal("Estado")),
+                    reader.GetString(
+                        reader.GetOrdinal("Rol")),
+                    reader.GetBoolean(
+                        reader.GetOrdinal("RolActivo"))));
+        }
+
+        return users;
+    }
+
+    public async Task<bool> DeactivateAsync(
+        int userId,
+        int modifiedByUserId)
+    {
+        await using var connection =
+            _connectionFactory.CreateConnection();
+
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
+
+        await using var command =
+            connection.CreateCommand();
+
+        command.CommandText = """
+            UPDATE dbo.Usuario
+            SET
+                Estado = @InactiveStatus,
+                UsuarioModificacionId = @ModifiedByUserId,
+                FechaModificacion = SYSDATETIME()
+            WHERE UsuarioId = @UserId
+            AND Estado <> @InactiveStatus;
+            """;
+
+        AddParameter(
+            command,
+            "@InactiveStatus",
+            UserStatuses.Inactive,
+            DbType.String,
+            20);
+
+        AddParameter(
+            command,
+            "@ModifiedByUserId",
+            modifiedByUserId,
+            DbType.Int32);
+
+        AddParameter(
+            command,
+            "@UserId",
+            userId,
+            DbType.Int32);
+
+        return await command.ExecuteNonQueryAsync() == 1;
+    }
+
 }

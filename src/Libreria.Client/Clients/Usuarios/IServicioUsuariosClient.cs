@@ -31,4 +31,8 @@ public interface IServicioUsuariosClient : IApiClient
     Task ActivarUsuarioAsync(
     ActivateUserRequestDto request,
     CancellationToken cancellationToken = default);
+
+    Task DarDeBajaUsuarioAsync(
+    Guid publicId,
+    CancellationToken cancellationToken = default);
 }
