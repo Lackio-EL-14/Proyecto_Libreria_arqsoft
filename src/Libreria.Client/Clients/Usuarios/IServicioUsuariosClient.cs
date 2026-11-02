@@ -31,4 +31,8 @@ public interface IServicioUsuariosClient : IApiClient
     Task ActivarUsuarioAsync(
     ActivateUserRequestDto request,
     CancellationToken cancellationToken = default);
+
+    Task CambiarContrasenaAsync(
+    ChangePasswordRequestDto request,
+    CancellationToken cancellationToken = default);
 }

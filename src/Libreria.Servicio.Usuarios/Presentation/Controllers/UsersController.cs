@@ -14,13 +14,14 @@ public sealed class UsersController : ControllerBase
     private readonly CreateUserUseCase _createUserUseCase;
     private readonly ActivateUserUseCase _activateUserUseCase;
     private readonly GetUserRolesUseCase _getUserRolesUseCase;
+    private readonly ChangePasswordUseCase _changePasswordUseCase;
 
     public UsersController(
         CheckActiveSessionUseCase checkActiveSessionUseCase,
         GetUserNamesUseCase getUserNamesUseCase,
         ListUsersUseCase listUsersUseCase,CreateUserUseCase createUserUseCase,
         ActivateUserUseCase activateUserUseCase,
-        GetUserRolesUseCase getUserRolesUseCase)
+        GetUserRolesUseCase getUserRolesUseCase,ChangePasswordUseCase changePasswordUseCase)
     {
         _checkActiveSessionUseCase = checkActiveSessionUseCase;
         _getUserNamesUseCase = getUserNamesUseCase;
@@ -28,6 +29,7 @@ public sealed class UsersController : ControllerBase
         _createUserUseCase = createUserUseCase;
         _activateUserUseCase = activateUserUseCase;
         _getUserRolesUseCase = getUserRolesUseCase;
+        _changePasswordUseCase = changePasswordUseCase;
     }
 
     [HttpGet]
@@ -213,4 +215,44 @@ public sealed class UsersController : ControllerBase
         }
     }
 
+    [HttpPut("contrasena")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ChangePasswordAsync(
+        [FromBody] ChangePasswordRequest request)
+    {
+        try
+        {
+            var changed =
+                await _changePasswordUseCase.ExecuteAsync(request);
+
+            if (!changed)
+            {
+                return StatusCode(
+                    StatusCodes.Status403Forbidden);
+            }
+
+            return NoContent();
+        }
+        catch (ArgumentException exception)
+        {
+            return Problem(
+                title: "No fue posible cambiar la contraseña.",
+                detail: exception.Message,
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return Problem(
+                title: "No fue posible cambiar la contraseña.",
+                detail: exception.Message,
+                statusCode: StatusCodes.Status409Conflict);
+        }
+    }
 }
