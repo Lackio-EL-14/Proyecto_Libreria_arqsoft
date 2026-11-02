@@ -92,11 +92,11 @@ public sealed class FacadeAndGeneratorTests
         var excel = new ExcelReportGeneratorFactory().CreateGenerator().Generate(document, png);
         using var archive = new ZipArchive(new MemoryStream(excel.Content));
         Assert.NotNull(archive.GetEntry("xl/workbook.xml"));
-        Assert.Single(archive.Entries, entry => entry.FullName.StartsWith("xl/media/"));
+        Assert.Equal(2, archive.Entries.Count(entry => entry.FullName.StartsWith("xl/media/")));
         using var workbook = new XLWorkbook(new MemoryStream(excel.Content));
         var sheet = workbook.Worksheet(1);
-        Assert.Equal("mauricio", sheet.Cell(2, 2).GetString());
-        Assert.Single(sheet.Pictures);
+        Assert.Contains(sheet.CellsUsed(), cell => cell.GetString().Contains("Reporte generado: mauricio"));
+        Assert.Equal(2, sheet.Pictures.Count);
         if (!empty)
         {
             Assert.Equal(12.50m, sheet.Cell(6, 2).GetValue<decimal>());

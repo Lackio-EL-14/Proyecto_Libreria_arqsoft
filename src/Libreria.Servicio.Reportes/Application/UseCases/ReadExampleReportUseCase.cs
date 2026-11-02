@@ -13,6 +13,6 @@ public sealed class ReadExampleReportUseCase(
 
         var rows = await repository.ReadSampleAsync(cancellationToken);
         return new ReportDocument("Reporte de ejemplo — US-99", rows.ToArray(),
-            currentUser.Username, timeProvider.GetUtcNow());
+            currentUser.Username, timeProvider.GetUtcNow()) { Summary = [$"Total de registros: {rows.Count}"] };
     }
 }

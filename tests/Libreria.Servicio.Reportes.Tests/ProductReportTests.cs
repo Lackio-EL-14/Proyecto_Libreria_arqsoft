@@ -80,12 +80,12 @@ public sealed class ProductReportTests
         {
             using var workbook = new XLWorkbook(new MemoryStream(bytes));
             var sheet = workbook.Worksheet(1);
-            Assert.Equal("Reporte de productos", sheet.Cell(1, 1).GetString());
-            Assert.Equal("mauricio", sheet.Cell(2, 2).GetString());
-            Assert.Equal(XLDataType.DateTime, sheet.Cell(3, 2).DataType);
+            Assert.Equal("Reporte de productos", sheet.Cell(1, 2).GetString());
+            Assert.Contains(sheet.CellsUsed(), cell => cell.GetString().Contains("Reporte generado: mauricio"));
+            Assert.Contains(sheet.CellsUsed(), cell => cell.GetString() == $"Total de productos: {(empty ? 0 : 1)}");
             Assert.Equal("Categoría", sheet.Cell(5, 2).GetString());
             Assert.Equal("Marca", sheet.Cell(5, 3).GetString());
-            Assert.Empty(sheet.Pictures);
+            Assert.Single(sheet.Pictures);
             if (empty) Assert.Contains("No se encontraron", sheet.Cell(6, 1).GetString());
             else
             {

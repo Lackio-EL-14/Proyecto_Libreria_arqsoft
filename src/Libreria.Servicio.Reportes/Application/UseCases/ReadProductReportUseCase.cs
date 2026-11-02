@@ -16,6 +16,6 @@ public sealed class ReadProductReportUseCase(
 
         var rows = await repository.ReadProductsAsync(filter, cancellationToken);
         return new("Reporte de productos", rows, currentUser.Username, timeProvider.GetUtcNow(),
-            IsProductReport: true);
+            IsProductReport: true) { Summary = [$"Total de productos: {rows.Count}"] };
     }
 }
