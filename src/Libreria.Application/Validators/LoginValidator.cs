@@ -18,7 +18,6 @@ public class LoginValidator
         {
             errores["Input.NombreUsuario"] = "El nombre de usuario es obligatorio.";
         }
-        else if (input.NombreUsuario.Length > 50)
         {
             errores["Input.NombreUsuario"] = "El nombre de usuario no puede superar los 50 caracteres.";
         }

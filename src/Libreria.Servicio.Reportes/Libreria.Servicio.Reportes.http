@@ -1,6 +1,38 @@
-@Libreria.Servicio.Reportes_HostAddress = http://localhost:5299
+@host = http://localhost:5103
+@userId = 1
+@username = mauricio
 
-GET {{Libreria.Servicio.Reportes_HostAddress}}/weatherforecast/
+### Datos de ejemplo (requiere ConnectionStrings__LibreriaDb y una BD existente)
+GET {{host}}/api/reportes/ejemplo
+X-Usuario-Id: {{userId}}
+X-Usuario-Nombre: {{username}}
 Accept: application/json
 
-###
+### PDF binario
+POST {{host}}/api/reportes/ejemplo/exportar
+X-Usuario-Id: {{userId}}
+X-Usuario-Nombre: {{username}}
+Content-Type: application/json
+Accept: application/pdf
+
+{"format":"Pdf"}
+
+### Excel binario
+POST {{host}}/api/reportes/ejemplo/exportar
+X-Usuario-Id: {{userId}}
+X-Usuario-Nombre: {{username}}
+Content-Type: application/json
+Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+{"format":"Excel"}
+
+### Sin encabezados: 401 ProblemDetails
+GET {{host}}/api/reportes/ejemplo
+
+### Formato no admitido: 400 ProblemDetails
+POST {{host}}/api/reportes/ejemplo/exportar
+X-Usuario-Id: {{userId}}
+X-Usuario-Nombre: {{username}}
+Content-Type: application/json
+
+{"format":"Csv"}
