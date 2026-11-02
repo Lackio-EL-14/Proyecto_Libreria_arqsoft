@@ -15,6 +15,9 @@ namespace Libreria.Servicio.Reportes.Tests;
 
 public sealed class FacadeAndGeneratorTests
 {
+    private static ReadProductReportUseCase CreateProductUseCase() =>
+        new(new ProductSampleRepository(), new TestUser(), new FixedClock());
+
     [Fact]
     public async Task FacadeCoordinatesReadPreparationFactoryAndExport()
     {
@@ -22,7 +25,7 @@ public sealed class FacadeAndGeneratorTests
         var repository = new SampleRepository(() => calls.Add("query"));
         var factory = new RecordingFactory(calls);
         var facade = new ReporteFacade(new ReadExampleReportUseCase(repository, new TestUser(), new FixedClock()),
-            new RecordingChart(calls), [factory]);
+            new RecordingChart(calls), [factory], CreateProductUseCase());
 
         var result = await facade.ExportExampleAsync(ReportFormat.Pdf, CancellationToken.None);
 
@@ -40,7 +43,7 @@ public sealed class FacadeAndGeneratorTests
         var calls = new List<string>();
         var readExample = new ReadExampleReportUseCase(new SampleRepository(() => calls.Add("query")),
             new TestUser(), new FixedClock());
-        var facade = new ReporteFacade(readExample, new RecordingChart(calls), []);
+        var facade = new ReporteFacade(readExample, new RecordingChart(calls), [], CreateProductUseCase());
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
             facade.ExportExampleAsync((ReportFormat)999, CancellationToken.None));
         Assert.Empty(calls);
@@ -52,7 +55,7 @@ public sealed class FacadeAndGeneratorTests
         var calls = new List<string>();
         var readExample = new ReadExampleReportUseCase(new SampleRepository(() => calls.Add("query")),
             new TestUser(null, null), new FixedClock());
-        var facade = new ReporteFacade(readExample, new RecordingChart(calls), [new PdfReportGeneratorFactory()]);
+        var facade = new ReporteFacade(readExample, new RecordingChart(calls), [new PdfReportGeneratorFactory()], CreateProductUseCase());
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => facade.ExportExampleAsync(ReportFormat.Pdf, CancellationToken.None));
         Assert.Empty(calls);
     }

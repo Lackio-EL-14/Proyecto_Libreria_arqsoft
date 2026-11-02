@@ -13,5 +13,6 @@
     <PackageReference Include="PdfPig" Version="0.1.13" />
     <Using Include="Xunit" />
     <ProjectReference Include="../../src/Libreria.Servicio.Reportes/Libreria.Servicio.Reportes.csproj" />
+    <ProjectReference Include="../../src/Libreria.Client/Libreria.Client.csproj" />
   </ItemGroup>
 </Project>

@@ -24,6 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(connectionStrings);
         services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
         services.AddScoped<IExampleReportRepository, ExampleReportRepository>();
+        services.AddScoped<IProductReportRepository, ProductReportRepository>();
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddSingleton(TimeProvider.System);
@@ -32,6 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ReportGeneratorFactory, ExcelReportGeneratorFactory>();
         services.AddScoped<ReporteFacade>();
         services.AddScoped<ReadExampleReportUseCase>();
+        services.AddScoped<ReadProductReportUseCase>();
         return services;
     }
 }

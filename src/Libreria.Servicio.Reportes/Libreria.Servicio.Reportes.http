@@ -2,6 +2,26 @@
 @userId = 1
 @username = mauricio
 
+### Categorías activas (GUID públicos)
+GET {{host}}/api/reportes/categorias
+X-Usuario-Id: {{userId}}
+X-Usuario-Nombre: {{username}}
+
+### Lista de productos: se puede agregar CategoryPublicId=<guid de categorías>
+GET {{host}}/api/reportes/productos?MinimumPrice=0&MaximumPrice=50
+X-Usuario-Id: {{userId}}
+X-Usuario-Nombre: {{username}}
+
+### Descargar lista PDF con los mismos filtros
+GET {{host}}/api/reportes/productos/exportar?format=Pdf&MinimumPrice=0&MaximumPrice=50
+X-Usuario-Id: {{userId}}
+X-Usuario-Nombre: {{username}}
+
+### Descargar lista Excel con los mismos filtros
+GET {{host}}/api/reportes/productos/exportar?format=Excel&MinimumPrice=0&MaximumPrice=50
+X-Usuario-Id: {{userId}}
+X-Usuario-Nombre: {{username}}
+
 ### Datos de ejemplo (requiere ConnectionStrings__LibreriaDb y una BD existente)
 GET {{host}}/api/reportes/ejemplo
 X-Usuario-Id: {{userId}}

@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using Libreria.Servicio.Reportes.Application.Abstractions;
+using Libreria.Servicio.Reportes.Application.DTOs;
 using Libreria.Servicio.Reportes.Infrastructure.Connection;
 using Libreria.Servicio.Reportes.Infrastructure.Repositories;
 using Microsoft.Data.SqlClient;
@@ -11,6 +12,45 @@ namespace Libreria.Servicio.Reportes.Tests;
 
 public sealed class RepositoryTests
 {
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task ProductsQueryJoinsTablesAndBindsOptionalFilters(bool category, bool prices)
+    {
+        var connection = new RecordingConnection();
+        var filter = new ProductReportFilter { CategoryPublicId = category ? ProductSampleRepository.CategoryId : null,
+            MinimumPrice = prices ? 10.25m : null, MaximumPrice = prices ? 20m : null };
+        var rows = await new ProductReportRepository(new RecordingConnectionFactory(connection))
+            .ReadProductsAsync(filter, CancellationToken.None);
+        var sql = connection.Command.Sql;
+        Assert.Contains("INNER JOIN dbo.Categoria c ON c.CategoriaId = p.CategoriaId", sql);
+        Assert.Contains("INNER JOIN dbo.Marca m ON m.MarcaId = p.MarcaId", sql);
+        Assert.Contains("ORDER BY p.Nombre, p.PublicId", sql);
+        Assert.Contains("p.PrecioVenta >= @MinimumPrice", sql);
+        Assert.Contains("p.PrecioVenta <= @MaximumPrice", sql);
+        Assert.Contains("c.PublicId = @CategoryPublicId", sql);
+        Assert.False(Regex.IsMatch(sql, @"\b(INSERT|UPDATE|DELETE|MERGE|DROP|ALTER|EXEC|TRUNCATE|Usuario|Rol)\b", RegexOptions.IgnoreCase));
+        Assert.Equal((object?)filter.CategoryPublicId ?? DBNull.Value, connection.Command.Arguments["@CategoryPublicId"].Item2);
+        Assert.Equal((object?)filter.MinimumPrice ?? DBNull.Value, connection.Command.Arguments["@MinimumPrice"].Item2);
+        Assert.Equal((object?)filter.MaximumPrice ?? DBNull.Value, connection.Command.Arguments["@MaximumPrice"].Item2);
+        Assert.Equal("Papelería", Assert.Single(rows).Category);
+        Assert.Equal("Escolar", rows[0].Brand);
+    }
+
+    [ReadOnlySqlFact]
+    public async Task ProductReportSupportsRealReadOnlyQueryWhenConfigured()
+    {
+        var strings = ConnectionStringSingleton.Instancia;
+        strings.Configurar(Environment.GetEnvironmentVariable("LIBRERIA_REPORTES_SQL_TEST_CONNECTION")!);
+        var repository = new ProductReportRepository(new SqlConnectionFactory(strings));
+        var categories = await repository.ReadCategoriesAsync(CancellationToken.None);
+        var filter = new ProductReportFilter { CategoryPublicId = categories.FirstOrDefault()?.PublicId, MinimumPrice = 0 };
+        var rows = await repository.ReadProductsAsync(filter, CancellationToken.None);
+        Assert.All(rows, row => Assert.True(row.Amount >= 0 && row.Category is not null && row.Brand is not null));
+    }
+
     [Fact]
     public async Task AdoRepositoryExecutesOnlyParameterizedSelectAndMapsDecimals()
     {
@@ -104,7 +144,13 @@ public sealed class RepositoryTests
             var table = new DataTable();
             table.Columns.Add("Nombre", typeof(string));
             table.Columns.Add("PrecioVenta", typeof(decimal));
-            table.Rows.Add("Cuaderno", 12.50m);
+            if (Sql.Contains("INNER JOIN"))
+            {
+                table.Columns.Add("Categoria", typeof(string));
+                table.Columns.Add("Marca", typeof(string));
+                table.Rows.Add("Cuaderno", 12.50m, "Papelería", "Escolar");
+            }
+            else table.Rows.Add("Cuaderno", 12.50m);
             return table.CreateDataReader();
         }
         protected override void Dispose(bool disposing)

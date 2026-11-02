@@ -3,6 +3,8 @@ using Libreria.Servicio.Reportes.Application.Facades;
 using Libreria.Servicio.Reportes.Application.UseCases;
 using Libreria.Servicio.Reportes.Domain.Reports;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
+using Libreria.Servicio.Reportes.Application.Abstractions;
 
 namespace Libreria.Servicio.Reportes.Presentation.Controllers;
 
@@ -10,6 +12,27 @@ namespace Libreria.Servicio.Reportes.Presentation.Controllers;
 [Route("api/reportes")]
 public sealed class ReportesController : ControllerBase
 {
+    [HttpGet("categorias")]
+    public async Task<ActionResult<IReadOnlyList<ReportCategory>>> ReadCategories(
+        [FromServices] IProductReportRepository repository, CancellationToken cancellationToken) =>
+        Ok(await repository.ReadCategoriesAsync(cancellationToken));
+
+    [HttpGet("productos")]
+    public async Task<ActionResult<ReportDocument>> ReadProducts(
+        [FromQuery] ProductReportFilter filter,
+        [FromServices] ReadProductReportUseCase useCase, CancellationToken cancellationToken) =>
+        Ok(await useCase.ExecuteAsync(filter, cancellationToken));
+
+    [HttpGet("productos/exportar")]
+    public async Task<IActionResult> ExportProducts(
+        [FromQuery] ProductReportFilter filter,
+        [FromQuery, EnumDataType(typeof(ReportFormat))] ReportFormat format,
+        [FromServices] ReporteFacade facade, CancellationToken cancellationToken)
+    {
+        var result = await facade.ExportProductsAsync(filter, format, cancellationToken);
+        return File(result.Content, result.ContentType, result.FileName);
+    }
+
     [HttpGet("ejemplo")]
     [ProducesResponseType<ReportDocument>(StatusCodes.Status200OK)]
     public async Task<ActionResult<ReportDocument>> ReadExample(

@@ -1,16 +1,69 @@
 @page
 @model Libreria.Client.Pages.Reportes.IndexModel
 @{
-    ViewData["Title"] = "Reportes";
+    ViewData["Title"] = "Reporte de productos";
 }
 
 <div class="page-header">
     <div>
-        <h1>Reportes</h1>
-        <p>Este módulo está preparado para integrar las consultas del servicio de Reportes.</p>
+        <h1>Reporte de productos</h1>
+        <p>Consulte los productos activos por categoría y rango de precios.</p>
     </div>
 </div>
 
-<div class="form-card">
-    <p>Las opciones de reportes se habilitarán conforme se completen las historias asignadas al módulo.</p>
-</div>
+<form method="get" class="form-card" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end; margin-bottom:1.5rem;">
+    <div class="form-group" style="flex:2; min-width:200px; margin:0;">
+        <label asp-for="Filter.CategoryPublicId">Categoría</label>
+        <select asp-for="Filter.CategoryPublicId" class="form-control">
+            <option value="">Todas las categorías</option>
+            @foreach (var category in Model.Categories)
+            {
+                <option value="@category.PublicId">@category.Name</option>
+            }
+        </select>
+    </div>
+    <div class="form-group" style="flex:1; min-width:150px; margin:0;">
+        <label asp-for="Filter.MinimumPrice">Precio mínimo (Bs)</label>
+        <input asp-for="Filter.MinimumPrice" type="number" min="0" step="0.01" class="form-control" />
+    </div>
+    <div class="form-group" style="flex:1; min-width:150px; margin:0;">
+        <label asp-for="Filter.MaximumPrice">Precio máximo (Bs)</label>
+        <input asp-for="Filter.MaximumPrice" type="number" min="0" step="0.01" class="form-control" />
+    </div>
+    <button type="submit" class="btn btn--primary">Consultar</button>
+    <button type="submit" name="handler" value="Pdf" class="btn btn--secondary">Descargar PDF</button>
+    <button type="submit" name="handler" value="Excel" class="btn btn--secondary">Descargar Excel</button>
+    <a asp-page="./Index" class="btn btn--secondary">Limpiar</a>
+</form>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="validation-summary-errors" role="alert">
+        Revise la categoría y los precios. Los precios deben ser números no negativos y el mínimo no puede superar al máximo.
+    </div>
+}
+else if (Model.ErrorMessage is not null)
+{
+    <div class="validation-summary-errors" role="alert">@Model.ErrorMessage</div>
+}
+else if (Model.Products.Count == 0)
+{
+    <div class="form-card">No se encontraron productos con los filtros seleccionados.</div>
+}
+else
+{
+    <div class="table-container">
+        <table>
+            <thead><tr><th>Producto</th><th>Categoría</th><th>Marca</th><th>Precio de venta</th></tr></thead>
+            <tbody>
+            @foreach (var product in Model.Products)
+            {
+                <tr>
+                    <td>@product.Name</td><td>@product.Category</td><td>@product.Brand</td>
+                    <td>Bs @product.Amount.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("es-BO"))</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
