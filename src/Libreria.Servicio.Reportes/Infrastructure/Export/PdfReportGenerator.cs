@@ -1,5 +1,4 @@
-using System.Globalization;
-using Libreria.Servicio.Reportes.Application.Abstractions;
+﻿using Libreria.Servicio.Reportes.Application.Abstractions;
 using Libreria.Servicio.Reportes.Application.DTOs;
 using Libreria.Servicio.Reportes.Domain.Reports;
 using QuestPDF.Fluent;
@@ -11,55 +10,53 @@ public sealed class PdfReportGenerator : IReportGenerator
 {
     public ExportedReport Generate(ReportDocument document, byte[] chartPng)
     {
+        var columns = ReportTemplate.GetColumns(document);
+        var rows = ReportTemplate.GetValues(document);
         var content = Document.Create(container => container.Page(page =>
         {
             page.Size(PageSizes.A4);
             page.Margin(30);
             page.DefaultTextStyle(style => style.FontSize(10));
-            page.Header().Text(document.Title).FontSize(18).SemiBold();
+            page.Header().Element(header => ReportTemplate.PdfHeader(header, document));
             page.Content().PaddingVertical(15).Column(column =>
             {
                 column.Spacing(10);
-                if (!document.IsProductReport)
-                    column.Item().Text("Muestra técnica de productos. No es el reporte definitivo.");
                 column.Item().Table(table =>
                 {
-                    table.ColumnsDefinition(columns =>
+                    table.ColumnsDefinition(definition =>
                     {
-                        columns.RelativeColumn(2);
-                        if (document.IsProductReport)
-                        {
-                            columns.RelativeColumn();
-                            columns.RelativeColumn();
-                        }
-                        columns.ConstantColumn(85);
+                        foreach (var _ in columns) definition.RelativeColumn();
                     });
                     table.Header(header =>
                     {
-                        header.Cell().Text("Producto").SemiBold();
-                        if (document.IsProductReport)
-                        {
-                            header.Cell().Text("Categoría").SemiBold();
-                            header.Cell().Text("Marca").SemiBold();
-                        }
-                        header.Cell().AlignRight().Text("Precio (Bs)").SemiBold();
+                        foreach (var title in columns)
+                            header.Cell().Background(ReportTemplate.Primary).Padding(6)
+                                .Text(title).FontColor(Colors.White).SemiBold();
                     });
-                    foreach (var row in document.Rows)
+                    foreach (var row in rows)
                     {
-                        table.Cell().PaddingVertical(3).Text(row.Name);
-                        if (document.IsProductReport)
+                        foreach (var value in row)
                         {
-                            table.Cell().PaddingVertical(3).Text(row.Category ?? "");
-                            table.Cell().PaddingVertical(3).Text(row.Brand ?? "");
+                            var cell = table.Cell().BorderBottom(0.5f).BorderColor(ReportTemplate.Border).Padding(6);
+                            if (ReportTemplate.IsNumber(value)) cell = cell.AlignRight();
+                            cell.Text(ReportTemplate.Format(value));
                         }
-                        table.Cell().PaddingVertical(3).AlignRight()
-                            .Text(row.Amount.ToString("N2", CultureInfo.GetCultureInfo("es-BO")));
                     }
                 });
-                if (document.Rows.Count == 0) column.Item().Text("No se encontraron productos con los filtros seleccionados.");
+                if (rows.Count == 0)
+                    column.Item().Text(document.IsProductReport
+                        ? "No se encontraron productos con los filtros seleccionados."
+                        : "No se encontraron registros.");
                 if (chartPng.Length > 0) column.Item().Image(chartPng);
+                column.Item().ShowEntire().Element(summary => ReportTemplate.PdfSummary(summary, document));
             });
-            page.Footer().Text($"Generado por {document.GeneratedBy} · {document.GeneratedAt:yyyy-MM-dd HH:mm} UTC");
+            page.Footer().AlignRight().Text(text =>
+            {
+                text.Span("Página ");
+                text.CurrentPageNumber();
+                text.Span(" de ");
+                text.TotalPages();
+            });
         })).GeneratePdf();
         return new ExportedReport(content, "application/pdf",
             document.IsProductReport ? "reporte-productos.pdf" : "ejemplo-us99.pdf");

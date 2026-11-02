@@ -1,4 +1,4 @@
-using ClosedXML.Excel;
+﻿using ClosedXML.Excel;
 using Libreria.Servicio.Reportes.Application.Abstractions;
 using Libreria.Servicio.Reportes.Application.DTOs;
 using Libreria.Servicio.Reportes.Domain.Reports;
@@ -9,47 +9,54 @@ public sealed class ExcelReportGenerator : IReportGenerator
 {
     public ExportedReport Generate(ReportDocument document, byte[] chartPng)
     {
+        var columns = ReportTemplate.GetColumns(document);
+        var rows = ReportTemplate.GetValues(document);
         using var workbook = new XLWorkbook();
-        var sheet = workbook.AddWorksheet(document.IsProductReport ? "Productos" : "Ejemplo US-99");
-        sheet.Cell(1, 1).Value = document.Title;
-        sheet.Cell(2, 1).Value = "Generado por";
-        sheet.Cell(2, 2).Value = document.GeneratedBy;
-        sheet.Cell(3, 1).Value = "Fecha UTC";
-        sheet.Cell(3, 2).Value = document.GeneratedAt.UtcDateTime;
-        sheet.Cell(5, 1).Value = "Producto";
-        var priceColumn = document.IsProductReport ? 4 : 2;
-        if (document.IsProductReport)
-        {
-            sheet.Cell(5, 2).Value = "Categoría";
-            sheet.Cell(5, 3).Value = "Marca";
-            sheet.Column(3).Width = 24;
-        }
-        sheet.Cell(5, priceColumn).Value = "Precio (Bs)";
-        sheet.Range(5, 1, 5, priceColumn).Style.Font.Bold = true;
+        var sheet = workbook.AddWorksheet(document.IsProductReport ? "Productos" : "Reporte");
+        sheet.Style.Font.FontName = "Calibri";
+        sheet.Style.Font.FontSize = 11;
+        ReportTemplate.ExcelHeader(sheet, document, columns.Count);
+        for (var index = 0; index < columns.Count; index++)
+            sheet.Cell(5, index + 1).Value = columns[index];
+        var header = sheet.Range(5, 1, 5, columns.Count);
+        header.Style.Font.Bold = true;
+        header.Style.Font.FontColor = XLColor.White;
+        header.Style.Fill.BackgroundColor = XLColor.FromHtml(ReportTemplate.Primary);
+        sheet.Row(5).Height = 24;
         var rowNumber = 6;
-        foreach (var row in document.Rows)
+        foreach (var row in rows)
         {
-            // Value almacena texto incluso si comienza por '='; nunca se asigna FormulaA1.
-            sheet.Cell(rowNumber, 1).Value = row.Name;
-            if (document.IsProductReport)
+            for (var index = 0; index < row.Count; index++)
             {
-                sheet.Cell(rowNumber, 2).Value = row.Category ?? "";
-                sheet.Cell(rowNumber, 3).Value = row.Brand ?? "";
+                var cell = sheet.Cell(rowNumber, index + 1);
+                // FromObject conserva los números y trata '=...' como texto, nunca como fórmula.
+                cell.Value = XLCellValue.FromObject(row[index], ReportTemplate.Culture);
+                if (ReportTemplate.IsNumber(row[index])) cell.Style.NumberFormat.Format = "#,##0.00";
+                cell.Style.Border.BottomBorder = XLBorderStyleValues.Hair;
+                cell.Style.Border.BottomBorderColor = XLColor.FromHtml(ReportTemplate.Border);
             }
-            sheet.Cell(rowNumber++, priceColumn).Value = row.Amount;
+            rowNumber++;
         }
-        if (document.Rows.Count == 0)
-            sheet.Cell(rowNumber++, 1).Value = "No se encontraron productos con los filtros seleccionados.";
-        sheet.Column(1).Width = 45;
-        sheet.Column(2).Width = 24;
-        sheet.Column(priceColumn).Width = 24;
-        sheet.Range(6, priceColumn, Math.Max(6, rowNumber - 1), priceColumn).Style.NumberFormat.Format = "#,##0.00";
-        sheet.Cell(3, 2).Style.DateFormat.Format = "yyyy-mm-dd hh:mm";
+        if (rows.Count == 0)
+        {
+            sheet.Range(rowNumber, 1, rowNumber, columns.Count).Merge().Value = document.IsProductReport
+                ? "No se encontraron productos con los filtros seleccionados."
+                : "No se encontraron registros.";
+            rowNumber++;
+        }
+        for (var index = 1; index <= columns.Count; index++)
+        {
+            sheet.Column(index).AdjustToContents(5, Math.Max(6, rowNumber - 1));
+            sheet.Column(index).Width = Math.Clamp(sheet.Column(index).Width + 2, 20, 45);
+        }
         if (chartPng.Length > 0)
         {
             using var image = new MemoryStream(chartPng, writable: false);
-            sheet.AddPicture(image).MoveTo(sheet.Cell(rowNumber + 2, 1)).WithSize(720, 360);
+            sheet.AddPicture(image).MoveTo(sheet.Cell(rowNumber + 1, 1)).WithSize(720, 360);
+            rowNumber += 20;
         }
+        ReportTemplate.ExcelSummary(sheet, document, rowNumber + 2, columns.Count);
+        sheet.SheetView.FreezeRows(5);
         using var output = new MemoryStream();
         workbook.SaveAs(output);
         return new ExportedReport(output.ToArray(),
