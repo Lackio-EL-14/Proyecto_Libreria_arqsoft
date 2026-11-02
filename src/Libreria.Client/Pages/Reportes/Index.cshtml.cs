@@ -1,10 +1,47 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc;
+using Libreria.Client.Clients.Common;
+using Libreria.Client.Clients.Reportes;
+using Libreria.Client.DTOs.Reportes;
 
 namespace Libreria.Client.Pages.Reportes;
 
-public sealed class IndexModel : PageModel
+public sealed class IndexModel(IServicioReportesClient reports) : PageModel
 {
-    public void OnGet()
+    [BindProperty(SupportsGet = true)]
+    public ProductReportFilterDto Filter { get; set; } = new();
+    public IReadOnlyList<ReportCategoryDto> Categories { get; private set; } = [];
+    public IReadOnlyList<ProductReportRowDto> Products { get; private set; } = [];
+    public string? ErrorMessage { get; private set; }
+
+    public async Task OnGetAsync(CancellationToken cancellationToken)
     {
+        try
+        {
+            Categories = await reports.GetCategoriesAsync(cancellationToken);
+            if (ModelState.IsValid)
+                Products = (await reports.GetProductsAsync(Filter, cancellationToken))?.Rows ?? [];
+        }
+        catch (Exception exception) when (exception is ApiClientException or ServicioNoDisponibleException)
+        { ErrorMessage = "No se pudo consultar el reporte. Verifique que el servicio de Reportes esté disponible."; }
+    }
+
+    public Task<IActionResult> OnGetPdfAsync(CancellationToken cancellationToken) => DownloadAsync("Pdf", cancellationToken);
+    public Task<IActionResult> OnGetExcelAsync(CancellationToken cancellationToken) => DownloadAsync("Excel", cancellationToken);
+
+    private async Task<IActionResult> DownloadAsync(string format, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid) { await OnGetAsync(cancellationToken); return Page(); }
+        try
+        {
+            var file = await reports.DownloadProductsAsync(Filter, format, cancellationToken);
+            return File(file.Content, file.ContentType, file.FileName);
+        }
+        catch (Exception exception) when (exception is ApiClientException or ServicioNoDisponibleException)
+        {
+            await OnGetAsync(cancellationToken);
+            ErrorMessage = "No se pudo descargar el reporte. Verifique que el servicio de Reportes esté disponible.";
+            return Page();
+        }
     }
 }
