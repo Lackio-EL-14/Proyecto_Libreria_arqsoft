@@ -20,4 +20,15 @@ public interface IServicioUsuariosClient : IApiClient
     Task<IReadOnlyList<UserListItemDto>> ObtenerUsuariosAsync(
     string? estado = null,
     CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<string>> ObtenerRolesAsync(
+    CancellationToken cancellationToken = default);
+
+    Task<CreateUserResultDto?> CrearUsuarioAsync(
+        CreateUserRequestDto request,
+        CancellationToken cancellationToken = default);
+
+    Task ActivarUsuarioAsync(
+    ActivateUserRequestDto request,
+    CancellationToken cancellationToken = default);
 }

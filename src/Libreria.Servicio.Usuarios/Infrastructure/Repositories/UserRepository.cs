@@ -259,104 +259,315 @@ public sealed class UserRepository : IUserRepository
 
 
     public async Task<bool> IsActiveAdministratorAsync(int userId)
-{
-    await using var connection =
-        _connectionFactory.CreateConnection();
-
-    await using var command =
-        connection.CreateCommand();
-
-    command.CommandText = """
-        SELECT COUNT(1)
-        FROM dbo.Usuario u
-        INNER JOIN dbo.Rol r
-            ON r.RolId = u.RolId
-        WHERE u.UsuarioId = @UserId
-          AND u.Estado = @ActiveStatus
-          AND r.Nombre = @AdministratorRole
-          AND r.Estado = 1;
-        """;
-
-    AddParameter(
-        command,
-        "@UserId",
-        userId,
-        DbType.Int32);
-
-    AddParameter(
-        command,
-        "@ActiveStatus",
-        UserStatuses.Active,
-        DbType.String,
-        20);
-
-    AddParameter(
-        command,
-        "@AdministratorRole",
-        SystemRoles.Administrator,
-        DbType.String,
-        50);
-
-    return Convert.ToInt32(
-        await command.ExecuteScalarAsync()) == 1;
-}
-
-public async Task<IReadOnlyList<UserListItemDto>> GetListAsync(
-    string? status = null)
-{
-    await using var connection =
-        _connectionFactory.CreateConnection();
-
-    await using var command =
-        connection.CreateCommand();
-
-    command.CommandText = """
-        SELECT
-            u.PublicId,
-            u.NombreCompleto,
-            u.NombreUsuario,
-            u.Correo,
-            r.Nombre AS Rol,
-            u.Estado
-        FROM dbo.Usuario u
-        INNER JOIN dbo.Rol r
-            ON r.RolId = u.RolId
-        WHERE (@Status IS NULL OR u.Estado = @Status)
-        ORDER BY u.FechaCreacion DESC, u.NombreUsuario ASC;
-        """;
-
-    AddParameter(
-        command,
-        "@Status",
-        status is null ? DBNull.Value : status,
-        DbType.String,
-        20);
-
-    var users = new List<UserListItemDto>();
-
-    await using var reader =
-        await command.ExecuteReaderAsync();
-
-    while (await reader.ReadAsync())
     {
-        users.Add(
-            new UserListItemDto(
-                reader.GetGuid(
-                    reader.GetOrdinal("PublicId")),
-                reader.GetString(
-                    reader.GetOrdinal("NombreCompleto")),
-                reader.GetString(
-                    reader.GetOrdinal("NombreUsuario")),
-                reader.GetString(
-                    reader.GetOrdinal("Correo")),
-                reader.GetString(
-                    reader.GetOrdinal("Rol")),
-                reader.GetString(
-                    reader.GetOrdinal("Estado"))));
+        await using var connection =
+            _connectionFactory.CreateConnection();
+
+        await using var command =
+            connection.CreateCommand();
+
+        command.CommandText = """
+            SELECT COUNT(1)
+            FROM dbo.Usuario u
+            INNER JOIN dbo.Rol r
+                ON r.RolId = u.RolId
+            WHERE u.UsuarioId = @UserId
+            AND u.Estado = @ActiveStatus
+            AND r.Nombre = @AdministratorRole
+            AND r.Estado = 1;
+            """;
+
+        AddParameter(
+            command,
+            "@UserId",
+            userId,
+            DbType.Int32);
+
+        AddParameter(
+            command,
+            "@ActiveStatus",
+            UserStatuses.Active,
+            DbType.String,
+            20);
+
+        AddParameter(
+            command,
+            "@AdministratorRole",
+            SystemRoles.Administrator,
+            DbType.String,
+            50);
+
+        return Convert.ToInt32(
+            await command.ExecuteScalarAsync()) == 1;
     }
 
-    return users;
-}
+    public async Task<IReadOnlyList<UserListItemDto>> GetListAsync(
+        string? status = null)
+    {
+        await using var connection =
+            _connectionFactory.CreateConnection();
+
+        await using var command =
+            connection.CreateCommand();
+
+        command.CommandText = """
+            SELECT
+                u.PublicId,
+                u.NombreCompleto,
+                u.NombreUsuario,
+                u.Correo,
+                r.Nombre AS Rol,
+                u.Estado
+            FROM dbo.Usuario u
+            INNER JOIN dbo.Rol r
+                ON r.RolId = u.RolId
+            WHERE (@Status IS NULL OR u.Estado = @Status)
+            ORDER BY u.FechaCreacion DESC, u.NombreUsuario ASC;
+            """;
+
+        AddParameter(
+            command,
+            "@Status",
+            status is null ? DBNull.Value : status,
+            DbType.String,
+            20);
+
+        var users = new List<UserListItemDto>();
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            users.Add(
+                new UserListItemDto(
+                    reader.GetGuid(
+                        reader.GetOrdinal("PublicId")),
+                    reader.GetString(
+                        reader.GetOrdinal("NombreCompleto")),
+                    reader.GetString(
+                        reader.GetOrdinal("NombreUsuario")),
+                    reader.GetString(
+                        reader.GetOrdinal("Correo")),
+                    reader.GetString(
+                        reader.GetOrdinal("Rol")),
+                    reader.GetString(
+                        reader.GetOrdinal("Estado"))));
+        }
+
+        return users;
+    }
+
+    public async Task<bool> EmailExistsAsync(string email)
+    {
+        await using var connection =
+            _connectionFactory.CreateConnection();
+
+        await using var command =
+            connection.CreateCommand();
+
+        command.CommandText = """
+            SELECT COUNT(1)
+            FROM dbo.Usuario
+            WHERE Correo = @Email;
+            """;
+
+        AddParameter(
+            command,
+            "@Email",
+            email.Trim(),
+            DbType.String,
+            254);
+
+        return Convert.ToInt32(
+            await command.ExecuteScalarAsync()) > 0;
+    }
+
+    public async Task<int?> GetActiveRoleIdByNameAsync(string roleName)
+    {
+        await using var connection =
+            _connectionFactory.CreateConnection();
+
+        await using var command =
+            connection.CreateCommand();
+
+        command.CommandText = """
+            SELECT RolId
+            FROM dbo.Rol
+            WHERE Nombre = @RoleName
+            AND Estado = 1;
+            """;
+
+        AddParameter(
+            command,
+            "@RoleName",
+            roleName.Trim(),
+            DbType.String,
+            50);
+
+        var result = await command.ExecuteScalarAsync();
+
+        return result is null || result == DBNull.Value
+            ? null
+            : Convert.ToInt32(result);
+    }
+
+    public async Task<IReadOnlyList<string>>
+        GetActiveRoleNamesAsync()
+    {
+        await using var connection =
+            _connectionFactory.CreateConnection();
+
+        await using var command =
+            connection.CreateCommand();
+
+        command.CommandText = """
+            SELECT Nombre
+            FROM dbo.Rol
+            WHERE Estado = 1
+            ORDER BY Nombre ASC;
+            """;
+
+        var roles = new List<string>();
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            roles.Add(reader.GetString(
+                reader.GetOrdinal("Nombre")));
+        }
+
+        return roles;
+    }
+
+    public async Task<Guid> CreatePendingAsync(User user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        await using var connection =
+            _connectionFactory.CreateConnection();
+
+        await using var command =
+            connection.CreateCommand();
+
+        command.CommandText = """
+            INSERT INTO dbo.Usuario
+            (
+                Nombre,
+                Apellido,
+                Correo,
+                NombreUsuario,
+                NombreCompleto,
+                PasswordHash,
+                RolId,
+                Estado,
+                TokenActivacionHash,
+                TokenActivacionExpiracion,
+                TokenActivacionFechaUso,
+                UsuarioCreacionId,
+                UsuarioModificacionId
+            )
+            OUTPUT INSERTED.PublicId
+            VALUES
+            (
+                @FirstName,
+                @LastName,
+                @Email,
+                @Username,
+                @FullName,
+                NULL,
+                @RoleId,
+                @Status,
+                @ActivationTokenHash,
+                @ActivationTokenExpiresAt,
+                NULL,
+                @CreatedByUserId,
+                NULL
+            );
+            """;
+
+        AddParameter(
+            command,
+            "@FirstName",
+            user.FirstName.Trim(),
+            DbType.String,
+            100);
+
+        AddParameter(
+            command,
+            "@LastName",
+            user.LastName.Trim(),
+            DbType.String,
+            100);
+
+        AddParameter(
+            command,
+            "@Email",
+            user.Email.Trim(),
+            DbType.String,
+            254);
+
+        AddParameter(
+            command,
+            "@Username",
+            user.Username.Trim(),
+            DbType.String,
+            50);
+
+        AddParameter(
+            command,
+            "@FullName",
+            user.FullName.Trim(),
+            DbType.String,
+            150);
+
+        AddParameter(
+            command,
+            "@RoleId",
+            user.RoleId,
+            DbType.Int32);
+
+        AddParameter(
+            command,
+            "@Status",
+            UserStatuses.Pending,
+            DbType.String,
+            20);
+
+        AddParameter(
+            command,
+            "@ActivationTokenHash",
+            user.ActivationTokenHash
+                ?? throw new InvalidOperationException(
+                    "El token de activación es obligatorio."),
+            DbType.String,
+            200);
+
+        AddParameter(
+            command,
+            "@ActivationTokenExpiresAt",
+            user.ActivationTokenExpiresAt
+                ?? throw new InvalidOperationException(
+                    "La expiración del token es obligatoria."),
+            DbType.DateTime2);
+
+        AddParameter(
+            command,
+            "@CreatedByUserId",
+            user.CreatedByUserId.HasValue
+                ? user.CreatedByUserId.Value
+                : DBNull.Value,
+            DbType.Int32);
+
+        var result = await command.ExecuteScalarAsync();
+
+        return (Guid)(result
+            ?? throw new InvalidOperationException(
+                "No fue posible obtener el identificador del usuario."));
+    }
+
     private static User MapUser(DbDataReader reader)
     {
         var roleId = reader.GetInt32(
@@ -508,5 +719,117 @@ public async Task<IReadOnlyList<UserListItemDto>> GetListAsync(
 
         return Convert.ToInt32(
             await command.ExecuteScalarAsync()) > 0;
+    }
+
+    public async Task<User?> GetByActivationTokenHashAsync(
+    string tokenHash)
+    {
+        await using var connection =
+            _connectionFactory.CreateConnection();
+
+        await using var command =
+            connection.CreateCommand();
+
+        command.CommandText = """
+            SELECT
+                u.UsuarioId,
+                u.PublicId,
+                u.Nombre,
+                u.Apellido,
+                u.Correo,
+                u.NombreUsuario,
+                u.NombreCompleto,
+                u.PasswordHash,
+                u.RolId,
+                u.Estado,
+                u.TokenActivacionHash,
+                u.TokenActivacionExpiracion,
+                u.TokenActivacionFechaUso,
+                u.FechaCreacion,
+                u.FechaModificacion,
+                u.UsuarioCreacionId,
+                u.UsuarioModificacionId,
+                r.Nombre AS RolNombre,
+                r.Descripcion AS RolDescripcion,
+                r.Estado AS RolEstado
+            FROM dbo.Usuario u
+            INNER JOIN dbo.Rol r
+                ON r.RolId = u.RolId
+            WHERE u.TokenActivacionHash = @TokenHash
+            AND r.Estado = 1;
+            """;
+
+        AddParameter(
+            command,
+            "@TokenHash",
+            tokenHash.Trim(),
+            DbType.String,
+            200);
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        return await reader.ReadAsync()
+            ? MapUser(reader)
+            : null;
+    }
+
+    public async Task<bool> ActivateAsync(
+        int userId,
+        string passwordHash,
+        DateTime activatedAt)
+    {
+        await using var connection =
+            _connectionFactory.CreateConnection();
+
+        await using var command =
+            connection.CreateCommand();
+
+        command.CommandText = """
+            UPDATE dbo.Usuario
+            SET PasswordHash = @PasswordHash,
+                Estado = @ActiveStatus,
+                TokenActivacionFechaUso = @ActivatedAt,
+                FechaModificacion = @ActivatedAt
+            WHERE UsuarioId = @UserId
+            AND Estado = @PendingStatus
+            AND TokenActivacionFechaUso IS NULL
+            AND TokenActivacionExpiracion > @ActivatedAt;
+            """;
+
+        AddParameter(
+            command,
+            "@PasswordHash",
+            passwordHash,
+            DbType.String,
+            500);
+
+        AddParameter(
+            command,
+            "@ActiveStatus",
+            UserStatuses.Active,
+            DbType.String,
+            20);
+
+        AddParameter(
+            command,
+            "@PendingStatus",
+            UserStatuses.Pending,
+            DbType.String,
+            20);
+
+        AddParameter(
+            command,
+            "@ActivatedAt",
+            activatedAt,
+            DbType.DateTime2);
+
+        AddParameter(
+            command,
+            "@UserId",
+            userId,
+            DbType.Int32);
+
+        return await command.ExecuteNonQueryAsync() == 1;
     }
 }

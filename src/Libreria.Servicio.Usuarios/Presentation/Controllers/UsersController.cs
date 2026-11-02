@@ -11,14 +11,23 @@ public sealed class UsersController : ControllerBase
     private readonly CheckActiveSessionUseCase _checkActiveSessionUseCase;
     private readonly GetUserNamesUseCase _getUserNamesUseCase;
     private readonly ListUsersUseCase _listUsersUseCase;
+    private readonly CreateUserUseCase _createUserUseCase;
+    private readonly ActivateUserUseCase _activateUserUseCase;
+    private readonly GetUserRolesUseCase _getUserRolesUseCase;
+
     public UsersController(
         CheckActiveSessionUseCase checkActiveSessionUseCase,
         GetUserNamesUseCase getUserNamesUseCase,
-        ListUsersUseCase listUsersUseCase)
+        ListUsersUseCase listUsersUseCase,CreateUserUseCase createUserUseCase,
+        ActivateUserUseCase activateUserUseCase,
+        GetUserRolesUseCase getUserRolesUseCase)
     {
         _checkActiveSessionUseCase = checkActiveSessionUseCase;
         _getUserNamesUseCase = getUserNamesUseCase;
         _listUsersUseCase = listUsersUseCase;
+        _createUserUseCase = createUserUseCase;
+        _activateUserUseCase = activateUserUseCase;
+        _getUserRolesUseCase = getUserRolesUseCase;
     }
 
     [HttpGet]
@@ -102,4 +111,106 @@ public sealed class UsersController : ControllerBase
 
         return Ok(names);
     }
+
+    [HttpPost]
+    [ProducesResponseType(
+        typeof(CreateUserResultDto),
+        StatusCodes.Status201Created)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<CreateUserResultDto>>
+        CreateUserAsync(
+            [FromBody] CreateUserRequest request)
+    {
+        try
+        {
+            var result =
+                await _createUserUseCase.ExecuteAsync(request);
+
+            if (result is null)
+            {
+                return StatusCode(
+                    StatusCodes.Status403Forbidden);
+            }
+
+            return StatusCode(
+                StatusCodes.Status201Created,
+                result);
+        }
+        catch (ArgumentException exception)
+        {
+            return Problem(
+                title: "Solicitud inválida.",
+                detail: exception.Message,
+                statusCode:
+                    StatusCodes.Status400BadRequest);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return Problem(
+                title: "No fue posible registrar el usuario.",
+                detail: exception.Message,
+                statusCode:
+                    StatusCodes.Status409Conflict);
+        }
+    }
+
+    [HttpGet("roles")]
+    [ProducesResponseType(
+        typeof(IReadOnlyList<string>),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IReadOnlyList<string>>>
+        GetRolesAsync()
+    {
+        var roles =
+            await _getUserRolesUseCase.ExecuteAsync();
+
+        if (roles is null)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden);
+        }
+
+        return Ok(roles);
+    }
+
+
+    [HttpPost("activar")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ActivateUserAsync(
+        [FromBody] ActivateUserRequest request)
+    {
+        try
+        {
+            await _activateUserUseCase.ExecuteAsync(request);
+
+            return NoContent();
+        }
+        catch (ArgumentException exception)
+        {
+            return Problem(
+                title: "No fue posible activar la cuenta.",
+                detail: exception.Message,
+                statusCode:
+                    StatusCodes.Status400BadRequest);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return Problem(
+                title: "No fue posible activar la cuenta.",
+                detail: exception.Message,
+                statusCode:
+                    StatusCodes.Status400BadRequest);
+        }
+    }
+
 }

@@ -68,4 +68,29 @@ public sealed class ServicioUsuariosClient : ApiClientBase, IServicioUsuariosCli
                 cancellationToken)
             ?? [];
     }
+
+    public async Task<IReadOnlyList<string>> ObtenerRolesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<List<string>>(
+                "api/usuarios/roles",
+                cancellationToken)
+            ?? [];
+    }
+
+    public Task<CreateUserResultDto?> CrearUsuarioAsync(
+        CreateUserRequestDto request,
+        CancellationToken cancellationToken = default) =>
+        PostAsync<CreateUserRequestDto, CreateUserResultDto>(
+            "api/usuarios",
+            request,
+            cancellationToken);
+
+    public Task ActivarUsuarioAsync(
+    ActivateUserRequestDto request,
+    CancellationToken cancellationToken = default) =>
+    PostAsync(
+        "api/usuarios/activar",
+        request,
+        cancellationToken);
 }
