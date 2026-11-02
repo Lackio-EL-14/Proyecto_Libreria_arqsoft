@@ -4,6 +4,7 @@ using Libreria.Servicio.Usuarios.Application.Abstractions;
 using Libreria.Servicio.Usuarios.Domain.Constants;
 using Libreria.Servicio.Usuarios.Domain.Entities;
 using Libreria.Servicio.Usuarios.Infrastructure.Connection;
+using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 
 namespace Libreria.Servicio.Usuarios.Infrastructure.Repositories;
 
@@ -256,6 +257,106 @@ public sealed class UserRepository : IUserRepository
         return result;
     }
 
+
+    public async Task<bool> IsActiveAdministratorAsync(int userId)
+{
+    await using var connection =
+        _connectionFactory.CreateConnection();
+
+    await using var command =
+        connection.CreateCommand();
+
+    command.CommandText = """
+        SELECT COUNT(1)
+        FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r
+            ON r.RolId = u.RolId
+        WHERE u.UsuarioId = @UserId
+          AND u.Estado = @ActiveStatus
+          AND r.Nombre = @AdministratorRole
+          AND r.Estado = 1;
+        """;
+
+    AddParameter(
+        command,
+        "@UserId",
+        userId,
+        DbType.Int32);
+
+    AddParameter(
+        command,
+        "@ActiveStatus",
+        UserStatuses.Active,
+        DbType.String,
+        20);
+
+    AddParameter(
+        command,
+        "@AdministratorRole",
+        SystemRoles.Administrator,
+        DbType.String,
+        50);
+
+    return Convert.ToInt32(
+        await command.ExecuteScalarAsync()) == 1;
+}
+
+public async Task<IReadOnlyList<UserListItemDto>> GetListAsync(
+    string? status = null)
+{
+    await using var connection =
+        _connectionFactory.CreateConnection();
+
+    await using var command =
+        connection.CreateCommand();
+
+    command.CommandText = """
+        SELECT
+            u.PublicId,
+            u.NombreCompleto,
+            u.NombreUsuario,
+            u.Correo,
+            r.Nombre AS Rol,
+            u.Estado
+        FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r
+            ON r.RolId = u.RolId
+        WHERE (@Status IS NULL OR u.Estado = @Status)
+        ORDER BY u.FechaCreacion DESC, u.NombreUsuario ASC;
+        """;
+
+    AddParameter(
+        command,
+        "@Status",
+        status is null ? DBNull.Value : status,
+        DbType.String,
+        20);
+
+    var users = new List<UserListItemDto>();
+
+    await using var reader =
+        await command.ExecuteReaderAsync();
+
+    while (await reader.ReadAsync())
+    {
+        users.Add(
+            new UserListItemDto(
+                reader.GetGuid(
+                    reader.GetOrdinal("PublicId")),
+                reader.GetString(
+                    reader.GetOrdinal("NombreCompleto")),
+                reader.GetString(
+                    reader.GetOrdinal("NombreUsuario")),
+                reader.GetString(
+                    reader.GetOrdinal("Correo")),
+                reader.GetString(
+                    reader.GetOrdinal("Rol")),
+                reader.GetString(
+                    reader.GetOrdinal("Estado"))));
+    }
+
+    return users;
+}
     private static User MapUser(DbDataReader reader)
     {
         var roleId = reader.GetInt32(

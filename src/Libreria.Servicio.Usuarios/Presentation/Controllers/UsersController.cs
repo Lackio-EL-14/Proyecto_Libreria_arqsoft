@@ -1,5 +1,6 @@
 using Libreria.Servicio.Usuarios.Application.UseCases.Users;
 using Microsoft.AspNetCore.Mvc;
+using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 
 namespace Libreria.Servicio.Usuarios.Presentation.Controllers;
 
@@ -9,15 +10,47 @@ public sealed class UsersController : ControllerBase
 {
     private readonly CheckActiveSessionUseCase _checkActiveSessionUseCase;
     private readonly GetUserNamesUseCase _getUserNamesUseCase;
+    private readonly ListUsersUseCase _listUsersUseCase;
     public UsersController(
-    CheckActiveSessionUseCase checkActiveSessionUseCase,
-    GetUserNamesUseCase getUserNamesUseCase)
+        CheckActiveSessionUseCase checkActiveSessionUseCase,
+        GetUserNamesUseCase getUserNamesUseCase,
+        ListUsersUseCase listUsersUseCase)
     {
-        _checkActiveSessionUseCase =
-            checkActiveSessionUseCase;
+        _checkActiveSessionUseCase = checkActiveSessionUseCase;
+        _getUserNamesUseCase = getUserNamesUseCase;
+        _listUsersUseCase = listUsersUseCase;
+    }
 
-        _getUserNamesUseCase =
-            getUserNamesUseCase;
+    [HttpGet]
+    [ProducesResponseType(
+        typeof(IReadOnlyList<UserListItemDto>),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IReadOnlyList<UserListItemDto>>> GetUsersAsync(
+        [FromQuery] string? estado = null)
+    {
+        try
+        {
+            var users =
+                await _listUsersUseCase.ExecuteAsync(estado);
+
+           if (users is null)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden);
+            }
+
+            return Ok(users);
+        }
+        catch (ArgumentException exception)
+        {
+            return Problem(
+                title: "Solicitud inválida.",
+                detail: exception.Message,
+                statusCode: StatusCodes.Status400BadRequest);
+        }
     }
 
     [HttpGet("{id:int}/sesion-activa")]

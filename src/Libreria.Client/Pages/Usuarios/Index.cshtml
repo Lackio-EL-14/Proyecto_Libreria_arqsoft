@@ -52,16 +52,11 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Identificador público</th>
                         <th>Nombre completo</th>
                         <th>Nombre de usuario</th>
                         <th>Correo electrónico</th>
                         <th>Rol</th>
                         <th>Estado</th>
-                        <th>Fecha de creación</th>
-                        <th>Creado por</th>
-                        <th>Modificado por</th>
-                        <th>Fecha de modificación</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -69,23 +64,20 @@
                     @foreach (var usuario in Model.Usuarios)
                     {
                         <tr>
-                            <td>@usuario.PublicId</td>
-                            <td>@usuario.NombreCompleto</td>
-                            <td>@usuario.NombreUsuario</td>
-                            <td>@usuario.Correo</td>
-                            <td>@usuario.Rol</td>
-                            <td>@usuario.Estado</td>
-                            <td>@usuario.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td>@(usuario.CreadoPor ?? "—")</td>
-                            <td>@(usuario.ModificadoPor ?? "Sin modificaciones registradas")</td>
-                            <td>@(usuario.FechaModificacion?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                            <td>@usuario.FullName</td>
+                            <td>@usuario.Username</td>
+                            <td>@usuario.Email</td>
+                            <td>@usuario.Role</td>
+                            <td>@usuario.Status</td>
                             <td>
-                                @if (usuario.Estado != EstadosUsuario.Inactivo)
+                                @if (usuario.Status != EstadosUsuario.Inactivo)
                                 {
-                                    <button type="button" class="btn-table btn-table--danger"
-                                            data-confirm-trigger data-modal-target="usuario-baja-modal"
+                                    <button type="button"
+                                            class="btn-table btn-table--danger"
+                                            data-confirm-trigger
+                                            data-modal-target="usuario-baja-modal"
                                             data-entity-id="@Model.ProtegerId(usuario.PublicId)"
-                                            data-entity-name="@usuario.NombreCompleto">
+                                            data-entity-name="@usuario.FullName">
                                         Dar de baja
                                     </button>
                                 }

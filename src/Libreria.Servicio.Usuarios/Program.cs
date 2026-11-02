@@ -45,6 +45,7 @@ builder.Services.AddScoped<LoginValidator>();
 builder.Services.AddScoped<LoginUseCase>();
 builder.Services.AddScoped<CheckActiveSessionUseCase>();
 builder.Services.AddScoped<GetUserNamesUseCase>();
+builder.Services.AddScoped<ListUsersUseCase>();
 
 builder.Services.AddScoped<UsernameGenerator>();
 builder.Services.AddScoped<UsuarioFacade>();
