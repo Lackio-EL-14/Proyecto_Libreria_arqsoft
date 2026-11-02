@@ -16,4 +16,8 @@ public interface IServicioUsuariosClient : IApiClient
     Task<IReadOnlyDictionary<int, string>> ObtenerNombresAsync(
         IEnumerable<int> usuarioIds,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<UserListItemDto>> ObtenerUsuariosAsync(
+    string? estado = null,
+    CancellationToken cancellationToken = default);
 }

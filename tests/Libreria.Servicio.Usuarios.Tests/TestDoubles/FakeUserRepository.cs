@@ -1,5 +1,6 @@
 using Libreria.Servicio.Usuarios.Application.Abstractions;
 using Libreria.Servicio.Usuarios.Domain.Entities;
+using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 
 namespace Libreria.Servicio.Usuarios.Tests.TestDoubles;
 
@@ -12,6 +13,12 @@ public sealed class FakeUserRepository : IUserRepository
     public bool UpdatePasswordResult { get; set; } = true;
 
     public bool SessionActive { get; set; }
+
+    public bool IsActiveAdministrator { get; set; }
+
+    public List<UserListItemDto> UserList { get; } = [];
+
+    public string? LastListStatus { get; private set; }
 
     public Dictionary<int, string> Names { get; } = new();
 
@@ -62,4 +69,21 @@ public sealed class FakeUserRepository : IUserRepository
         return Task.FromResult(
             ExistingUsernames.Contains(username));
     }
+
+
+    public Task<bool> IsActiveAdministratorAsync(int userId)
+    {
+        return Task.FromResult(IsActiveAdministrator);
+    }
+
+    public Task<IReadOnlyList<UserListItemDto>> GetListAsync(
+        string? status = null)
+    {
+        LastListStatus = status;
+
+        IReadOnlyList<UserListItemDto> result = UserList;
+
+        return Task.FromResult(result);
+    }
+
 }
