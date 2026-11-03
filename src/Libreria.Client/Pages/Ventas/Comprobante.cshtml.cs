@@ -1,5 +1,5 @@
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Primary;
+using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Ventas;
 using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,18 +11,18 @@ namespace Libreria.Client.Pages.Ventas;
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 public class ComprobanteModel : PageModel
 {
-    private readonly IComprobanteVentaService _comprobantes;
+    private readonly IVentasApiClient _ventasApiClient;
     private readonly ILogger<ComprobanteModel> _logger;
 
     public ComprobanteModel(
-        IComprobanteVentaService comprobantes,
+        IVentasApiClient ventasApiClient,
         ILogger<ComprobanteModel> logger)
     {
-        _comprobantes = comprobantes;
+        _ventasApiClient = ventasApiClient;
         _logger = logger;
     }
 
-    public ComprobanteVenta? Comprobante { get; private set; }
+    public ComprobanteVentaDto? Comprobante { get; private set; }
     public string? MensajeError { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(Guid publicId)
@@ -39,7 +39,7 @@ public class ComprobanteModel : PageModel
 
         try
         {
-            Comprobante = await _comprobantes.ObtenerAsync(publicId);
+            Comprobante = await _ventasApiClient.ObtenerComprobanteAsync(publicId);
 
             return Comprobante is null
                 ? ComprobanteNoEncontrado()

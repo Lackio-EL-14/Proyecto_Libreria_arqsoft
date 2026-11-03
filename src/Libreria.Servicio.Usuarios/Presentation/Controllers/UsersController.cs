@@ -15,13 +15,17 @@ public sealed class UsersController : ControllerBase
     private readonly ActivateUserUseCase _activateUserUseCase;
     private readonly GetUserRolesUseCase _getUserRolesUseCase;
     private readonly ChangePasswordUseCase _changePasswordUseCase;
+    private readonly DeactivateUserUseCase _deactivateUserUseCase;
 
     public UsersController(
         CheckActiveSessionUseCase checkActiveSessionUseCase,
         GetUserNamesUseCase getUserNamesUseCase,
-        ListUsersUseCase listUsersUseCase,CreateUserUseCase createUserUseCase,
+        ListUsersUseCase listUsersUseCase,
+        CreateUserUseCase createUserUseCase,
         ActivateUserUseCase activateUserUseCase,
-        GetUserRolesUseCase getUserRolesUseCase,ChangePasswordUseCase changePasswordUseCase)
+        GetUserRolesUseCase getUserRolesUseCase,
+        ChangePasswordUseCase changePasswordUseCase,
+        DeactivateUserUseCase deactivateUserUseCase)
     {
         _checkActiveSessionUseCase = checkActiveSessionUseCase;
         _getUserNamesUseCase = getUserNamesUseCase;
@@ -30,6 +34,7 @@ public sealed class UsersController : ControllerBase
         _activateUserUseCase = activateUserUseCase;
         _getUserRolesUseCase = getUserRolesUseCase;
         _changePasswordUseCase = changePasswordUseCase;
+        _deactivateUserUseCase = deactivateUserUseCase;
     }
 
     [HttpGet]
@@ -254,5 +259,57 @@ public sealed class UsersController : ControllerBase
                 detail: exception.Message,
                 statusCode: StatusCodes.Status409Conflict);
         }
+    }
+
+    [HttpDelete("{publicId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> DeactivateUserAsync(
+        Guid publicId)
+    {
+        var result =
+            await _deactivateUserUseCase.ExecuteAsync(publicId);
+
+        return result switch
+        {
+            DeactivateUserResult.Success =>
+                NoContent(),
+
+            DeactivateUserResult.NotFound =>
+                Problem(
+                    title: "Usuario no encontrado.",
+                    detail: "No se encontró el usuario solicitado.",
+                    statusCode: StatusCodes.Status404NotFound),
+
+            DeactivateUserResult.ActorNotAuthorized =>
+                StatusCode(StatusCodes.Status403Forbidden),
+
+            DeactivateUserResult.AlreadyInactive =>
+                Problem(
+                    title: "No fue posible dar de baja al usuario.",
+                    detail: "El usuario ya se encuentra inactivo.",
+                    statusCode: StatusCodes.Status409Conflict),
+
+            DeactivateUserResult.LastActiveAdministrator =>
+                Problem(
+                    title: "No fue posible dar de baja al usuario.",
+                    detail: "No se puede dar de baja al último administrador activo.",
+                    statusCode: StatusCodes.Status409Conflict),
+
+            DeactivateUserResult.SelfDeactivation =>
+                Problem(
+                    title: "No fue posible dar de baja al usuario.",
+                    detail: "No puede darse de baja a sí mismo.",
+                    statusCode: StatusCodes.Status409Conflict),
+
+            _ => throw new InvalidOperationException(
+                "Resultado de baja de usuario no reconocido.")
+        };
     }
 }

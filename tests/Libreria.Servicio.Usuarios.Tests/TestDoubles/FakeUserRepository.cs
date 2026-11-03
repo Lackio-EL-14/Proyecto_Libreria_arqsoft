@@ -39,6 +39,14 @@ public sealed class FakeUserRepository : IUserRepository
 
     public DateTime? ActivatedAt { get; private set; }
 
+    public List<UserDeactivationData> UsersForDeactivation { get; } = [];
+
+    public bool DeactivateResult { get; set; } = true;
+
+    public int? DeactivatedUserId { get; private set; }
+
+    public int? DeactivatedByUserId { get; private set; }
+
     public HashSet<string> ExistingUsernames { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 
@@ -166,4 +174,22 @@ public sealed class FakeUserRepository : IUserRepository
 
         return Task.FromResult(ActivateResult);
     }
+
+    public Task<IReadOnlyList<UserDeactivationData>>
+        GetUsersForDeactivationAsync()
+    {
+        return Task.FromResult<IReadOnlyList<UserDeactivationData>>(
+            UsersForDeactivation);
+    }
+
+    public Task<bool> DeactivateAsync(
+        int userId,
+        int modifiedByUserId)
+    {
+        DeactivatedUserId = userId;
+        DeactivatedByUserId = modifiedByUserId;
+
+        return Task.FromResult(DeactivateResult);
+    }
+
 }

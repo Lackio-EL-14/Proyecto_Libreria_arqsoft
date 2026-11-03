@@ -5,26 +5,25 @@ using Libreria.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-
 using Libreria.Client.Clients.Usuarios;
 using Libreria.Client.DTOs.Usuarios;
+using Libreria.Client.Clients.Common;
 
 namespace Libreria.Client.Pages.Usuarios;
 
 [Authorize(Policy = PoliticasAcceso.SoloAdministrador)]
 public class IndexModel : PageModel
 {
-    private readonly IConsultaUsuarioService _consulta;
-    private readonly IAuthorizationService _authorizationService;
-    private readonly IUsuarioSeguridadService _seguridad;
+   private readonly IAuthorizationService _authorizationService;
     private readonly IUrlProtector _protector;
     private readonly IServicioUsuariosClient _usuariosClient;
-    public IndexModel(IConsultaUsuarioService consulta, IAuthorizationService authorizationService,
-        IUsuarioSeguridadService seguridad, IUrlProtector protector,IServicioUsuariosClient usuariosClient)
+
+    public IndexModel(
+        IAuthorizationService authorizationService,
+        IUrlProtector protector,
+        IServicioUsuariosClient usuariosClient)
     {
-        _consulta = consulta;
         _authorizationService = authorizationService;
-        _seguridad = seguridad;
         _protector = protector;
         _usuariosClient = usuariosClient;
     }
@@ -37,26 +36,49 @@ public class IndexModel : PageModel
 
     public string ProtegerId(Guid publicId) => _protector.Cifrar(publicId);
 
-    public async Task<IActionResult> OnPostDarDeBajaAsync(string? publicId)
+    public async Task<IActionResult> OnPostDarDeBajaAsync(
+        string? publicId)
     {
         if (User.Identity?.IsAuthenticated != true)
+        {
             return Challenge();
-        if (!(await _authorizationService.AuthorizeAsync(User, PoliticasAcceso.SoloAdministrador)).Succeeded)
+        }
+
+        if (!(await _authorizationService.AuthorizeAsync(
+                User,
+                PoliticasAcceso.SoloAdministrador)).Succeeded)
+        {
             return Forbid();
+        }
 
-        var identificador = string.IsNullOrWhiteSpace(publicId) ? null : _protector.Descifrar(publicId);
-        if (!identificador.HasValue || identificador == Guid.Empty)
+        var identificador =
+            string.IsNullOrWhiteSpace(publicId)
+                ? null
+                : _protector.Descifrar(publicId);
+
+        if (!identificador.HasValue ||
+            identificador == Guid.Empty)
+        {
             return BadRequest();
+        }
 
-        var resultado = await _seguridad.DarDeBajaAsync(identificador.Value);
-        if (resultado.NoEncontrado)
-            return NotFound();
-        if (resultado.Exitoso)
-            TempData["MensajeExito"] = "Usuario dado de baja correctamente.";
-        else
-            TempData["MensajeError"] = string.Join(" ", resultado.Errores.Values);
+        try
+        {
+            await _usuariosClient.DarDeBajaUsuarioAsync(
+                identificador.Value,
+                HttpContext.RequestAborted);
 
-        return RedirectToPage("./Index", new { Estado });
+            TempData["MensajeExito"] =
+                "Usuario dado de baja correctamente.";
+        }
+        catch (ApiClientException error)
+        {
+            TempData["MensajeError"] = error.Message;
+        }
+
+        return RedirectToPage(
+            "./Index",
+            new { Estado });
     }
 
     public async Task<IActionResult> OnGetAsync()
