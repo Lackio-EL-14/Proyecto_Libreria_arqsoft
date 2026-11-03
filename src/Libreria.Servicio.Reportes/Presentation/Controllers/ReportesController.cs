@@ -25,6 +25,21 @@ public sealed class ReportesController : ControllerBase
         return File(result.Content, result.ContentType, result.FileName);
     }
 
+    [HttpGet("ventas/exportar")]
+    public async Task<IActionResult> ExportSales(
+        [FromQuery] SalesReportFilter filter,
+        [FromQuery, EnumDataType(typeof(ReportFormat))] ReportFormat format,
+        [FromServices] ReporteFacade facade,
+        CancellationToken cancellationToken)
+    {
+        var result = await facade.ExportSalesAsync(
+            filter,
+            format,
+            cancellationToken);
+
+        return File(result.Content, result.ContentType, result.FileName);
+    }
+
     [HttpGet("categorias")]
     public async Task<ActionResult<IReadOnlyList<ReportCategory>>> ReadCategories(
         [FromServices] IProductReportRepository repository, CancellationToken cancellationToken) =>

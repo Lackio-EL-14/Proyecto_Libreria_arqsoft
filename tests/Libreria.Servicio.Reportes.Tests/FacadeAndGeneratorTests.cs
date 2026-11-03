@@ -120,6 +120,7 @@ public sealed class FacadeAndGeneratorTests
     private sealed class RecordingChart(List<string> calls) : IReportChartRenderer
     {
         public byte[] Render(IReadOnlyList<ReportRow> rows) { calls.Add("chart"); return [9]; }
+        public byte[] RenderSales(IReadOnlyList<SalesReportRow> rows) { calls.Add("chart"); return [9]; }
     }
 
     private sealed class RecordingFactory(List<string> calls) : ReportGeneratorFactory

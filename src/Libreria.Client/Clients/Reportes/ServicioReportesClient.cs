@@ -29,6 +29,25 @@ public sealed class ServicioReportesClient : ApiClientBase, IServicioReportesCli
     public Task<ReportFileDto> DownloadSalesPdfAsync(SalesReportFilterDto filter, CancellationToken cancellationToken = default) =>
         DownloadFileAsync(BuildSalesUrl("api/reportes/ventas/pdf", filter), "reporte-ventas.pdf", cancellationToken);
 
+    public Task<ReportFileDto> DownloadSalesAsync(
+        SalesReportFilterDto filter,
+        string format,
+        CancellationToken cancellationToken = default)
+    {
+        if (format is not ("Pdf" or "Excel"))
+            throw new ArgumentException("El formato debe ser PDF o Excel.", nameof(format));
+
+        var url = QueryHelpers.AddQueryString(
+            BuildSalesUrl("api/reportes/ventas/exportar", filter),
+            "format",
+            format);
+        var fileName = format == "Pdf"
+            ? "reporte-ventas.pdf"
+            : "reporte-ventas.xlsx";
+
+        return DownloadFileAsync(url, fileName, cancellationToken);
+    }
+
     public async Task<ReportFileDto> DownloadProductsAsync(
         ProductReportFilterDto filter, string format, CancellationToken cancellationToken = default)
     {

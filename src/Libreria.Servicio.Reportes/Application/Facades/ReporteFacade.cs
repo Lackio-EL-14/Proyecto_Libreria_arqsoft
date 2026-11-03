@@ -14,11 +14,27 @@ public sealed class ReporteFacade(
         readSales.ExecuteAsync(filter, cancellationToken);
 
     public async Task<ExportedReport> ExportSalesPdfAsync(SalesReportFilter filter, CancellationToken cancellationToken)
+        => await ExportSalesAsync(filter, ReportFormat.Pdf, cancellationToken);
+
+    public async Task<ExportedReport> ExportSalesAsync(
+        SalesReportFilter filter,
+        ReportFormat format,
+        CancellationToken cancellationToken)
     {
-        var factory = FindFactory(ReportFormat.Pdf);
+        var factory = FindFactory(format);
         var result = await ReadSalesAsync(filter, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        return factory.CreateGenerator().Generate(result.ToDocument(), []) with { FileName = "reporte-ventas.pdf" };
+        var chartPng = chartRenderer.RenderSales(result.Rows);
+        var fileName = format == ReportFormat.Pdf
+            ? "reporte-ventas.pdf"
+            : "reporte-ventas.xlsx";
+
+        return factory
+            .CreateGenerator()
+            .Generate(result.ToDocument(), chartPng) with
+        {
+            FileName = fileName
+        };
     }
 
     public async Task<ExportedReport> ExportExampleAsync(
