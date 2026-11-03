@@ -40,4 +40,11 @@ public interface IUserRepository
         int userId,
         string passwordHash,
         DateTime activatedAt);
+
+    Task<IReadOnlyList<UserDeactivationData>>
+    GetUsersForDeactivationAsync();
+
+    Task<bool> DeactivateAsync(
+        int userId,
+        int modifiedByUserId);
 }

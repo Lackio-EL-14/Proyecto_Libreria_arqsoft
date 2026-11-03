@@ -5,8 +5,21 @@ namespace Libreria.Servicio.Usuarios.Infrastructure.Transactions;
 
 public sealed class TransactionRunner : ITransactionRunner
 {
-    public async Task<T> ExecuteAsync<T>(
-        Func<Task<T>> operation)
+    public Task<T> ExecuteAsync<T>(
+        Func<Task<T>> operation) =>
+        ExecuteAsync(
+            operation,
+            IsolationLevel.ReadCommitted);
+
+    public Task<T> ExecuteSerializableAsync<T>(
+        Func<Task<T>> operation) =>
+        ExecuteAsync(
+            operation,
+            IsolationLevel.Serializable);
+
+    private static async Task<T> ExecuteAsync<T>(
+        Func<Task<T>> operation,
+        IsolationLevel isolationLevel)
     {
         ArgumentNullException.ThrowIfNull(operation);
 
@@ -14,8 +27,7 @@ public sealed class TransactionRunner : ITransactionRunner
             TransactionScopeOption.Required,
             new TransactionOptions
             {
-                IsolationLevel =
-                    IsolationLevel.ReadCommitted
+                IsolationLevel = isolationLevel
             },
             TransactionScopeAsyncFlowOption.Enabled);
 
