@@ -1,6 +1,6 @@
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Primary;
-using Libreria.Application.Ports.Secondary;
+using Libreria.Client.Clients.Common;
+using Libreria.Client.Clients.Usuarios;
+using Libreria.Client.DTOs.Usuarios;
 using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,26 +12,15 @@ namespace Libreria.Client.Pages.Usuarios;
 [Authorize(Policy = PoliticasAcceso.SoloAdministrador)]
 public class CreateModel : PageModel
 {
-    private readonly IGeneradorNombreUsuario _generadorNombreUsuario;
-    private readonly IUsuarioService _usuarioService;
-    private readonly IRolRepository _rolRepository;
+    private readonly IServicioUsuariosClient _usuariosClient;
     private readonly ILogger<CreateModel> _logger;
-    private readonly bool _correoLocal;
 
     public CreateModel(
-        IGeneradorNombreUsuario generadorNombreUsuario,
-        IUsuarioService usuarioService,
-        IRolRepository rolRepository,
-        ILogger<CreateModel> logger,
-        IHostEnvironment environment,
-        IConfiguration configuration)
+        IServicioUsuariosClient usuariosClient,
+        ILogger<CreateModel> logger)
     {
-        _generadorNombreUsuario = generadorNombreUsuario;
-        _usuarioService = usuarioService;
-        _rolRepository = rolRepository;
+        _usuariosClient = usuariosClient;
         _logger = logger;
-        _correoLocal = environment.IsDevelopment() &&
-            string.Equals(configuration["EMAIL_DELIVERY_MODE"], "PickupDirectory", StringComparison.OrdinalIgnoreCase);
     }
 
     [BindProperty]
@@ -44,7 +33,7 @@ public class CreateModel : PageModel
     public string Correo { get; set; } = string.Empty;
 
     [BindProperty]
-    public int RolId { get; set; }
+    public string Rol { get; set; } = string.Empty;
 
     public string NombreUsuario { get; private set; } = string.Empty;
 
@@ -57,97 +46,85 @@ public class CreateModel : PageModel
         await CargarRolesAsync();
     }
 
-    public async Task<IActionResult> OnPostGenerarAsync()
-    {
-        await CargarRolesAsync();
-
-        ValidarNombreYApellido();
-
-        if (!ModelState.IsValid)
-            return Page();
-
-        NombreUsuario =
-            await _generadorNombreUsuario.GenerarAsync(
-                Nombre,
-                Apellido);
-
-        return Page();
-    }
-
     public async Task<IActionResult> OnPostCrearAsync()
     {
         await CargarRolesAsync();
 
-        if (!Roles.Any(rol => rol.Value == RolId.ToString()))
-            ModelState.AddModelError(nameof(RolId), "Debe seleccionar un rol válido.");
+        if (!Roles.Any(rol =>
+                string.Equals(
+                    rol.Value,
+                    Rol,
+                    StringComparison.OrdinalIgnoreCase)))
+        {
+            ModelState.AddModelError(
+                nameof(Rol),
+                "Debe seleccionar un rol válido.");
+        }
 
         if (!ModelState.IsValid)
+        {
             return Page();
+        }
 
         try
         {
-            var input = new UsuarioAltaInput
-            {
-                Nombre = Nombre,
-                Apellido = Apellido,
-                Correo = Correo,
-                RolId = RolId
-            };
+            var result =
+                await _usuariosClient.CrearUsuarioAsync(
+                    new CreateUserRequestDto(
+                        Nombre,
+                        Apellido,
+                        Correo,
+                        Rol));
 
-            NombreUsuario =
-                await _usuarioService.CrearPendienteAsync(input);
+            if (result is null)
+            {
+                ModelState.AddModelError(
+                    string.Empty,
+                    "No fue posible crear el usuario.");
+
+                return Page();
+            }
+
+            NombreUsuario = result.Username;
+
             MensajeExito =
                 $"Usuario {NombreUsuario} creado correctamente. " +
-                (_correoLocal
-                    ? "El correo de activación se guardó localmente para pruebas; no se envió por Internet."
-                    : "Se envió el enlace de activación al correo registrado.");
+                "Se generó el enlace de activación para el correo registrado.";
 
             return Page();
         }
-        catch (ArgumentException error)
+        catch (ApiClientException error)
         {
-            ModelState.AddModelError(string.Empty, error.Message);
-            return Page();
-        }
-        catch (InvalidOperationException error)
-        {
-            _logger.LogError(error, "No fue posible completar el alta de usuario.");
             ModelState.AddModelError(
                 string.Empty,
-                "No fue posible crear el usuario. Intente nuevamente.");
+                error.Message);
 
             return Page();
         }
-    }
+        catch (ServicioNoDisponibleException error)
+        {
+            _logger.LogError(
+                error,
+                "El servicio de Usuarios no está disponible.");
 
-    private void ValidarNombreYApellido()
-    {
-        if (string.IsNullOrWhiteSpace(Nombre))
             ModelState.AddModelError(
-                nameof(Nombre),
-                "El nombre es obligatorio.");
+                string.Empty,
+                "El servicio de Usuarios no está disponible.");
 
-        if (string.IsNullOrWhiteSpace(Apellido))
-            ModelState.AddModelError(
-                nameof(Apellido),
-                "El apellido es obligatorio.");
-
-        if (!string.IsNullOrWhiteSpace(Nombre) && !Nombre.Trim().All(char.IsLetter))
-            ModelState.AddModelError(nameof(Nombre), "El nombre solo permite letras, incluyendo acentos y ñ.");
-
-        if (!string.IsNullOrWhiteSpace(Apellido) && !Apellido.Trim().All(char.IsLetter))
-            ModelState.AddModelError(nameof(Apellido), "El apellido solo permite letras, incluyendo acentos y ñ.");
+            return Page();
+        }
     }
 
     private async Task CargarRolesAsync()
     {
-        var roles = await _rolRepository.ObtenerActivosAsync();
+        var roles =
+            await _usuariosClient.ObtenerRolesAsync();
 
         Roles = roles
             .Select(rol => new SelectListItem
             {
-                Value = rol.RolId.ToString(),
-                Text = rol.Nombre
+                Value = rol,
+                Text = rol
             })
             .ToList();
     }

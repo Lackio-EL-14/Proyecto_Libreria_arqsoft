@@ -13,10 +13,15 @@ using Libreria.Servicio.Usuarios.Infrastructure.Repositories;
 using Libreria.Servicio.Usuarios.Presentation.Security;
 using Libreria.Servicio.Usuarios.Presentation.Middleware;
 using Libreria.Servicio.Usuarios.Infrastructure.Security;
+using Libreria.Servicio.Usuarios.Infrastructure.Transactions;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-
+builder.Services.AddScoped<
+    ITransactionRunner,
+    TransactionRunner>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
@@ -45,6 +50,11 @@ builder.Services.AddScoped<LoginValidator>();
 builder.Services.AddScoped<LoginUseCase>();
 builder.Services.AddScoped<CheckActiveSessionUseCase>();
 builder.Services.AddScoped<GetUserNamesUseCase>();
+builder.Services.AddScoped<ListUsersUseCase>();
+builder.Services.AddScoped<CreateUserUseCase>();
+builder.Services.AddScoped<ActivateUserUseCase>();
+builder.Services.AddScoped<GetUserRolesUseCase>();
+builder.Services.AddScoped<PasswordPolicyValidator>();
 
 builder.Services.AddScoped<UsernameGenerator>();
 builder.Services.AddScoped<UsuarioFacade>();

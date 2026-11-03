@@ -1,5 +1,6 @@
 using Libreria.Servicio.Usuarios.Application.Abstractions;
 using Libreria.Servicio.Usuarios.Domain.Entities;
+using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 
 namespace Libreria.Servicio.Usuarios.Tests.TestDoubles;
 
@@ -13,7 +14,30 @@ public sealed class FakeUserRepository : IUserRepository
 
     public bool SessionActive { get; set; }
 
+    public bool IsActiveAdministrator { get; set; }
+
+    public List<UserListItemDto> UserList { get; } = [];
+
+    public string? LastListStatus { get; private set; }
+
     public Dictionary<int, string> Names { get; } = new();
+
+    public bool EmailExists { get; set; }
+
+    public Dictionary<string, int> ActiveRoles { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    public User? ActivationUser { get; set; }
+
+    public User? CreatedUser { get; private set; }
+
+    public bool ActivateResult { get; set; } = true;
+
+    public int? ActivatedUserId { get; private set; }
+
+    public string? ActivatedPasswordHash { get; private set; }
+
+    public DateTime? ActivatedAt { get; private set; }
 
     public HashSet<string> ExistingUsernames { get; } =
         new(StringComparer.OrdinalIgnoreCase);
@@ -61,5 +85,76 @@ public sealed class FakeUserRepository : IUserRepository
     {
         return Task.FromResult(
             ExistingUsernames.Contains(username));
+    }
+
+
+    public Task<bool> IsActiveAdministratorAsync(int userId)
+    {
+        return Task.FromResult(IsActiveAdministrator);
+    }
+
+    public Task<IReadOnlyList<UserListItemDto>> GetListAsync(
+        string? status = null)
+    {
+        LastListStatus = status;
+
+        IReadOnlyList<UserListItemDto> result = UserList;
+
+        return Task.FromResult(result);
+    }
+
+
+    public Task<bool> EmailExistsAsync(string email)
+    {
+        return Task.FromResult(EmailExists);
+    }
+
+    public Task<int?> GetActiveRoleIdByNameAsync(
+        string roleName)
+    {
+        return Task.FromResult(
+            ActiveRoles.TryGetValue(roleName, out var roleId)
+                ? (int?)roleId
+                : null);
+    }
+
+    public Task<IReadOnlyList<string>>
+        GetActiveRoleNamesAsync()
+    {
+        IReadOnlyList<string> roles =
+            ActiveRoles.Keys
+                .OrderBy(role => role)
+                .ToArray();
+
+        return Task.FromResult(roles);
+    }
+
+    public Task<Guid> CreatePendingAsync(User user)
+    {
+        CreatedUser = user;
+
+        var publicId = user.PublicId == Guid.Empty
+            ? Guid.NewGuid()
+            : user.PublicId;
+
+        return Task.FromResult(publicId);
+    }
+
+    public Task<User?> GetByActivationTokenHashAsync(
+        string tokenHash)
+    {
+        return Task.FromResult(ActivationUser);
+    }
+
+    public Task<bool> ActivateAsync(
+        int userId,
+        string passwordHash,
+        DateTime activatedAt)
+    {
+        ActivatedUserId = userId;
+        ActivatedPasswordHash = passwordHash;
+        ActivatedAt = activatedAt;
+
+        return Task.FromResult(ActivateResult);
     }
 }
