@@ -57,8 +57,10 @@ builder.Services.AddScoped<GetUserRolesUseCase>();
 builder.Services.AddScoped<ChangePasswordUseCase>();
 builder.Services.AddScoped<PasswordPolicyValidator>();
 builder.Services.AddScoped<DeactivateUserUseCase>();
+builder.Services.AddScoped<ResendActivationUseCase>();
 builder.Services.AddScoped<UsernameGenerator>();
 builder.Services.AddScoped<UsuarioFacade>();
+builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddScoped<
     IApplicationConfiguration,

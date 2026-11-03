@@ -16,6 +16,7 @@ public sealed class UsersController : ControllerBase
     private readonly GetUserRolesUseCase _getUserRolesUseCase;
     private readonly ChangePasswordUseCase _changePasswordUseCase;
     private readonly DeactivateUserUseCase _deactivateUserUseCase;
+    private readonly ResendActivationUseCase _resendActivationUseCase;
 
     public UsersController(
         CheckActiveSessionUseCase checkActiveSessionUseCase,
@@ -25,7 +26,8 @@ public sealed class UsersController : ControllerBase
         ActivateUserUseCase activateUserUseCase,
         GetUserRolesUseCase getUserRolesUseCase,
         ChangePasswordUseCase changePasswordUseCase,
-        DeactivateUserUseCase deactivateUserUseCase)
+        DeactivateUserUseCase deactivateUserUseCase,
+        ResendActivationUseCase resendActivationUseCase)
     {
         _checkActiveSessionUseCase = checkActiveSessionUseCase;
         _getUserNamesUseCase = getUserNamesUseCase;
@@ -35,6 +37,7 @@ public sealed class UsersController : ControllerBase
         _getUserRolesUseCase = getUserRolesUseCase;
         _changePasswordUseCase = changePasswordUseCase;
         _deactivateUserUseCase = deactivateUserUseCase;
+        _resendActivationUseCase = resendActivationUseCase;
     }
 
     [HttpGet]
@@ -311,5 +314,41 @@ public sealed class UsersController : ControllerBase
             _ => throw new InvalidOperationException(
                 "Resultado de baja de usuario no reconocido.")
         };
+    }
+
+    [HttpPost("{publicId:guid}/reenviar-activacion")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status404NotFound)]
+    [ProducesResponseType(
+        typeof(ProblemDetails),
+        StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ResendActivationAsync(
+        Guid publicId)
+    {
+        try
+        {
+            var sent = await _resendActivationUseCase.ExecuteAsync(publicId);
+
+            return sent
+                ? NoContent()
+                : StatusCode(StatusCodes.Status403Forbidden);
+        }
+        catch (KeyNotFoundException exception)
+        {
+            return Problem(
+                title: "Usuario no encontrado.",
+                detail: exception.Message,
+                statusCode: StatusCodes.Status404NotFound);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return Problem(
+                title: "No fue posible reenviar la activación.",
+                detail: exception.Message,
+                statusCode: StatusCodes.Status409Conflict);
+        }
     }
 }
