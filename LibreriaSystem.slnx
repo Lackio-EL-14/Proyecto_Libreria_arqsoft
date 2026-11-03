@@ -10,6 +10,8 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Libreria.Application.Tests/Libreria.Application.Tests.csproj" />
+    <Project Path="tests/Libreria.Servicio.Reportes.Tests/Libreria.Servicio.Reportes.Tests.csproj" />
+    <Project Path="tests/Libreria.Servicio.Usuarios.Tests/Libreria.Servicio.Usuarios.Tests.csproj" />
     <Project Path="tests/Libreria.Servicio.Ventas.Tests/Libreria.Servicio.Ventas.Tests.csproj" />
   </Folder>
 </Solution>
