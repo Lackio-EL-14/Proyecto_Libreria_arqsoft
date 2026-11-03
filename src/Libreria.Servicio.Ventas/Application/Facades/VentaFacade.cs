@@ -17,6 +17,7 @@ namespace Libreria.Servicio.Ventas.Application.Facades
         private readonly IDbConnectionFactory _connectionFactory;
         private readonly IUsuarioActual _usuarioActual;
         private readonly IStockFacade _stockFacade;
+        private readonly IMovimientoStockRepository _movimientoStockRepository;
 
         public VentaFacade(
             IVentaRepository ventaRepository,
@@ -24,7 +25,8 @@ namespace Libreria.Servicio.Ventas.Application.Facades
             IClienteRepository clienteRepository,
             IDbConnectionFactory connectionFactory,
             IUsuarioActual usuarioActual,
-            IStockFacade stockFacade)
+            IStockFacade stockFacade,
+            IMovimientoStockRepository movimientoStockRepository)
         {
             _ventaRepository = ventaRepository;
             _productoRepository = productoRepository;
@@ -32,6 +34,7 @@ namespace Libreria.Servicio.Ventas.Application.Facades
             _connectionFactory = connectionFactory;
             _usuarioActual = usuarioActual;
             _stockFacade = stockFacade;
+            _movimientoStockRepository = movimientoStockRepository;
         }
 
         public async Task<VentaRegistradaResult> RegistrarVentaAsync(
@@ -186,6 +189,13 @@ namespace Libreria.Servicio.Ventas.Application.Facades
                             "No existe stock suficiente para realizar la venta.",
                             innerException: errorStock);
                     }
+                    await _movimientoStockRepository.RegistrarAsync(
+                        ventaId,
+                        detalleVenta.ProductoId,
+                        detalleVenta.Cantidad,
+                        "Venta",
+                        connection,
+                        transaction);
                 }
                 await transaction.CommitAsync();
 
@@ -355,6 +365,13 @@ namespace Libreria.Servicio.Ventas.Application.Facades
                     await _stockFacade.RestaurarStockAsync(
                         detalle.ProductoId,
                         detalle.Cantidad,
+                        connection,
+                        transaction);
+                    await _movimientoStockRepository.RegistrarAsync(
+                        venta.VentaId,
+                        detalle.ProductoId,
+                        detalle.Cantidad,
+                        "Anulacion",
                         connection,
                         transaction);
                 }

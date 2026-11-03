@@ -48,6 +48,7 @@ builder.Services.AddScoped<IHistoricoCostoRepository, HistoricoCostoRepository>(
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<IVentaRepository, VentaRepository>();
+builder.Services.AddScoped<IMovimientoStockRepository, MovimientoStockRepository>();
 
 // 6. Servicios y fachadas (puertos primarios)
 builder.Services.AddScoped<IProductoService, ProductoService>();
