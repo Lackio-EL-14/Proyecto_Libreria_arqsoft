@@ -4,6 +4,32 @@
 ### Estado del servicio
 GET {{host}}/api/ventas/ping
 
+### ---------- Ventas (US-89: Listado y Detalle) ----------
+GET {{host}}/api/ventas
+
+### Listado filtrado por estado
+GET {{host}}/api/ventas?estado=Activa
+
+### Listado filtrado por rango de fechas
+GET {{host}}/api/ventas?fechaDesde=2026-01-01&fechaHasta=2026-12-31
+
+### Detalle de venta como Administrador (con ganancia)
+# Reemplazar con el PublicId de una venta existente
+@ventaPublicId = 00000000-0000-0000-0000-000000000000
+GET {{host}}/api/ventas/{{ventaPublicId}}?esAdministrador=true
+
+### Detalle de venta como Vendedor (sin ganancia)
+GET {{host}}/api/ventas/{{ventaPublicId}}?esAdministrador=false
+
+### ---------- Ventas (US-88: Anulación lógica) ----------
+POST {{host}}/api/ventas/{{ventaPublicId}}/anular
+Content-Type: application/json
+X-Usuario-Id: {{usuario}}
+
+{
+  "motivo": "Cliente solicitó devolución de la compra por error en caja"
+}
+
 ### ---------- Categorías ----------
 GET {{host}}/api/categorias
 ###

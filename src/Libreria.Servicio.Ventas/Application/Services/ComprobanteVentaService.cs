@@ -39,12 +39,11 @@ public class ComprobanteVentaService : IComprobanteVentaService
 
         return comprobante with
         {
-            // Se mantiene la fecha y hora en que se genera el comprobante.
-            GeneradoEl = DateTimeOffset.UtcNow.ToOffset(
-                TimeSpan.FromHours(-4)),
-
-            // El total ya viene persistido desde Venta.Total.
-            TotalEnLetras = NumeroALetras.Convertir(comprobante.Total)
+            GeneradoEl = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(-4)),
+            TotalEnLetras = NumeroALetras.Convertir(comprobante.Total),
+            GeneradoPor = !string.IsNullOrWhiteSpace(_usuarioActual.NombreUsuario)
+                ? _usuarioActual.NombreUsuario
+                : "Usuario"
         };
     }
 }

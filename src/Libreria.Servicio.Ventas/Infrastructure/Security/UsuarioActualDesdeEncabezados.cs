@@ -4,13 +4,10 @@ using Microsoft.AspNetCore.Http;
 
 namespace Libreria.Servicio.Ventas.Infrastructure.Security;
 
-// Adaptador del puerto IUsuarioActual para el modelo SBA.
-// En el monolito el usuario salía de los claims de la cookie; ahora el servicio
-// no tiene sesión propia: el Front le informa quién opera mediante el
-// encabezado X-Usuario-Id. El núcleo (Application) no cambia en absoluto.
 public class UsuarioActualDesdeEncabezados : IUsuarioActual
 {
     public const string EncabezadoUsuarioId = "X-Usuario-Id";
+    public const string EncabezadoUsuarioNombre = "X-Usuario-Nombre";
 
     private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -30,6 +27,17 @@ public class UsuarioActualDesdeEncabezados : IUsuarioActual
                    && usuarioId > 0
                 ? usuarioId
                 : null;
+        }
+    }
+
+    public string? NombreUsuario
+    {
+        get
+        {
+            var valor = _httpContextAccessor.HttpContext?
+                .Request.Headers[EncabezadoUsuarioNombre].ToString();
+
+            return string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
         }
     }
 }
