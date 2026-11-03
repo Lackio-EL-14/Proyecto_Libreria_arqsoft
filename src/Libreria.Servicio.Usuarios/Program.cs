@@ -54,9 +54,9 @@ builder.Services.AddScoped<ListUsersUseCase>();
 builder.Services.AddScoped<CreateUserUseCase>();
 builder.Services.AddScoped<ActivateUserUseCase>();
 builder.Services.AddScoped<GetUserRolesUseCase>();
+builder.Services.AddScoped<ChangePasswordUseCase>();
 builder.Services.AddScoped<PasswordPolicyValidator>();
 builder.Services.AddScoped<DeactivateUserUseCase>();
-
 builder.Services.AddScoped<UsernameGenerator>();
 builder.Services.AddScoped<UsuarioFacade>();
 

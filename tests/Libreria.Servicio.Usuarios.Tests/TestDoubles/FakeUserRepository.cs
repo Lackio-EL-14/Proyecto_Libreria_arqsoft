@@ -52,6 +52,12 @@ public sealed class FakeUserRepository : IUserRepository
 
     public int UpdatePasswordCalls { get; private set; }
 
+    public int? UpdatedPasswordUserId { get; private set; }
+
+    public string? PreviousPasswordHash { get; private set; }
+
+    public string? NewPasswordHash { get; private set; }
+
     public Task<User?> GetActiveByUsernameAsync(string username)
     {
         return Task.FromResult(UserByUsername);
@@ -68,6 +74,9 @@ public sealed class FakeUserRepository : IUserRepository
         string newHash)
     {
         UpdatePasswordCalls++;
+        UpdatedPasswordUserId = userId;
+        PreviousPasswordHash = previousHash;
+        NewPasswordHash = newHash;
 
         return Task.FromResult(UpdatePasswordResult);
     }

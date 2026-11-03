@@ -94,6 +94,14 @@ public sealed class ServicioUsuariosClient : ApiClientBase, IServicioUsuariosCli
         request,
         cancellationToken);
 
+    public Task CambiarContrasenaAsync(
+    ChangePasswordRequestDto request,
+    CancellationToken cancellationToken = default) =>
+    PutAsync(
+        "api/usuarios/contrasena",
+        request,
+        cancellationToken);
+
     public Task DarDeBajaUsuarioAsync(
         Guid publicId,
         CancellationToken cancellationToken = default)
