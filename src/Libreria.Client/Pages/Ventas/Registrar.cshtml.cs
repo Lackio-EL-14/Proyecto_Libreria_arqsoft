@@ -86,14 +86,47 @@ public class RegistrarModel : PageModel
                     : StatusCodes.Status400BadRequest
             };
         }
+        
         catch (ApiClientException error)
         {
             _logger.LogWarning(error, "La API rechazó el registro del cliente.");
+
+            if (error.Errors is { Count: > 0 })
+            {
+                
+                var errores = error.Errors.ToDictionary(
+                    campo => campo.Key.StartsWith("Input.")
+                        ? campo.Key
+                        : $"Input.{campo.Key}",
+                    campo =>
+                    {
+                        var mensaje = campo.Value.FirstOrDefault() ?? "Revise este campo.";
+
+                        if (mensaje.Contains("is required", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return campo.Key.Split('.').Last() switch
+                            {
+                                "CiNit" => "El CI/NIT es obligatorio.",
+                                "RazonSocial" => "La razón social es obligatoria.",
+                                _ => "Este campo es obligatorio."
+                            };
+                        }
+
+                        return mensaje;
+                    });
+
+
+                return new JsonResult(ClienteRegistroResult.Invalido(errores))
+                {
+                    StatusCode = StatusCodes.Status400BadRequest
+                };
+            }
 
             return ErrorCliente(
                 "No se pudo registrar el cliente.",
                 StatusCodes.Status400BadRequest);
         }
+
         catch (Exception error)
         {
             _logger.LogError(error, "Error al registrar el cliente.");

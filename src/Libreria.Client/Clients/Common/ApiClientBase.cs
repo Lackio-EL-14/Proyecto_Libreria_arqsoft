@@ -90,6 +90,10 @@ public abstract class ApiClientBase : IApiClient
         }
 
         var message = problem?.Detail ?? problem?.Title ?? $"El servicio de {_servicio} rechazó la solicitud.";
-        throw new ApiClientException(_servicio, response.StatusCode, message);
+        throw new ApiClientException(
+            _servicio,
+            response.StatusCode,
+            message,
+            problem?.Errors);
     }
 }
