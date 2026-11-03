@@ -146,6 +146,41 @@ public class VentasController : ControllerBase
         }
     }
 
+    [HttpPost]
+    public async Task<IActionResult> RegistrarVenta(
+        [FromBody] RegistrarVentaInput input)
+    {
+        if (input is null || input.SolicitudId == Guid.Empty)
+        {
+            return Problem(
+                statusCode: 400,
+                title: "Solicitud de venta inválida.",
+                detail: "Debe proporcionar un SolicitudId válido.");
+        }
+
+        try
+        {
+            var resultado = await _ventaFacade.RegistrarVentaAsync(input);
+            return Ok(resultado);
+        }
+        catch (ArgumentException error)
+        {
+            return Problem(
+                statusCode: 400,
+                title: "Datos de venta inválidos.",
+                detail: error.Message);
+        }
+        catch (VentaRegistroException error)
+        {
+            return Problem(
+                statusCode: error.ResultadoIncierto ? 503 : 409,
+                title: error.ResultadoIncierto
+                    ? "No se pudo confirmar el resultado de la venta."
+                    : "No se pudo registrar la venta.",
+                detail: error.Message);
+        }
+    }
+
     [HttpPost("{publicId:guid}/anular")]
     public async Task<IActionResult> AnularVenta(Guid publicId, [FromBody] AnularVentaRequest request)
     {
