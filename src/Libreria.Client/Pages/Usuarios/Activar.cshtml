@@ -29,29 +29,41 @@
                     <input type="hidden" asp-for="TokenHash" />
                     <input type="hidden" asp-for="Token" />
 
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div asp-validation-summary="All"
+                             class="validation-summary-errors"
+                             role="alert"></div>
+                    }
+
                     <div class="mb-3">
-                        <label asp-for="Contrasena" class="form-label">
+                        <label asp-for="Input.Password" class="form-label">
                             Contraseña
                         </label>
 
-                        <input asp-for="Contrasena"
+                        <input asp-for="Input.Password"
                                type="password"
                                class="form-control"
-                               autocomplete="new-password" />
+                               autocomplete="new-password"
+                               aria-describedby="password-requirements" />
+                        <span asp-validation-for="Input.Password"
+                              class="text-danger"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="ConfirmarContrasena" class="form-label">
+                        <label asp-for="Input.Confirmation" class="form-label">
                             Confirmar contraseña
                         </label>
 
-                        <input asp-for="ConfirmarContrasena"
+                        <input asp-for="Input.Confirmation"
                                type="password"
                                class="form-control"
                                autocomplete="new-password" />
+                        <span asp-validation-for="Input.Confirmation"
+                              class="text-danger"></span>
                     </div>
 
-                    <div class="alert alert-secondary">
+                    <div id="password-requirements" class="alert alert-secondary">
                         La contraseña debe tener al menos 8 caracteres,
                         una mayúscula, una minúscula, un número
                         y un carácter especial.

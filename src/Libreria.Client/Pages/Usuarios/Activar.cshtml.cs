@@ -28,10 +28,7 @@ public class ActivarModel : PageModel
     public string Token { get; set; } = string.Empty;
 
     [BindProperty]
-    public string Contrasena { get; set; } = string.Empty;
-
-    [BindProperty]
-    public string ConfirmarContrasena { get; set; } = string.Empty;
+    public ActivateUserInputModel Input { get; set; } = new();
 
     public string? MensajeError { get; private set; }
 
@@ -60,14 +57,19 @@ public class ActivarModel : PageModel
             return Page();
         }
 
+        if (!ModelState.IsValid)
+        {
+            return Page();
+        }
+
         try
         {
             await _usuariosClient.ActivarUsuarioAsync(
                 new ActivateUserRequestDto(
                     TokenHash,
                     Token,
-                    Contrasena,
-                    ConfirmarContrasena));
+                    Input.Password,
+                    Input.Confirmation));
 
             ActivacionExitosa = true;
             return Page();
