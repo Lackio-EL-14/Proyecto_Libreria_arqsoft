@@ -28,18 +28,26 @@ public sealed class SalesReportModel(IServicioReportesClient reports) : PageMode
         { ErrorMessage = "No se pudo consultar el reporte. Verifique que el servicio de Reportes esté disponible."; }
     }
 
-    public async Task<IActionResult> OnGetPdfAsync(CancellationToken cancellationToken)
+    public Task<IActionResult> OnGetPdfAsync(CancellationToken cancellationToken) =>
+        DownloadAsync("Pdf", cancellationToken);
+
+    public Task<IActionResult> OnGetExcelAsync(CancellationToken cancellationToken) =>
+        DownloadAsync("Excel", cancellationToken);
+
+    private async Task<IActionResult> DownloadAsync(
+        string format,
+        CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) { await OnGetAsync(cancellationToken); return Page(); }
         try
         {
-            var file = await reports.DownloadSalesPdfAsync(Filter, cancellationToken);
+            var file = await reports.DownloadSalesAsync(Filter, format, cancellationToken);
             return File(file.Content, file.ContentType, file.FileName);
         }
         catch (Exception exception) when (exception is ApiClientException or ServicioNoDisponibleException)
         {
             await OnGetAsync(cancellationToken);
-            ErrorMessage ??= "No se pudo descargar el PDF. Verifique que el servicio de Reportes esté disponible.";
+            ErrorMessage ??= "No se pudo descargar el reporte. Verifique que el servicio de Reportes esté disponible.";
             return Page();
         }
     }

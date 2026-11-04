@@ -53,9 +53,14 @@ public sealed class SalesReportTests
         var repository = new SalesSampleRepository();
         await using var app = new ReportTestApplication(sales: repository);
         using var client = CreateClient(app);
-        foreach (var route in new[] { "ventas", "ventas/pdf" })
+        foreach (var route in new[]
+                 {
+                     $"ventas?{query}",
+                     $"ventas/pdf?{query}",
+                     $"ventas/exportar?format=Excel&{query}"
+                 })
         {
-            using var response = await client.GetAsync($"/api/reportes/{route}?{query}");
+            using var response = await client.GetAsync($"/api/reportes/{route}");
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal("application/problem+json", response.Content.Headers.ContentType!.MediaType);
         }
@@ -63,36 +68,59 @@ public sealed class SalesReportTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task PdfUsesCommonTemplateRangeTotalsAndIdentityWithoutChart(bool empty)
+    [InlineData(false, "Pdf", "application/pdf", ".pdf")]
+    [InlineData(false, "Excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xlsx")]
+    [InlineData(true, "Pdf", "application/pdf", ".pdf")]
+    [InlineData(true, "Excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xlsx")]
+    public async Task ExportsUseCommonTemplateRangeTotalsIdentityAndChart(
+        bool empty,
+        string format,
+        string contentType,
+        string extension)
     {
         await using var app = new ReportTestApplication();
         using var client = CreateClient(app);
         var query = empty ? "DateFrom=2026-11-03" : "DateFrom=2026-11-01&DateTo=2026-11-01&CategoryPublicId=11111111-1111-1111-1111-111111111111";
-        using var response = await client.GetAsync("/api/reportes/ventas/pdf?" + query);
+        using var response = await client.GetAsync(
+            $"/api/reportes/ventas/exportar?format={format}&{query}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(contentType, response.Content.Headers.ContentType!.MediaType);
+        Assert.Contains(extension, response.Content.Headers.ContentDisposition!.FileName);
+        var bytes = await response.Content.ReadAsByteArrayAsync();
+
+        if (format == "Pdf")
+        {
+            using var pdf = UglyToad.PdfPig.PdfDocument.Open(bytes);
+            var text = string.Concat(pdf.GetPages().Select(page => page.Text));
+            Assert.Contains("Reporte de ventas", text);
+            Assert.Contains(empty ? "Desde: 03/11/2026 - Hasta: sin límite" : "Desde: 01/11/2026 - Hasta: 01/11/2026", text);
+            Assert.Contains(empty ? "Total de unidades vendidas: 0" : "Total de unidades vendidas: 5", text);
+            Assert.Contains(empty ? "Total vendido: Bs 0,00" : "Total vendido: Bs 65,00", text);
+            Assert.Contains("Reporte generado: mauricio", text);
+            Assert.Contains("UTC-04:00", text);
+            Assert.Contains(empty ? "No se encontraron registros" : "Cuaderno", text);
+            Assert.DoesNotContain("9000", text);
+            Assert.Equal(2, pdf.GetPage(1).NumberOfImages);
+            Assert.Contains("Total vendido", pdf.GetPage(pdf.NumberOfPages).Text);
+        }
+        else
+        {
+            using var workbook = new ClosedXML.Excel.XLWorkbook(new MemoryStream(bytes));
+            var sheet = workbook.Worksheet(1);
+            Assert.Equal(2, sheet.Pictures.Count);
+            Assert.Contains(sheet.CellsUsed(), cell =>
+                cell.GetString().Contains("Total vendido: Bs"));
+        }
+    }
+
+    [Fact]
+    public async Task LegacyPdfRouteRemainsAvailable()
+    {
+        await using var app = new ReportTestApplication();
+        using var client = CreateClient(app);
+        using var response = await client.GetAsync("/api/reportes/ventas/pdf");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("application/pdf", response.Content.Headers.ContentType!.MediaType);
-        Assert.Contains("reporte-ventas.pdf", response.Content.Headers.ContentDisposition!.FileName);
-        var bytes = await response.Content.ReadAsByteArrayAsync();
-        using var pdf = UglyToad.PdfPig.PdfDocument.Open(bytes);
-        var text = string.Concat(pdf.GetPages().Select(page => page.Text));
-        Assert.Contains("Reporte de ventas", text);
-        Assert.Contains(empty ? "Desde: 03/11/2026 - Hasta: sin límite" : "Desde: 01/11/2026 - Hasta: 01/11/2026", text);
-        Assert.Contains(empty ? "Total de unidades vendidas: 0" : "Total de unidades vendidas: 5", text);
-        Assert.Contains(empty ? "Total vendido: Bs 0,00" : "Total vendido: Bs 65,00", text);
-        Assert.Contains("Reporte generado: mauricio", text);
-        Assert.Contains("UTC-04:00", text);
-        Assert.Contains(empty ? "No se encontraron registros" : "Cuaderno", text);
-        Assert.DoesNotContain("9000", text);
-        Assert.Equal(1, pdf.GetPage(1).NumberOfImages); // Solo el logo.
-        Assert.Contains("Total vendido", pdf.GetPage(pdf.NumberOfPages).Text);
-        var output = Environment.GetEnvironmentVariable("LIBRERIA_SALES_REPORT_ARTIFACTS");
-        if (!string.IsNullOrWhiteSpace(output))
-        {
-            Directory.CreateDirectory(output);
-            await File.WriteAllBytesAsync(Path.Combine(output, empty ? "ventas-vacio.pdf" : "reporte-ventas.pdf"), bytes);
-        }
     }
 
     [Fact]

@@ -56,18 +56,20 @@ docker exec libreria-db bash -c 'for f in /scripts/*.sql; do echo "Ejecutando $f
 
 Los scripts son idempotentes y pueden actualizar una base existente. No uses `docker compose down -v` para una actualización normal porque elimina el volumen y sus datos.
 
-## Configuración obligatoria de Usuarios
+## Configuración obligatoria de Usuarios y Reportes
 
 El Servicio de Usuarios no guarda contraseñas ni cadenas de conexión en Git. Cada integrante debe ejecutar una vez:
 
 ```powershell
 dotnet user-secrets set "ConnectionStrings:LibreriaDb" "Server=localhost,1433;Database=LibreriaDb;User Id=sa;Password=Libreria2026!;TrustServerCertificate=True;" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "ConnectionStrings:LibreriaDb" "Server=localhost,1433;Database=LibreriaDb;User Id=sa;Password=Libreria2026!;TrustServerCertificate=True;" --project src/Libreria.Servicio.Reportes
 ```
 
 Comprueba que quedó configurado:
 
 ```powershell
 dotnet user-secrets list --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets list --project src/Libreria.Servicio.Reportes
 ```
 
 Visual Studio y `dotnet run` leen automáticamente ese secreto cuando el ambiente es `Development`. Un archivo `.env` de la raíz solo es leído automáticamente por Docker Compose; las aplicaciones .NET no lo cargan por sí solas.
@@ -81,6 +83,10 @@ src/Libreria.Servicio.Usuarios/bin/Development/mail
 ```
 
 Abre el archivo generado y usa el enlace de activación. Esto permite demostrar el flujo sin internet ni contraseña SMTP.
+
+Si el usuario continúa en estado `Pendiente`, un administrador puede usar **Reenviar activación** desde la pantalla de Usuarios. El sistema genera un token nuevo, invalida el anterior y permite otro reenvío después de un minuto.
+
+El cambio de contraseña no utiliza correo: exige una sesión iniciada, la contraseña actual y la nueva contraseña escrita dos veces.
 
 Para enviar correos reales con Gmail, configura secretos y usa una contraseña de aplicación de Google, no la contraseña normal de la cuenta:
 
@@ -194,6 +200,7 @@ Las páginas antiguas de Ventas, Productos, Categorías, Marcas e Histórico per
 dotnet build LibreriaSystem.slnx
 dotnet test tests/Libreria.Application.Tests/Libreria.Application.Tests.csproj
 dotnet test tests/Libreria.Servicio.Usuarios.Tests/Libreria.Servicio.Usuarios.Tests.csproj
+dotnet test tests/Libreria.Servicio.Reportes.Tests/Libreria.Servicio.Reportes.Tests.csproj
 ```
 
 Usuarios de datos semilla:

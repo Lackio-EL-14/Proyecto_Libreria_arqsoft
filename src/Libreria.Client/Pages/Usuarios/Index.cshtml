@@ -70,6 +70,20 @@
                             <td>@usuario.Role</td>
                             <td>@usuario.Status</td>
                             <td>
+                                @if (usuario.Status == EstadosUsuario.Pendiente)
+                                {
+                                    <form method="post"
+                                          asp-page-handler="ReenviarActivacion"
+                                          style="display:inline">
+                                        <input type="hidden"
+                                               name="publicId"
+                                               value="@Model.ProtegerId(usuario.PublicId)" />
+                                        <button type="submit"
+                                                class="btn-table">
+                                            Reenviar activación
+                                        </button>
+                                    </form>
+                                }
                                 @if (usuario.Status != EstadosUsuario.Inactivo)
                                 {
                                     <button type="button"

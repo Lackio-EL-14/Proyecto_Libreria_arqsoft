@@ -117,4 +117,21 @@ public sealed class ServicioUsuariosClient : ApiClientBase, IServicioUsuariosCli
             $"api/usuarios/{publicId:D}",
             cancellationToken);
     }
+
+    public Task ReenviarActivacionAsync(
+        Guid publicId,
+        CancellationToken cancellationToken = default)
+    {
+        if (publicId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "El identificador del usuario es obligatorio.",
+                nameof(publicId));
+        }
+
+        return PostAsync(
+            $"api/usuarios/{publicId:D}/reenviar-activacion",
+            new { },
+            cancellationToken);
+    }
 }

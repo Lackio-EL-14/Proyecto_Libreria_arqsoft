@@ -29,6 +29,18 @@ public sealed class FakeUserRepository : IUserRepository
 
     public User? ActivationUser { get; set; }
 
+    public User? UserByPublicId { get; set; }
+
+    public bool UpdateActivationTokenResult { get; set; } = true;
+
+    public string? UpdatedActivationTokenHash { get; private set; }
+
+    public DateTime? UpdatedActivationExpiresAt { get; private set; }
+
+    public int? ActivationModifiedByUserId { get; private set; }
+
+    public DateTime? ActivationModifiedAt { get; private set; }
+
     public User? CreatedUser { get; private set; }
 
     public bool ActivateResult { get; set; } = true;
@@ -161,6 +173,29 @@ public sealed class FakeUserRepository : IUserRepository
         string tokenHash)
     {
         return Task.FromResult(ActivationUser);
+    }
+
+    public Task<User?> GetByPublicIdAsync(Guid publicId)
+    {
+        return Task.FromResult(
+            UserByPublicId?.PublicId == publicId
+                ? UserByPublicId
+                : null);
+    }
+
+    public Task<bool> UpdateActivationTokenAsync(
+        int userId,
+        string tokenHash,
+        DateTime expiresAt,
+        int modifiedByUserId,
+        DateTime modifiedAt)
+    {
+        UpdatedActivationTokenHash = tokenHash;
+        UpdatedActivationExpiresAt = expiresAt;
+        ActivationModifiedByUserId = modifiedByUserId;
+        ActivationModifiedAt = modifiedAt;
+
+        return Task.FromResult(UpdateActivationTokenResult);
     }
 
     public Task<bool> ActivateAsync(

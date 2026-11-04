@@ -10,4 +10,5 @@ public interface IServicioReportesClient : IApiClient
     Task<ReportFileDto> DownloadProductsAsync(ProductReportFilterDto filter, string format, CancellationToken cancellationToken = default);
     Task<SalesReportDto?> GetSalesAsync(SalesReportFilterDto filter, CancellationToken cancellationToken = default);
     Task<ReportFileDto> DownloadSalesPdfAsync(SalesReportFilterDto filter, CancellationToken cancellationToken = default);
+    Task<ReportFileDto> DownloadSalesAsync(SalesReportFilterDto filter, string format, CancellationToken cancellationToken = default);
 }

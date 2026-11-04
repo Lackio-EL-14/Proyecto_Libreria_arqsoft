@@ -10,15 +10,18 @@ public sealed class UsuarioFacade
     private readonly UsernameGenerator _usernameGenerator;
     private readonly IEmailSender _emailSender;
     private readonly IApplicationConfiguration _configuration;
+    private readonly TimeProvider _timeProvider;
 
     public UsuarioFacade(
         UsernameGenerator usernameGenerator,
         IEmailSender emailSender,
-        IApplicationConfiguration configuration)
+        IApplicationConfiguration configuration,
+        TimeProvider? timeProvider = null)
     {
         _usernameGenerator = usernameGenerator;
         _emailSender = emailSender;
         _configuration = configuration;
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     public async Task<UserActivationPreparation>
@@ -31,17 +34,22 @@ public sealed class UsuarioFacade
                 firstName,
                 lastName);
 
-        var token =
-            ActivationTokenService.Generate();
+        return PrepareActivation(username);
+    }
 
-        var tokenHash =
-            ActivationTokenService.CalculateHash(token);
+    public UserActivationPreparation PrepareActivation(
+        string username)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(username);
+
+        var token = ActivationTokenService.Generate();
+        var tokenHash = ActivationTokenService.CalculateHash(token);
 
         return new UserActivationPreparation(
-            username,
+            username.Trim(),
             token,
             tokenHash,
-            DateTime.UtcNow.AddHours(24));
+            _timeProvider.GetUtcNow().UtcDateTime.AddHours(24));
     }
 
     public Task SendActivationEmailAsync(

@@ -774,6 +774,119 @@ public sealed class UserRepository : IUserRepository
             : null;
     }
 
+    public async Task<User?> GetByPublicIdAsync(Guid publicId)
+    {
+        await using var connection =
+            _connectionFactory.CreateConnection();
+
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = """
+            SELECT
+                u.UsuarioId,
+                u.PublicId,
+                u.Nombre,
+                u.Apellido,
+                u.Correo,
+                u.NombreUsuario,
+                u.NombreCompleto,
+                u.PasswordHash,
+                u.RolId,
+                u.Estado,
+                u.TokenActivacionHash,
+                u.TokenActivacionExpiracion,
+                u.TokenActivacionFechaUso,
+                u.FechaCreacion,
+                u.FechaModificacion,
+                u.UsuarioCreacionId,
+                u.UsuarioModificacionId,
+                r.Nombre AS RolNombre,
+                r.Descripcion AS RolDescripcion,
+                r.Estado AS RolEstado
+            FROM dbo.Usuario u
+            INNER JOIN dbo.Rol r
+                ON r.RolId = u.RolId
+            WHERE u.PublicId = @PublicId;
+            """;
+
+        AddParameter(
+            command,
+            "@PublicId",
+            publicId,
+            DbType.Guid);
+
+        await using var reader = await command.ExecuteReaderAsync();
+
+        return await reader.ReadAsync()
+            ? MapUser(reader)
+            : null;
+    }
+
+    public async Task<bool> UpdateActivationTokenAsync(
+        int userId,
+        string tokenHash,
+        DateTime expiresAt,
+        int modifiedByUserId,
+        DateTime modifiedAt)
+    {
+        await using var connection =
+            _connectionFactory.CreateConnection();
+
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = """
+            UPDATE dbo.Usuario
+            SET TokenActivacionHash = @TokenHash,
+                TokenActivacionExpiracion = @ExpiresAt,
+                TokenActivacionFechaUso = NULL,
+                FechaModificacion = @ModifiedAt,
+                UsuarioModificacionId = @ModifiedByUserId
+            WHERE UsuarioId = @UserId
+            AND Estado = @PendingStatus
+            AND TokenActivacionFechaUso IS NULL;
+            """;
+
+        AddParameter(
+            command,
+            "@TokenHash",
+            tokenHash,
+            DbType.String,
+            200);
+
+        AddParameter(
+            command,
+            "@ExpiresAt",
+            expiresAt,
+            DbType.DateTime2);
+
+        AddParameter(
+            command,
+            "@ModifiedAt",
+            modifiedAt,
+            DbType.DateTime2);
+
+        AddParameter(
+            command,
+            "@ModifiedByUserId",
+            modifiedByUserId,
+            DbType.Int32);
+
+        AddParameter(
+            command,
+            "@UserId",
+            userId,
+            DbType.Int32);
+
+        AddParameter(
+            command,
+            "@PendingStatus",
+            UserStatuses.Pending,
+            DbType.String,
+            20);
+
+        return await command.ExecuteNonQueryAsync() == 1;
+    }
+
     public async Task<bool> ActivateAsync(
         int userId,
         string passwordHash,

@@ -36,6 +36,15 @@ public interface IUserRepository
 
     Task<User?> GetByActivationTokenHashAsync(string tokenHash);
 
+    Task<User?> GetByPublicIdAsync(Guid publicId);
+
+    Task<bool> UpdateActivationTokenAsync(
+        int userId,
+        string tokenHash,
+        DateTime expiresAt,
+        int modifiedByUserId,
+        DateTime modifiedAt);
+
     Task<bool> ActivateAsync(
         int userId,
         string passwordHash,

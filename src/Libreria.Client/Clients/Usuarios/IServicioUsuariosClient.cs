@@ -39,4 +39,8 @@ public interface IServicioUsuariosClient : IApiClient
     Task DarDeBajaUsuarioAsync(
     Guid publicId,
     CancellationToken cancellationToken = default);
+
+    Task ReenviarActivacionAsync(
+        Guid publicId,
+        CancellationToken cancellationToken = default);
 }

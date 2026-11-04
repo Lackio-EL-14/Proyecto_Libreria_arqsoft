@@ -81,6 +81,50 @@ public class IndexModel : PageModel
             new { Estado });
     }
 
+    public async Task<IActionResult> OnPostReenviarActivacionAsync(
+        string? publicId)
+    {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return Challenge();
+        }
+
+        if (!(await _authorizationService.AuthorizeAsync(
+                User,
+                PoliticasAcceso.SoloAdministrador)).Succeeded)
+        {
+            return Forbid();
+        }
+
+        var identificador =
+            string.IsNullOrWhiteSpace(publicId)
+                ? null
+                : _protector.Descifrar(publicId);
+
+        if (!identificador.HasValue || identificador == Guid.Empty)
+        {
+            return BadRequest();
+        }
+
+        try
+        {
+            await _usuariosClient.ReenviarActivacionAsync(
+                identificador.Value,
+                HttpContext.RequestAborted);
+
+            TempData["MensajeExito"] =
+                "Se reenvió el correo de activación.";
+        }
+        catch (ApiClientException error)
+        {
+            TempData["MensajeError"] = error.Message;
+        }
+
+        return RedirectToPage(
+            "./Index",
+            new { Estado });
+    }
+
     public async Task<IActionResult> OnGetAsync()
     {
         if (User.Identity?.IsAuthenticated != true)
