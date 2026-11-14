@@ -68,5 +68,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseRouting();
 app.MapControllers();
+app.MapGet("/salud", () => Results.Ok(new { servicio = "Ventas", estado = "ok" }));
 
 app.Run();
