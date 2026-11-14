@@ -45,9 +45,30 @@ public sealed class AuditoriaService : IAuditoriaService
             usuarioAnulacionId.HasValue ? fechaAnulacion : null);
     }
 
-    private static string? ResolverNombre(
-        int? usuarioId,
-        IReadOnlyDictionary<int, string> nombres)
+    public async Task<AuditoriaRegistroDto> ObtenerAsync(
+        Guid? usuarioCreacionId,
+        DateTime? fechaCreacion,
+        Guid? usuarioModificacionId,
+        DateTime? fechaModificacion,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = new[] { usuarioCreacionId, usuarioModificacionId }
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value);
+
+        var nombres = await _usuariosClient.ObtenerNombresAsync(ids, cancellationToken);
+
+        return new AuditoriaRegistroDto(
+            ResolverNombre(usuarioCreacionId, nombres),
+            fechaCreacion,
+            ResolverNombre(usuarioModificacionId, nombres),
+            usuarioModificacionId.HasValue ? fechaModificacion : null);
+    }
+
+    private static string? ResolverNombre<TId>(
+        TId? usuarioId,
+        IReadOnlyDictionary<TId, string> nombres)
+        where TId : struct
     {
         if (!usuarioId.HasValue)
         {

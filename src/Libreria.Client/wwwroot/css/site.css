@@ -1063,3 +1063,83 @@ textarea:focus {
     font-weight: 400;
     color: var(--color-secondary);
 }
+
+/* ==========================================================================
+   MÓDULO: CLIENTES (US-116)
+   ========================================================================== */
+.mensaje {
+    padding: 1rem;
+    border-radius: var(--radius-base);
+    margin-bottom: 1.5rem;
+    border: 1px solid transparent;
+}
+
+.mensaje--exito {
+    background-color: #E8F0EB;
+    color: var(--color-accent);
+    border-color: #A3C2B1;
+}
+
+.mensaje--error {
+    background-color: #FDECEC;
+    color: var(--color-danger);
+    border-color: #F3B4B4;
+}
+
+.filtro-barra {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 1.5rem;
+    background-color: var(--color-surface);
+    padding: 1.25rem;
+    border-radius: var(--radius-base);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+}
+
+.filtro-barra .form-group {
+    margin-bottom: 0;
+}
+
+.filtro-barra__campo {
+    flex: 1;
+    min-width: 250px;
+}
+
+.filtro-barra__estado {
+    min-width: 160px;
+}
+
+.filtro-barra__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.estado-vacio {
+    text-align: center;
+    color: var(--color-secondary);
+    padding: 2rem;
+    background-color: var(--color-surface);
+    border-radius: var(--radius-base);
+    border: 1px solid var(--color-border);
+}
+
+.tabla-orden {
+    color: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.tabla-orden:hover,
+.tabla-orden:focus-visible {
+    text-decoration: underline;
+}
+
+.form-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+}

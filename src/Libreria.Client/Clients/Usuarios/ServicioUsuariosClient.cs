@@ -55,6 +55,39 @@ public sealed class ServicioUsuariosClient : ApiClientBase, IServicioUsuariosCli
                ?? new Dictionary<int, string>();
     }
 
+    public async Task<IReadOnlyDictionary<Guid, string>> ObtenerNombresAsync(
+        IEnumerable<Guid> usuarioIds,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(usuarioIds);
+
+        var ids = usuarioIds
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToArray();
+
+        if (ids.Length == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var query = string.Join("&", ids.Select(id => $"ids={id}"));
+
+        try
+        {
+            return await GetAsync<Dictionary<Guid, string>>(
+                       $"api/usuarios/nombres?{query}",
+                       cancellationToken)
+                   ?? new Dictionary<Guid, string>();
+        }
+        catch (ApiClientException)
+        {
+            // Los nombres son informativos: si Usuarios rechaza los GUID, la página sigue
+            // y la auditoría muestra «Usuario no disponible».
+            return new Dictionary<Guid, string>();
+        }
+    }
+
     public async Task<IReadOnlyList<UserListItemDto>> ObtenerUsuariosAsync(
     string? estado = null,
     CancellationToken cancellationToken = default)

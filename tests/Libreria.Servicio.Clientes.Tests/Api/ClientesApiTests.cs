@@ -103,6 +103,20 @@ public sealed class ClientesApiTests : IDisposable
         Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
     }
 
+    [Fact]
+    public async Task Alta_con_campos_nulos_devuelve_400_con_los_mensajes_del_validador()
+    {
+        // US-116: el Front envía null cuando el usuario deja un campo vacío.
+        var respuesta = await _http.PostAsJsonAsync("api/clientes",
+            new { ciNit = (string?)null, razonSocial = (string?)null, correo = "malo" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+        var errores = (await Json(respuesta)).GetProperty("errors");
+        Assert.Equal("El CI/NIT es obligatorio.", errores.GetProperty("CiNit")[0].GetString());
+        Assert.Equal("La razón social es obligatoria.", errores.GetProperty("RazonSocial")[0].GetString());
+        Assert.Equal("Ingrese un correo electrónico válido.", errores.GetProperty("Correo")[0].GetString());
+    }
+
     // ---------- GET api/clientes, GET api/clientes/{publicId} (Select) ----------
 
     [Fact]

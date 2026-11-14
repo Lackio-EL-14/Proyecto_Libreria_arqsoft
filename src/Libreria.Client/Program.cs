@@ -19,6 +19,7 @@ builder.Services
         options.Conventions.AuthorizeFolder("/Historico", PoliticasAcceso.SoloAdministrador);
 
         options.Conventions.AuthorizeFolder("/Ventas", PoliticasAcceso.Ventas);
+        options.Conventions.AuthorizeFolder("/Clientes", PoliticasAcceso.Ventas);
     })
     .AddMvcOptions(options =>
     {

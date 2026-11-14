@@ -62,6 +62,10 @@ public abstract class ApiClientBase : IApiClient
     protected Task<ResultadoApi> EnviarPatchAsync(string url, CancellationToken ct) =>
         EnviarAsync(() => _httpClient.PatchAsync(url, null, ct), ct);
 
+    /// <summary>PATCH con cuerpo JSON (por ejemplo, <c>{ "activo": false }</c> de Clientes).</summary>
+    protected Task<ResultadoApi> EnviarPatchAsync<TCuerpo>(string url, TCuerpo cuerpo, CancellationToken ct) =>
+        EnviarAsync(() => _httpClient.PatchAsJsonAsync(url, cuerpo, ct), ct);
+
     private async Task<ResultadoApi> EnviarAsync(Func<Task<HttpResponseMessage>> peticion, CancellationToken ct)
     {
         try
