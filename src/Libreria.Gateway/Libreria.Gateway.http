@@ -1,0 +1,13 @@
+@gateway = http://localhost:5080
+
+### Salud del gateway
+GET {{gateway}}/salud
+
+### Salud de cada microservicio (directo; las rutas del gateway llegan en US-112)
+GET http://localhost:5101/salud
+###
+GET http://localhost:5102/salud
+###
+GET http://localhost:5103/salud
+###
+GET http://localhost:5104/salud

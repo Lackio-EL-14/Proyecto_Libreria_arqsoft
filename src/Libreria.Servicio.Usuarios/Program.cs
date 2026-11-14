@@ -77,5 +77,6 @@ app.UseHttpsRedirection();
 app.UseMiddleware<CurrentUserMiddleware>();
 
 app.MapControllers();
+app.MapGet("/salud", () => Results.Ok(new { servicio = "Usuarios", estado = "ok" }));
 
 app.Run();

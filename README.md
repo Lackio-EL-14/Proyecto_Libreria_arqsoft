@@ -1,17 +1,20 @@
 # Sistema de inventario y ventas — Librería
 
-Solución académica en C# y .NET 10 que separa el sistema en un Front Razor Pages y dos servicios HTTP. SQL Server es compartido durante esta etapa del proyecto.
+Solución académica en C# y .NET 10: un Front en Razor Pages, un API Gateway y cuatro microservicios, cada uno con su propia base de datos (en construcción durante el sprint de microservicios; ver `docs/Planning_Sprint_Microservicios.md`).
 
 ## Arquitectura actual
 
-| Proceso | Proyecto | Puerto |
-| --- | --- | --- |
-| Front | `src/Libreria.Client` | 5000 |
-| Ventas e inventario | `src/Libreria.Servicio.Ventas` | 5101 |
-| Usuarios y autenticación | `src/Libreria.Servicio.Usuarios` | 5102 |
-| SQL Server | `docker-compose.yml` | 1433 |
+| Proceso | Proyecto | Puerto | Estilo |
+| --- | --- | --- | --- |
+| Front | `src/Libreria.Client` | 5000 | Razor Pages |
+| API Gateway | `src/Libreria.Gateway` | 5080 | YARP (rutas desde US-112) |
+| MS Ventas | `src/Libreria.Servicio.Ventas` | 5101 | Hexagonal |
+| MS Usuarios | `src/Libreria.Servicio.Usuarios` | 5102 | Hexagonal (se migra en US-124) |
+| MS Clientes | `src/Libreria.Servicio.Clientes` | 5103 | Hexagonal |
+| MS Productos | `src/Libreria.Servicio.Productos` | 5104 | Clean |
+| SQL Server | `docker-compose.yml` | 1433 | — |
 
-Docker Compose levanta únicamente SQL Server. El Front y los servicios se ejecutan como proyectos .NET independientes. En este sprint no se usan Nginx, Redis ni réplicas de la aplicación.
+Cada microservicio y el gateway responden `GET /salud` con `{ "servicio": "...", "estado": "ok" }`. Hasta US-111, Docker Compose levanta únicamente SQL Server. El Front y los servicios se ejecutan como proyectos .NET independientes. En este sprint no se usan Nginx, Redis ni réplicas de la aplicación.
 
 El Front no debe agregar referencias de proyecto a los servicios. La comunicación se realiza por HTTP, con DTOs propios del Front y clientes registrados mediante `IHttpClientFactory`.
 
@@ -97,38 +100,34 @@ dotnet user-secrets set "SMTP_FROM" "correo@gmail.com" --project src/Libreria.Se
 dotnet user-secrets set "BASE_URL" "http://localhost:5000" --project src/Libreria.Servicio.Usuarios
 ```
 
-## Ejecutar desde Visual Studio
+## Correr todo
+
+Los 6 proyectos (Front, gateway y 4 microservicios) se levantan a la vez de cualquiera de estas dos formas.
+
+### Desde Visual Studio
 
 1. Abre `LibreriaSystem.slnx`.
-2. En las propiedades de la solución, selecciona varios proyectos de inicio.
-3. Configura con acción **Iniciar**:
-   - `Libreria.Servicio.Ventas`
-   - `Libreria.Servicio.Usuarios`
-   - `Libreria.Client`
-4. Inicia sin depuración o con depuración.
-5. Abre `http://localhost:5000`.
+2. En el selector de inicio elige el perfil **Correr todo** (definido en `LibreriaSystem.slnLaunch`).
+3. Inicia con o sin depuración y abre `http://localhost:5000`.
 
-## Ejecutar manualmente
+### Con `run-all.ps1`
 
-Abre tres terminales en la raíz del repositorio.
-
-Terminal 1:
+Desde la raíz del repositorio, en PowerShell 7 (`pwsh`) en Windows, Linux o macOS:
 
 ```powershell
-dotnet run --project src/Libreria.Servicio.Ventas --launch-profile http
+./run-all.ps1            # compila una vez y arranca los 6
+./run-all.ps1 -SinCompilar
 ```
 
-Terminal 2:
+El script compila la solución, arranca cada proyecto con `dotnet run --no-build`, comprueba `GET /salud` de cada servicio y `GET /` del Front, y muestra una tabla con el estado de cada uno. En Windows cada proyecto abre su propia ventana; en Linux y macOS los logs quedan en la carpeta temporal `libreria-run-all`. **Ctrl+C** detiene los 6 procesos.
+
+### Un proyecto suelto
 
 ```powershell
-dotnet run --project src/Libreria.Servicio.Usuarios --launch-profile http
+dotnet run --project src/<proyecto>
 ```
 
-Terminal 3:
-
-```powershell
-dotnet run --project src/Libreria.Client --launch-profile Libreria.Client
-```
+Los puertos están fijados en el `Properties/launchSettings.json` de cada proyecto (tabla de arriba). Los `.http` de cada proyecto traen la petición de `/salud` para probarlo.
 
 ## Base compartida del Front — US-80
 

@@ -1,6 +1,4 @@
-@Libreria.Servicio.Usuarios_HostAddress = http://localhost:5039
+@host = http://localhost:5102
 
-GET {{Libreria.Servicio.Usuarios_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
+### Salud del servicio (US-110)
+GET {{host}}/salud
