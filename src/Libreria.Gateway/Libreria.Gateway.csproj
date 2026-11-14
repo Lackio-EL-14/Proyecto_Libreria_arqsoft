@@ -6,4 +6,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
+  </ItemGroup>
+
+  <!-- Rutas del gateway (US-112): yarp.g1.json es del Grupo 1 y yarp.g2.json del Grupo 2. -->
+  <ItemGroup>
+    <Content Update="yarp.*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

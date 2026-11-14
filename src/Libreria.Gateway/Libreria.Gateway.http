@@ -1,9 +1,64 @@
 @gateway = http://localhost:5080
+# Token de ejemplo: hasta US-126 el gateway no lo valida, solo lo reenvía al MS.
+@token = token-de-desarrollo
 
 ### Salud del gateway
 GET {{gateway}}/salud
 
-### Salud de cada microservicio (directo; las rutas del gateway llegan en US-112)
+### ---------- yarp.g1.json (Grupo 1) ----------
+
+### Clientes (5103)
+GET {{gateway}}/api/clientes
+Authorization: Bearer {{token}}
+
+### Ventas (5101)
+GET {{gateway}}/api/ventas/ping
+Authorization: Bearer {{token}}
+
+### Ventas: listado
+GET {{gateway}}/api/ventas
+Authorization: Bearer {{token}}
+
+### Productos (5104)
+GET {{gateway}}/api/productos
+Authorization: Bearer {{token}}
+
+### Categorías (5104)
+GET {{gateway}}/api/categorias
+Authorization: Bearer {{token}}
+
+### Marcas (5104)
+GET {{gateway}}/api/marcas
+Authorization: Bearer {{token}}
+
+### Histórico (5104)
+GET {{gateway}}/api/historico/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### ---------- yarp.g2.json (Grupo 2) ----------
+
+### Login (5102, anónima)
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "<contraseña>"
+}
+
+### Usuarios: roles (5102)
+GET {{gateway}}/api/usuarios/roles
+Authorization: Bearer {{token}}
+
+### ---------- Fuera del contrato ----------
+
+### Ruta inexistente → 404
+GET {{gateway}}/api/reportes
+
+### Microservicio caído → 503 ProblemDetails
+# Detén, por ejemplo, el MS de Clientes y vuelve a ejecutar «Clientes (5103)».
+
+### Salud de cada microservicio (directo, sin gateway)
 GET http://localhost:5101/salud
 ###
 GET http://localhost:5102/salud

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Libreria.Client.DTOs.Common;
@@ -79,6 +80,14 @@ public abstract class ApiClientBase : IApiClient
             return;
         }
 
+        // Detrás del gateway, un microservicio caído llega como 502/503/504 y no como error de red.
+        if (EsServicioNoDisponible(response.StatusCode))
+        {
+            throw new ServicioNoDisponibleException(
+                _servicio,
+                new HttpRequestException($"El gateway respondió {(int)response.StatusCode}.", null, response.StatusCode));
+        }
+
         ApiProblemDetailsDto? problem = null;
 
         try
@@ -96,4 +105,9 @@ public abstract class ApiClientBase : IApiClient
             message,
             problem?.Errors);
     }
+
+    private static bool EsServicioNoDisponible(HttpStatusCode statusCode) =>
+        statusCode is HttpStatusCode.BadGateway
+            or HttpStatusCode.ServiceUnavailable
+            or HttpStatusCode.GatewayTimeout;
 }
