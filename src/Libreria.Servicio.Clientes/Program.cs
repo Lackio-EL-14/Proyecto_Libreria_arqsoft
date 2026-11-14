@@ -1,4 +1,10 @@
+using Libreria.Servicio.Clientes.Application.Factories;
+using Libreria.Servicio.Clientes.Application.Ports.Primary;
 using Libreria.Servicio.Clientes.Application.Ports.Secondary;
+using Libreria.Servicio.Clientes.Application.Services;
+using Libreria.Servicio.Clientes.Application.Validators;
+using Libreria.Servicio.Clientes.Infrastructure.Connection;
+using Libreria.Servicio.Clientes.Infrastructure.Factories;
 using Libreria.Servicio.Clientes.Infrastructure.Seguridad;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,11 +14,32 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// 2. Usuario que opera (puerto IUsuarioActual). Hasta US-127 solo existe el de desarrollo.
+// 2. Cadena de conexión (Singleton) y fábrica de conexiones MySQL (contrato 6.1:
+//    appsettings sin contraseña; la real llega por ConnectionStrings__ClientesDb).
+var cadenaClientes = builder.Configuration.GetConnectionString("ClientesDb");
+if (string.IsNullOrWhiteSpace(cadenaClientes))
+{
+    throw new InvalidOperationException(
+        "Falta la cadena de conexión: defina ConnectionStrings__ClientesDb o ConnectionStrings:ClientesDb.");
+}
+
+var conexiones = ConnectionStringSingleton.Instancia;
+conexiones.Configurar(cadenaClientes);
+builder.Services.AddSingleton(conexiones);
+builder.Services.AddScoped<IDbConnectionFactory, MySqlConnectionFactory>();
+
+// 3. Usuario que opera (puerto IUsuarioActual). Hasta US-127 solo existe el de desarrollo.
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddSingleton<IUsuarioActual, UsuarioActualDesarrollo>();
 }
+
+// 4. Factory Method: el servicio pide su repositorio a la fábrica, no al contenedor.
+builder.Services.AddScoped<ClienteRepositoryFactory, MySqlClienteRepositoryFactory>();
+
+// 5. Núcleo: validador y casos de uso (puerto primario)
+builder.Services.AddScoped<ClienteValidator>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
 
 var app = builder.Build();
 
