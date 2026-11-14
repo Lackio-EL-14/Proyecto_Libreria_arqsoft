@@ -62,15 +62,16 @@ public sealed class ConfiguracionDeRutasTests
     }
 
     [Fact]
-    public void En_Development_clientes_y_productos_van_a_Ventas_durante_la_transicion()
+    public void En_Development_solo_productos_sigue_en_Ventas_durante_la_transicion()
     {
         var configuracion = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AgregarRutasYarp([], "Development")
             .Build();
 
-        // appsettings.Development.json gana sobre yarp.g1.json solo en los dos clústeres en transición.
-        Assert.Equal("http://localhost:5101", configuracion[GatewayFactory.ClaveDestino("clientes")]);
+        // appsettings.Development.json gana sobre yarp.g1.json solo en el clúster en transición (US-122).
+        // Clientes ya lo atiende su MS (US-115).
+        Assert.Equal("http://localhost:5103", configuracion[GatewayFactory.ClaveDestino("clientes")]);
         Assert.Equal("http://localhost:5101", configuracion[GatewayFactory.ClaveDestino("productos")]);
         Assert.Equal("http://localhost:5101", configuracion[GatewayFactory.ClaveDestino("ventas")]);
         Assert.Equal("http://localhost:5102", configuracion[GatewayFactory.ClaveDestino("usuarios")]);
@@ -79,9 +80,9 @@ public sealed class ConfiguracionDeRutasTests
     [Fact]
     public void Una_variable_de_entorno_gana_sobre_el_appsettings_del_entorno()
     {
-        const string variable = "ReverseProxy__Clusters__clientes__Destinations__principal__Address";
+        const string variable = "ReverseProxy__Clusters__productos__Destinations__principal__Address";
         var anterior = Environment.GetEnvironmentVariable(variable);
-        Environment.SetEnvironmentVariable(variable, "http://localhost:5103");
+        Environment.SetEnvironmentVariable(variable, "http://localhost:5104");
 
         try
         {
@@ -90,7 +91,7 @@ public sealed class ConfiguracionDeRutasTests
                 .AgregarRutasYarp([], "Development")
                 .Build();
 
-            Assert.Equal("http://localhost:5103", configuracion[GatewayFactory.ClaveDestino("clientes")]);
+            Assert.Equal("http://localhost:5104", configuracion[GatewayFactory.ClaveDestino("productos")]);
         }
         finally
         {

@@ -3,9 +3,11 @@ using Libreria.Servicio.Clientes.Application.Ports.Primary;
 using Libreria.Servicio.Clientes.Application.Ports.Secondary;
 using Libreria.Servicio.Clientes.Application.Services;
 using Libreria.Servicio.Clientes.Application.Validators;
+using Libreria.Servicio.Clientes.Controllers.Comun;
 using Libreria.Servicio.Clientes.Infrastructure.Connection;
 using Libreria.Servicio.Clientes.Infrastructure.Factories;
 using Libreria.Servicio.Clientes.Infrastructure.Seguridad;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +15,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Errores que no son de negocio → ProblemDetails: BD caída 503, inesperado 500 (contrato 6.5).
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ManejadorExcepciones>();
 
 // 2. Cadena de conexión (Singleton) y fábrica de conexiones MySQL (contrato 6.1:
 //    appsettings sin contraseña; la real llega por ConnectionStrings__ClientesDb).
@@ -41,7 +47,17 @@ builder.Services.AddScoped<ClienteRepositoryFactory, MySqlClienteRepositoryFacto
 builder.Services.AddScoped<ClienteValidator>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 
+// Detrás del gateway: YARP envía X-Forwarded-*; así el Location del 201 apunta al gateway (5080), no a 5103.
+// Por defecto solo se confía en proxies de loopback (el gateway en la misma máquina).
+builder.Services.Configure<ForwardedHeadersOptions>(opciones =>
+    opciones.ForwardedHeaders = ForwardedHeaders.XForwardedFor
+        | ForwardedHeaders.XForwardedProto
+        | ForwardedHeaders.XForwardedHost);
+
 var app = builder.Build();
+
+app.UseForwardedHeaders();
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
@@ -54,3 +70,6 @@ app.MapControllers();
 app.MapGet("/salud", () => Results.Ok(new { servicio = "Clientes", estado = "ok" }));
 
 app.Run();
+
+// Visible para las pruebas de la API (WebApplicationFactory).
+public partial class Program;
