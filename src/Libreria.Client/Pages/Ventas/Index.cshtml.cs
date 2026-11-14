@@ -1,7 +1,7 @@
 using Libreria.Client.Clients;
+using Libreria.Client.DTOs.Usuarios;
 using Libreria.Client.DTOs.Ventas;
 using Libreria.Client.Seguridad;
-using Libreria.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;

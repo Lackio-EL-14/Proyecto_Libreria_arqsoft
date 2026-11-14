@@ -1,5 +1,5 @@
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Primary;
+// TODO US-123: reconectar con el MS Productos vía gateway (página excluida del build en Libreria.Client.csproj).
+using Libreria.Client.DTOs.Common;
 using Libreria.Client.Clients;
 using Libreria.Client.DTOs.Ventas;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +28,7 @@ public class EditModel : PageModel
 
     public IReadOnlyList<string> Paises { get; private set; } = [];
 
-    public AuditoriaRegistro? Auditoria { get; private set; }
+    public AuditoriaRegistroDto? Auditoria { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {

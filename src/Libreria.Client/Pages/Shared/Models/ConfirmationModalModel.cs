@@ -1,7 +1,3 @@
-using Libreria.Domain;
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Factories;
 namespace Libreria.Client.Pages.Shared.Models;
 
 public sealed class ConfirmationModalModel
