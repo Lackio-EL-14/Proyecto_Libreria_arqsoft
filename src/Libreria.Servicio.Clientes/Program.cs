@@ -12,7 +12,10 @@ using Microsoft.AspNetCore.HttpOverrides;
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. API REST + Swagger
-builder.Services.AddControllers();
+// Sin [Required] implícito por ser string no anulable: así un campo nulo (el Front envía null
+// si el usuario lo deja vacío) llega a ClienteValidator y vuelve como Result con mensajes en español.
+builder.Services.AddControllers(opciones =>
+    opciones.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

@@ -48,6 +48,6 @@ Configuración: `Servicios:Gateway:BaseUrl` (obligatoria; sin ella el Front no a
 | Parcial | Contenido | Dueño |
 |---|---|---|
 | `_MenuVentas` | Registrar venta, Ventas | Cesar |
-| `_MenuClientes` | Clientes (aparece cuando exista `Pages/Clientes/Index`, US-116) | Edson |
+| `_MenuClientes` | Clientes (Administrador y Vendedor; baja y reactivación solo Administrador, US-116) | Edson |
 | `_MenuInventario` | Productos, Categorías, Marcas | Josue |
 | `_MenuUsuarios` | Usuarios | Grupo 2 |

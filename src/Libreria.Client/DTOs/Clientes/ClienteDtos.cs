@@ -23,3 +23,42 @@ public record ClienteVentaBusquedaDto(
     string CiNit,
     string RazonSocial
 );
+
+// Cliente tal como lo devuelve el MS Clientes (GET api/clientes y api/clientes/{publicId}).
+// La auditoría guarda el PublicId del usuario (sub del JWT).
+public record ClienteDetalleDto(
+    Guid PublicId,
+    string CiNit,
+    string RazonSocial,
+    string? Correo,
+    bool Estado,
+    DateTime FechaCreacion,
+    Guid? UsuarioCreacionId,
+    DateTime? FechaModificacion,
+    Guid? UsuarioModificacionId);
+
+// Qué clientes lista la página: el MS distingue «sin enviar» (activos), false e «estado=» (todos).
+public enum EstadoFiltroClientes
+{
+    Activos,
+    Inactivos,
+    Todos
+}
+
+// Columnas por las que el MS sabe ordenar (lista cerrada del contrato).
+public enum OrdenClientes
+{
+    RazonSocial,
+    CiNit,
+    Correo,
+    FechaCreacion
+}
+
+public sealed record FiltroClientes(
+    string? Busqueda = null,
+    EstadoFiltroClientes Estado = EstadoFiltroClientes.Activos,
+    OrdenClientes Orden = OrdenClientes.RazonSocial,
+    bool Descendente = false);
+
+// Cuerpo de PATCH api/clientes/{publicId}/estado.
+public sealed record CambioEstadoClienteDto(bool Activo);

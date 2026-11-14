@@ -1,6 +1,6 @@
 @model Libreria.Client.Pages.Shared.Models.MenuModuleViewModel
 @{
-    // La página llega con US-116; mientras no exista, Url.Page devuelve null y el menú no se muestra.
+    // US-116: Administrador y Vendedor (política Ventas). Si la página no existiera, Url.Page devuelve null y el menú no se muestra.
     var urlClientes = Url.Page("/Clientes/Index");
 }
 

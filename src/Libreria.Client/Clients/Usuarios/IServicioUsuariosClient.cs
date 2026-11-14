@@ -17,6 +17,12 @@ public interface IServicioUsuariosClient : IApiClient
         IEnumerable<int> usuarioIds,
         CancellationToken cancellationToken = default);
 
+    // Contrato 6.4: la auditoría de los MS nuevos guarda el PublicId (GUID) del usuario.
+    // Mientras Usuarios no acepte GUID (US-124/US-127) devuelve un diccionario vacío.
+    Task<IReadOnlyDictionary<Guid, string>> ObtenerNombresAsync(
+        IEnumerable<Guid> usuarioIds,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<UserListItemDto>> ObtenerUsuariosAsync(
     string? estado = null,
     CancellationToken cancellationToken = default);
