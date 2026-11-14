@@ -1,7 +1,7 @@
 using Libreria.Client.Binding;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Libreria.Client.DTOs.Ventas;
+namespace Libreria.Client.DTOs.Productos;
 
 public class ProductoInput
 {

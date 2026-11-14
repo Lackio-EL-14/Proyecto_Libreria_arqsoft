@@ -62,6 +62,43 @@ public sealed class ConfiguracionDeRutasTests
     }
 
     [Fact]
+    public void En_Development_clientes_y_productos_van_a_Ventas_durante_la_transicion()
+    {
+        var configuracion = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AgregarRutasYarp([], "Development")
+            .Build();
+
+        // appsettings.Development.json gana sobre yarp.g1.json solo en los dos clústeres en transición.
+        Assert.Equal("http://localhost:5101", configuracion[GatewayFactory.ClaveDestino("clientes")]);
+        Assert.Equal("http://localhost:5101", configuracion[GatewayFactory.ClaveDestino("productos")]);
+        Assert.Equal("http://localhost:5101", configuracion[GatewayFactory.ClaveDestino("ventas")]);
+        Assert.Equal("http://localhost:5102", configuracion[GatewayFactory.ClaveDestino("usuarios")]);
+    }
+
+    [Fact]
+    public void Una_variable_de_entorno_gana_sobre_el_appsettings_del_entorno()
+    {
+        const string variable = "ReverseProxy__Clusters__clientes__Destinations__principal__Address";
+        var anterior = Environment.GetEnvironmentVariable(variable);
+        Environment.SetEnvironmentVariable(variable, "http://localhost:5103");
+
+        try
+        {
+            var configuracion = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AgregarRutasYarp([], "Development")
+                .Build();
+
+            Assert.Equal("http://localhost:5103", configuracion[GatewayFactory.ClaveDestino("clientes")]);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(variable, anterior);
+        }
+    }
+
+    [Fact]
     public void El_argumento_de_linea_de_comandos_gana_sobre_el_archivo_de_rutas()
     {
         var configuracion = new ConfigurationBuilder()

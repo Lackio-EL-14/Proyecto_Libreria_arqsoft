@@ -1,4 +1,4 @@
-namespace Libreria.Client.DTOs.Ventas;
+namespace Libreria.Client.DTOs.Common;
 
 // Resultado de una operación de escritura contra el servicio.
 // Las claves de Errores son las mismas que usan las vistas (por ejemplo

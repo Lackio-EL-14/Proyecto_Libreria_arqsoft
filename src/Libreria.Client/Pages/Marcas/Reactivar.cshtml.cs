@@ -1,5 +1,6 @@
-using Libreria.Client.Clients;
-using Libreria.Client.DTOs.Ventas;
+using Libreria.Client.Clients.Productos;
+using Libreria.Client.DTOs.Common;
+using Libreria.Client.DTOs.Productos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -7,11 +8,11 @@ namespace Libreria.Client.Pages.Marcas;
 
 public class ReactivarModel : PageModel
 {
-    private readonly IVentasApiClient _ventas;
+    private readonly IServicioProductosClient _productos;
 
-    public ReactivarModel(IVentasApiClient ventas)
+    public ReactivarModel(IServicioProductosClient productos)
     {
-        _ventas = ventas;
+        _productos = productos;
     }
 
     [BindProperty]
@@ -21,7 +22,7 @@ public class ReactivarModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        Marca = await _ventas.ObtenerMarcaAsync(id, false);
+        Marca = await _productos.ObtenerMarcaAsync(id, false);
         if (Marca is null)
         {
             return NotFound();
@@ -33,7 +34,7 @@ public class ReactivarModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var resultado = await _ventas.CambiarEstadoMarcaAsync(PublicId, true);
+        var resultado = await _productos.CambiarEstadoMarcaAsync(PublicId, true);
         if (!resultado.Exitoso)
         {
             return NotFound();

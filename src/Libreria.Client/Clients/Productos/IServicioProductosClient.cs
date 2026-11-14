@@ -1,8 +1,14 @@
-using Libreria.Client.DTOs.Ventas;
+using Libreria.Client.Clients.Common;
+using Libreria.Client.DTOs.Common;
+using Libreria.Client.DTOs.Productos;
 
-namespace Libreria.Client.Clients;
+namespace Libreria.Client.Clients.Productos;
 
-public interface IVentasApiClient
+/// <summary>
+/// MS Productos detrás del gateway: productos, categorías, marcas e histórico de costos
+/// (rutas <c>api/productos</c>, <c>api/categorias</c>, <c>api/marcas</c> y <c>api/historico</c>).
+/// </summary>
+public interface IServicioProductosClient : IApiClient
 {
     Task<IReadOnlyList<CategoriaDto>> ObtenerCategoriasAsync(string? busqueda, CancellationToken ct = default);
     Task<CategoriaDto?> ObtenerCategoriaAsync(Guid publicId, bool activa, CancellationToken ct = default);
@@ -27,9 +33,4 @@ public interface IVentasApiClient
     Task<ResultadoApi> DarDeBajaProductoAsync(Guid publicId, CancellationToken ct = default);
 
     Task<HistoricoProductoDto?> ObtenerHistoricoAsync(Guid productoPublicId, CancellationToken ct = default);
-
-    Task<IReadOnlyList<VentaListItemDto>> ObtenerVentasAsync(string? estado, DateOnly? fechaDesde, DateOnly? fechaHasta, CancellationToken ct = default);
-    Task<VentaDetalleDto?> ObtenerDetalleVentaAsync(Guid publicId, bool esAdministrador, CancellationToken ct = default);
-    Task<ResultadoApi> AnularVentaAsync(Guid publicId, string motivo, CancellationToken ct = default);
-    Task<ComprobanteVentaDto?> ObtenerComprobanteAsync(Guid publicId, CancellationToken ct = default);
 }

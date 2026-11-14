@@ -150,7 +150,7 @@ dotnet user-secrets set "BASE_URL" "http://localhost:5000" --project src/Libreri
 
 ### Cambiar un destino sin tocar el repositorio
 
-Las variables de entorno (y los argumentos de línea de comandos) ganan sobre los JSON:
+Orden de precedencia (gana el último): `yarp.g1.json` / `yarp.g2.json` → `appsettings.{Entorno}.json` → variables de entorno → argumentos de línea de comandos:
 
 ```bash
 ReverseProxy__Clusters__<cluster>__Destinations__principal__Address=http://host:puerto
@@ -158,15 +158,15 @@ ReverseProxy__Clusters__<cluster>__Destinations__principal__Address=http://host:
 ReverseProxy__Clusters__productos__Destinations__principal__Address=http://localhost:5101 dotnet run --project src/Libreria.Gateway
 ```
 
-**Transición (hasta US-115 y US-122):** mientras Clientes y Productos son esqueletos, Ventas (5101) sigue atendiendo `api/clientes`, `api/productos`, `api/categorias`, `api/marcas` y `api/historico`. Para usar esas pantallas a través del gateway, apunta los dos clusters a Ventas:
+**Transición (hasta US-115 y US-122):** mientras Clientes y Productos son esqueletos, Ventas (5101) sigue atendiendo `api/clientes`, `api/productos`, `api/categorias`, `api/marcas` y `api/historico`. Por eso `src/Libreria.Gateway/appsettings.Development.json` apunta los clústeres `clientes` y `productos` a Ventas: en Development el Front completo funciona sin configurar nada. Al mergear US-115 (Clientes) y US-122 (Productos), su dueño borra su clúster de ese archivo y el gateway vuelve a 5103 / 5104.
+
+Para probar un MS nuevo antes de borrar su clúster, se fuerza su destino real con una variable (gana sobre el `appsettings`):
 
 ```bash
-export ReverseProxy__Clusters__clientes__Destinations__principal__Address=http://localhost:5101
-export ReverseProxy__Clusters__productos__Destinations__principal__Address=http://localhost:5101
-dotnet run --project src/Libreria.Gateway
+ReverseProxy__Clusters__clientes__Destinations__principal__Address=http://localhost:5103 dotnet run --project src/Libreria.Gateway
 ```
 
-En PowerShell: `$env:ReverseProxy__Clusters__productos__Destinations__principal__Address = "http://localhost:5101"`. Cuando cada MS esté en `develop`, basta con no definir la variable.
+En PowerShell: `$env:ReverseProxy__Clusters__clientes__Destinations__principal__Address = "http://localhost:5103"`.
 
 Las peticiones de prueba de cada ruta están en `src/Libreria.Gateway/Libreria.Gateway.http`, y las pruebas automáticas en `tests/Libreria.Gateway.Tests`.
 

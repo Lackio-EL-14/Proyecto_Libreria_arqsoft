@@ -1,7 +1,6 @@
-// TODO US-123: reconectar con el MS Productos vía gateway (página excluida del build en Libreria.Client.csproj).
 using Libreria.Client.DTOs.Common;
-using Libreria.Client.Clients;
-using Libreria.Client.DTOs.Ventas;
+using Libreria.Client.Clients.Productos;
+using Libreria.Client.DTOs.Productos;
 using Libreria.Client.Seguridad;
 using Libreria.Client.Services.Auditoria;
 using Microsoft.AspNetCore.Mvc;
@@ -14,16 +13,16 @@ namespace Libreria.Client.Pages.Categorias;
 
 public class EditModel : PageModel
 {
-    private readonly IVentasApiClient _ventas;
+    private readonly IServicioProductosClient _productos;
     private readonly IUrlProtector _urlProtector;
     private readonly IAuditoriaService _auditoriaService;
 
     public EditModel(
-        IVentasApiClient ventas,
+        IServicioProductosClient productos,
         IUrlProtector urlProtector,
         IAuditoriaService auditoriaService)
     {
-        _ventas = ventas;
+        _productos = productos;
         _urlProtector = urlProtector;
         _auditoriaService = auditoriaService;
     }
@@ -46,7 +45,7 @@ public class EditModel : PageModel
             return NotFound();
         }
 
-        var categoria = await _ventas.ObtenerCategoriaAsync(publicIdDescifrado.Value, true);
+        var categoria = await _productos.ObtenerCategoriaAsync(publicIdDescifrado.Value, true);
         if (categoria is null)
         {
             return NotFound();
@@ -73,7 +72,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var resultado = await _ventas.ActualizarCategoriaAsync(PublicId, Input);
+        var resultado = await _productos.ActualizarCategoriaAsync(PublicId, Input);
         if (resultado.NoEncontrado)
         {
             return NotFound();
@@ -92,7 +91,7 @@ public class EditModel : PageModel
 
     private async Task CargarUbicacionesAsync()
     {
-        Ubicaciones = await _ventas.ObtenerUbicacionesCategoriaAsync();
+        Ubicaciones = await _productos.ObtenerUbicacionesCategoriaAsync();
     }
 
     private void AgregarErrores(IReadOnlyDictionary<string, string> errores)

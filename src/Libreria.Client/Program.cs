@@ -1,4 +1,3 @@
-using Libreria.Client.Clients;
 using Libreria.Client.Clients.Common;
 using Libreria.Client.Clients.DependencyInjection;
 using Libreria.Client.DTOs.Usuarios;
@@ -27,11 +26,14 @@ builder.Services
         options.Filters.Add<ServicioNoDisponibleFilter>();
     });
 
+// Un módulo por microservicio; todos hablan solo con el gateway (Servicios:Gateway:BaseUrl).
+// Cada dueño edita únicamente su método de extensión (sección 7 del planning).
 builder.Services
     .AddContextoUsuarioServicios()
-    .AddServicioVentas(builder.Configuration)
-    .AddVentasApiClient(builder.Configuration)
-    .AddServicioUsuarios(builder.Configuration);
+    .AddModuloClientes(builder.Configuration)
+    .AddModuloVentas(builder.Configuration)
+    .AddModuloProductos(builder.Configuration)
+    .AddModuloUsuarios(builder.Configuration);
 
 builder.Services.AddMemoryCache();
 builder.Services.Configure<SesionActivaOptions>(

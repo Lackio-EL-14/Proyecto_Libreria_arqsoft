@@ -1,5 +1,6 @@
-using Libreria.Client.Clients;
-using Libreria.Client.DTOs.Ventas;
+using Libreria.Client.Clients.Productos;
+using Libreria.Client.DTOs.Common;
+using Libreria.Client.DTOs.Productos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -7,11 +8,11 @@ namespace Libreria.Client.Pages.Productos;
 
 public class EditModel : PageModel
 {
-    private readonly IVentasApiClient _ventas;
+    private readonly IServicioProductosClient _productos;
 
-    public EditModel(IVentasApiClient ventas)
+    public EditModel(IServicioProductosClient productos)
     {
-        _ventas = ventas;
+        _productos = productos;
     }
 
     public Guid PublicId { get; private set; }
@@ -24,7 +25,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        var edicion = await _ventas.ObtenerProductoParaEdicionAsync(id);
+        var edicion = await _productos.ObtenerProductoParaEdicionAsync(id);
         if (edicion is null)
         {
             return NotFound();
@@ -40,7 +41,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(Guid id)
     {
-        var resultado = await _ventas.ActualizarProductoAsync(id, Input);
+        var resultado = await _productos.ActualizarProductoAsync(id, Input);
         if (resultado.NoEncontrado)
         {
             return NotFound();
@@ -61,7 +62,7 @@ public class EditModel : PageModel
 
     private async Task CargarOpcionesAsync(Guid publicId)
     {
-        var edicion = await _ventas.ObtenerProductoParaEdicionAsync(publicId);
+        var edicion = await _productos.ObtenerProductoParaEdicionAsync(publicId);
         if (edicion is null)
         {
             return;

@@ -1,5 +1,6 @@
-using Libreria.Client.Clients;
-using Libreria.Client.DTOs.Ventas;
+using Libreria.Client.Clients.Productos;
+using Libreria.Client.DTOs.Common;
+using Libreria.Client.DTOs.Productos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -7,11 +8,11 @@ namespace Libreria.Client.Pages.Productos;
 
 public class IndexModel : PageModel
 {
-    private readonly IVentasApiClient _ventas;
+    private readonly IServicioProductosClient _productos;
 
-    public IndexModel(IVentasApiClient ventas)
+    public IndexModel(IServicioProductosClient productos)
     {
-        _ventas = ventas;
+        _productos = productos;
     }
 
     public IReadOnlyList<ProductoListItemDto> Productos { get; private set; } = [];
@@ -29,7 +30,7 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        var listado = await _ventas.ObtenerProductosAsync(Busqueda, CategoriaId, MarcaId);
+        var listado = await _productos.ObtenerProductosAsync(Busqueda, CategoriaId, MarcaId);
 
         Productos = listado.Productos;
         Categorias = listado.Categorias;
@@ -38,7 +39,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostDarDeBajaAsync(Guid publicId)
     {
-        var resultado = await _ventas.DarDeBajaProductoAsync(publicId);
+        var resultado = await _productos.DarDeBajaProductoAsync(publicId);
         if (!resultado.Exitoso)
         {
             return NotFound();

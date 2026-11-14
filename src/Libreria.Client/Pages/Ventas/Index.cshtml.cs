@@ -1,5 +1,6 @@
-using Libreria.Client.Clients;
+using Libreria.Client.Clients.Ventas;
 using Libreria.Client.DTOs.Usuarios;
+using Libreria.Client.DTOs.Common;
 using Libreria.Client.DTOs.Ventas;
 using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authorization;
@@ -10,9 +11,9 @@ namespace Libreria.Client.Pages.Ventas;
 
 public class IndexModel : PageModel
 {
-    private readonly IVentasApiClient _ventasApiClient;
+    private readonly IServicioVentasClient _ventasApiClient;
 
-    public IndexModel(IVentasApiClient ventasApiClient)
+    public IndexModel(IServicioVentasClient ventasApiClient)
     {
         _ventasApiClient = ventasApiClient;
     }

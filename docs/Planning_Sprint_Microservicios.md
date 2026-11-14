@@ -43,7 +43,7 @@ Hoy es sábado 14/11: quedan **10 días** hasta la defensa y se trabaja todos lo
 
 - El Front **todavía referencia el monolito** y tiene cadena de conexión propia: `Program.cs` conserva el bloque «TEMPORAL» con `AddUsuariosModule()`, `ConnectionStringSingleton` e `IDbConnectionFactory`. Usan tipos del monolito: `Cuenta/CambiarContrasena`, `Usuarios/Index`, `Productos/Details`, `Categorias/Edit`, `Marcas/Edit`, `Shared/Models/ConfirmModalModel` y `Shared/Models/ConfirmationModalModel`.
 - `CategoriasController`, `MarcasController`, `ProductosController` y `HistoricoController` llaman a `fabrica.CrearRepositorio()` **desde el controlador**, saltándose la capa de aplicación. En los servicios nuevos la fábrica la usa el caso de uso o servicio de aplicación.
-- `VentasApiClient` (unos 47 métodos) atiende a la vez ventas, productos, categorías, marcas e histórico. Si se queda así, tres personas editarían el mismo archivo. Se parte en la base (US-113).
+- `VentasApiClient` (unos 47 métodos) atiende a la vez ventas, productos, categorías, marcas e histórico. Si se queda así, tres personas editarían el mismo archivo. Se parte en la base (US-113). ✅ **Hecho en US-113:** un cliente por servicio y los DTOs ya en la carpeta de su módulo (ver `docs/contratos/front.md`).
 - No existe CRUD de Cliente en el Front (solo el alta rápida de la venta) y la tabla `Cliente` no tiene `PublicId`, `Estado` ni auditoría.
 - MongoDB en un solo contenedor **no admite transacciones de varios documentos**. Por eso el diseño de Productos usa operaciones atómicas sobre un solo documento (sección 5).
 - El `.env` real no debe salir del equipo; se actualiza solo `.env.example`.
@@ -273,7 +273,8 @@ Edson los copia el día 1 a `docs/contratos/` (US-113). Cambiar un contrato se a
 | Front: `Pages/Cuenta/CambiarContrasena`, `Pages/Usuarios/Index`, `Services/Auditoria`, `_AuditoriaInfo` | Mauricio |
 | Front: `Pages/Usuarios/Create`, middleware de primer ingreso | Mateo |
 
-- **`Program.cs` del Front:** cada módulo se registra en su método de extensión (`AddModuloClientes()`, `AddModuloVentas()`, `AddModuloProductos()`, `AddModuloUsuarios()` *(propuestos)*); nadie edita el bloque de otro. La autenticación es de Gabriel.
+- **`Program.cs` del Front:** cada módulo se registra en su método de extensión (`AddModuloClientes()`, `AddModuloVentas()`, `AddModuloProductos()`, `AddModuloUsuarios()`, en `Clients/DependencyInjection/ServicioClientsExtensions.cs`, US-113); nadie edita el bloque de otro. La autenticación es de Gabriel.
+- **DTOs del Front ya repartidos (US-113), con su namespace definitivo:** `DTOs/Common` (`ResultadoApi`), `DTOs/Clientes` (`ClienteInput`, `ClienteRegistroResult`, `ClienteVentaBusquedaDto`), `DTOs/Ventas` (ventas, `RegistrarVentaInput`, `ProductoVentaBusquedaDto`) y `DTOs/Productos` (categorías, marcas, productos, histórico). **Nadie necesita moverlos ni cambiar namespaces**; cada dueño solo agrega o ajusta lo de su carpeta.
 - **`.slnx` y `docker-compose.yml`:** solo los toca Edson (US-110, US-111, US-138). Si alguien necesita un cambio, se lo pide.
 - **Contract-first:** quien consume un MS que aún no existe trabaja contra su interfaz con datos de ejemplo de `datos-semilla.md`, y cambia a la API real cuando esté en `develop`.
 
@@ -314,11 +315,13 @@ Edson los copia el día 1 a `docs/contratos/` (US-113). Cambiar un contrato se a
 - [ ] Probado con el `.http`: cada ruta llega a su MS.
 
 ### US-113 – Base del Front y contratos publicados 🔴 (Edson, domingo)
-- [ ] Una sola URL `Servicios:Gateway:BaseUrl`; todos los clientes HTTP tipados apuntan al gateway.
-- [ ] Partir `VentasApiClient` / `IVentasApiClient` en `IServicioClientesClient`, `IServicioProductosClient` (productos, categorías, marcas, histórico) e `IServicioVentasClient` (el que ya existe), y actualizar las páginas que los usan sin cambiar su comportamiento.
-- [ ] Partir `_MenuVentas` en `_MenuVentas` (Registrar venta, Ventas) y `_MenuInventario` (Productos, Categorías, Marcas); crear `_MenuClientes`.
-- [ ] Métodos de extensión por módulo en `Program.cs` (sección 7).
-- [ ] Copiar la sección 6 completa a `docs/contratos/` (REST por MS, JWT, `Result`, usuario actual, rutas).
+- [x] Una sola URL `Servicios:Gateway:BaseUrl`; todos los clientes HTTP tipados apuntan al gateway.
+- [x] Partir `VentasApiClient` / `IVentasApiClient` en `IServicioClientesClient`, `IServicioProductosClient` (productos, categorías, marcas, histórico) e `IServicioVentasClient` (el que ya existe), y actualizar las páginas que los usan sin cambiar su comportamiento.
+- [x] Mover los DTOs a la carpeta de su módulo (`DTOs/Common`, `DTOs/Clientes`, `DTOs/Ventas`, `DTOs/Productos`), con su namespace definitivo, para que nadie tenga que moverlos después.
+- [x] Volver a incluir en el build las páginas de inventario (`Categorias`, `Marcas`, `Productos`, `Historico`) que US-109 había excluido; ya usan `IServicioProductosClient`.
+- [x] Partir `_MenuVentas` en `_MenuVentas` (Registrar venta, Ventas) y `_MenuInventario` (Productos, Categorías, Marcas); crear `_MenuClientes`.
+- [x] Métodos de extensión por módulo en `Program.cs` (sección 7).
+- [x] Copiar la sección 6 completa a `docs/contratos/` (REST por MS, JWT, `Result`, usuario actual, rutas, Front).
 - [ ] En `develop` el domingo: desbloquea a los 6.
 
 ---
@@ -339,12 +342,14 @@ Edson los copia el día 1 a `docs/contratos/` (US-113). Cambiar un contrato se a
 - [ ] **Update:** edición de razón social, correo y CI/NIT (sin chocar con otro); registra `UsuarioModificacionId`.
 - [ ] **Delete lógico:** `Estado = 0`, sin borrar la fila; se puede reactivar; un cliente inactivo no aparece en `buscar` para la venta.
 - [ ] Rutas de Clientes en `yarp.g1.json`. Probado con Swagger y `.http`.
+- [ ] Borrar el clúster `clientes` de `src/Libreria.Gateway/appsettings.Development.json` (transición de US-113 que lo apunta a Ventas 5101).
 
 ### US-116 – UI de Clientes en el Front (Edson) · Select 2
 - [ ] `Pages/Clientes`: **listado con refresco, ordenación por columna y búsqueda**, alta, edición, baja con el modal compartido y reactivación.
 - [ ] `_AuditoriaInfo` muestra creado y modificado por.
 - [ ] `_MenuClientes`; acceso de Administrador y Vendedor, baja solo Administrador *(propuesta, confirmar en el equipo)*.
-- [ ] `_ClienteAltaRapidaCampos` (alta rápida desde la venta) llama a Clientes por el gateway; coordinar con Cesar, que es dueño de `Registrar`.
+- [ ] `_ClienteAltaRapidaCampos` (alta rápida desde la venta) llama a Clientes por el gateway; coordinar con Cesar, que es dueño de `Registrar`. *(US-113 ya dejó `Registrar` usando `IServicioClientesClient` para `POST api/clientes`; falta que el MS Clientes lo atienda.)*
+- [ ] Métodos tipados del CRUD en `IServicioClientesClient` (`Clients/Clientes`) y DTOs en `DTOs/Clientes` (la carpeta ya existe).
 
 ### US-117 – MS Ventas: BD propia y retiro de lo que ya no le pertenece (Cesar) 🔴
 - [ ] Eliminar de Ventas todo lo que va a Clientes y Productos (sección 2): entidades, controladores (`CategoriasController`, `MarcasController`, `ProductosController`, `HistoricoController`, `ClientesController`, `ClientesAltaRapidaController`, `VentasBusquedasController`), servicios, validadores, factorías, repositorios y modelos. Edson y Josue copian desde `v3-sba`, así que no hay que esperarlos.
@@ -393,10 +398,12 @@ Edson los copia el día 1 a `docs/contratos/` (US-113). Cambiar un contrato se a
 - [ ] Renombrar una categoría o marca actualiza la copia embebida en los productos.
 - [ ] **Result:** nombre obligatorio, precio y costo no negativos, perecedero con fecha de vencimiento, categoría y marca activas, ubicación y país válidos, nombres únicos.
 - [ ] Rutas de Productos en `yarp.g1.json`.
+- [ ] Borrar el clúster `productos` de `src/Libreria.Gateway/appsettings.Development.json` (transición de US-113 que lo apunta a Ventas 5101).
 
 ### US-123 – UI de inventario conectada a Productos (Josue) · Select 6
 - [ ] **Listado de productos con refresco, ordenación por columna y filtros** (categoría, marca, estado).
-- [ ] `Productos`, `Categorias`, `Marcas` e `Historico` usan `IServicioProductosClient` (US-113) y funcionan igual que antes.
+- [x] `Productos`, `Categorias`, `Marcas` e `Historico` usan `IServicioProductosClient` y compilan de nuevo (hecho en US-113; DTOs ya en `DTOs/Productos`, sin cambios de namespace pendientes).
+- [ ] Comprobar que funcionan igual que antes contra el MS Productos real (después de borrar el clúster `productos` de `appsettings.Development.json` del gateway, US-122).
 - [ ] `Productos/Details` muestra el histórico embebido.
 - [ ] Menú en `_MenuInventario`.
 

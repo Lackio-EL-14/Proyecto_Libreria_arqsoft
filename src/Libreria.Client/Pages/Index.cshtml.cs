@@ -1,4 +1,5 @@
-using Libreria.Client.Clients;
+using Libreria.Client.Clients.Common;
+using Libreria.Client.Clients.Productos;
 using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,14 +13,14 @@ public class IndexModel : PageModel
 {
     private const int UmbralStockCritico = 5;
 
-    private readonly IVentasApiClient _ventas;
+    private readonly IServicioProductosClient _productos;
     private readonly IAuthorizationService _authorizationService;
 
     public IndexModel(
-        IVentasApiClient ventas,
+        IServicioProductosClient productos,
         IAuthorizationService authorizationService)
     {
-        _ventas = ventas;
+        _productos = productos;
         _authorizationService = authorizationService;
     }
 
@@ -44,7 +45,7 @@ public class IndexModel : PageModel
         try
         {
             // Un solo llamado al servicio trae productos, categorías y marcas activas.
-            var listado = await _ventas.ObtenerProductosAsync(null, null, null);
+            var listado = await _productos.ObtenerProductosAsync(null, null, null);
 
             TotalProductos = listado.Productos.Count;
             ProductosStockCritico = listado.Productos.Count(p => p.Stock <= UmbralStockCritico);
@@ -52,9 +53,9 @@ public class IndexModel : PageModel
             TotalCategorias = listado.Categorias.Count;
             TotalMarcas = listado.Marcas.Count;
         }
-        catch (HttpRequestException)
+        catch (Exception error) when (error is HttpRequestException or ServicioNoDisponibleException)
         {
-            // Si el servicio de Ventas no responde, el tablero se muestra en cero.
+            // Si el servicio de Productos no responde, el tablero se muestra en cero.
             TotalProductos = 0;
             ProductosStockCritico = 0;
             TotalPerecederos = 0;

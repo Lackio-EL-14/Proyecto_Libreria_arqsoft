@@ -1,5 +1,6 @@
-using Libreria.Client.Clients;
-using Libreria.Client.DTOs.Ventas;
+using Libreria.Client.Clients.Productos;
+using Libreria.Client.DTOs.Common;
+using Libreria.Client.DTOs.Productos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -7,11 +8,11 @@ namespace Libreria.Client.Pages.Categorias;
 
 public class CreateModel : PageModel
 {
-    private readonly IVentasApiClient _ventas;
+    private readonly IServicioProductosClient _productos;
 
-    public CreateModel(IVentasApiClient ventas)
+    public CreateModel(IServicioProductosClient productos)
     {
-        _ventas = ventas;
+        _productos = productos;
     }
 
     [BindProperty]
@@ -26,7 +27,7 @@ public class CreateModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var resultado = await _ventas.CrearCategoriaAsync(Input);
+        var resultado = await _productos.CrearCategoriaAsync(Input);
         if (!resultado.Exitoso)
         {
             AgregarErrores(resultado.Errores);
@@ -40,7 +41,7 @@ public class CreateModel : PageModel
 
     private async Task CargarUbicacionesAsync()
     {
-        Ubicaciones = await _ventas.ObtenerUbicacionesCategoriaAsync();
+        Ubicaciones = await _productos.ObtenerUbicacionesCategoriaAsync();
     }
 
     private void AgregarErrores(IReadOnlyDictionary<string, string> errores)
