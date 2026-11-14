@@ -158,15 +158,15 @@ ReverseProxy__Clusters__<cluster>__Destinations__principal__Address=http://host:
 ReverseProxy__Clusters__productos__Destinations__principal__Address=http://localhost:5101 dotnet run --project src/Libreria.Gateway
 ```
 
-**Transición (hasta US-115 y US-122):** mientras Clientes y Productos son esqueletos, Ventas (5101) sigue atendiendo `api/clientes`, `api/productos`, `api/categorias`, `api/marcas` y `api/historico`. Por eso `src/Libreria.Gateway/appsettings.Development.json` apunta los clústeres `clientes` y `productos` a Ventas: en Development el Front completo funciona sin configurar nada. Al mergear US-115 (Clientes) y US-122 (Productos), su dueño borra su clúster de ese archivo y el gateway vuelve a 5103 / 5104.
+**Transición (hasta US-122):** mientras Productos es un esqueleto, Ventas (5101) sigue atendiendo `api/productos`, `api/categorias`, `api/marcas` y `api/historico`. Por eso `src/Libreria.Gateway/appsettings.Development.json` apunta el clúster `productos` a Ventas: en Development el Front completo funciona sin configurar nada. Al mergear US-122, su dueño borra ese clúster y el gateway vuelve a 5104. Clientes ya salió de la transición (US-115): `api/clientes` va a 5103.
 
 Para probar un MS nuevo antes de borrar su clúster, se fuerza su destino real con una variable (gana sobre el `appsettings`):
 
 ```bash
-ReverseProxy__Clusters__clientes__Destinations__principal__Address=http://localhost:5103 dotnet run --project src/Libreria.Gateway
+ReverseProxy__Clusters__productos__Destinations__principal__Address=http://localhost:5104 dotnet run --project src/Libreria.Gateway
 ```
 
-En PowerShell: `$env:ReverseProxy__Clusters__clientes__Destinations__principal__Address = "http://localhost:5103"`.
+En PowerShell: `$env:ReverseProxy__Clusters__productos__Destinations__principal__Address = "http://localhost:5104"`.
 
 Las peticiones de prueba de cada ruta están en `src/Libreria.Gateway/Libreria.Gateway.http`, y las pruebas automáticas en `tests/Libreria.Gateway.Tests`.
 

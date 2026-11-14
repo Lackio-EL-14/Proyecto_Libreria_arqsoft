@@ -38,9 +38,12 @@ Si un MS no responde, el gateway devuelve **502/503/504** y el Front muestra `Se
 
 ### Transición: MS que todavía no tienen sus endpoints
 
-Mientras Clientes (US-115) y Productos (US-122) no estén en `develop`, Ventas (5101) sigue atendiendo `api/clientes`, `api/categorias`, `api/marcas`, `api/productos` e `api/historico`. Por eso **`src/Libreria.Gateway/appsettings.Development.json`** apunta los clústeres `clientes` y `productos` a `http://localhost:5101`: en Development el Front completo funciona sin variables.
+Mientras Productos (US-122) no esté en `develop`, Ventas (5101) sigue atendiendo `api/categorias`, `api/marcas`, `api/productos` e `api/historico`. Por eso **`src/Libreria.Gateway/appsettings.Development.json`** apunta el clúster `productos` a `http://localhost:5101`: en Development el Front completo funciona sin variables.
+
+Clientes ya salió de la transición (US-115): `api/clientes` va a 5103, como dice `yarp.g1.json`.
 
 Precedencia de configuración del gateway (gana el último): `yarp.g1.json` / `yarp.g2.json` → `appsettings.{Entorno}.json` → variables de entorno → línea de comandos.
 
-- **Al mergear US-115 / US-122:** su dueño borra su clúster de `appsettings.Development.json`; el gateway vuelve al destino de `yarp.g1.json` (5103 / 5104). El Front no cambia.
-- **Para probar el MS nuevo antes de eso:** `ReverseProxy__Clusters__clientes__Destinations__principal__Address=http://localhost:5103` (o `productos` → 5104).
+- **Al mergear US-122:** su dueño borra el clúster `productos` de `appsettings.Development.json`; el gateway vuelve al destino de `yarp.g1.json` (5104). El Front no cambia.
+- **Para probar el MS nuevo antes de eso:** `ReverseProxy__Clusters__productos__Destinations__principal__Address=http://localhost:5104`.
+- Los MS detrás del gateway respetan `X-Forwarded-Host`/`-Proto` (que YARP envía), para que un `Location` apunte al gateway y no al puerto interno.
