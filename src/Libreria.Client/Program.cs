@@ -1,17 +1,9 @@
-using Libreria.Application.Factories;
-using Libreria.Application.Ports.Primary;
-using Libreria.Application.Ports.Secondary;
-using Libreria.Application.Services;
-using Libreria.Application.Validators;
 using Libreria.Client.Clients;
 using Libreria.Client.Clients.Common;
 using Libreria.Client.Clients.DependencyInjection;
+using Libreria.Client.DTOs.Usuarios;
 using Libreria.Client.Seguridad;
 using Libreria.Client.Services.Auditoria;
-using Libreria.Domain;
-using Libreria.Infrastructure;
-using Libreria.Infrastructure.Configuration;
-using Libreria.Infrastructure.Email;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 
@@ -26,7 +18,6 @@ builder.Services
         options.Conventions.AuthorizeFolder("/Marcas", PoliticasAcceso.SoloAdministrador);
         options.Conventions.AuthorizeFolder("/Productos", PoliticasAcceso.SoloAdministrador);
         options.Conventions.AuthorizeFolder("/Historico", PoliticasAcceso.SoloAdministrador);
-        options.Conventions.AuthorizeFolder("/Reportes", PoliticasAcceso.SoloAdministrador);
 
         options.Conventions.AuthorizeFolder("/Ventas", PoliticasAcceso.Ventas);
     })
@@ -40,35 +31,19 @@ builder.Services
     .AddContextoUsuarioServicios()
     .AddServicioVentas(builder.Configuration)
     .AddVentasApiClient(builder.Configuration)
-    .AddServicioUsuarios(builder.Configuration)
-    .AddServicioReportes(builder.Configuration);
+    .AddServicioUsuarios(builder.Configuration);
 
 builder.Services.AddMemoryCache();
 builder.Services.Configure<SesionActivaOptions>(
     builder.Configuration.GetSection(SesionActivaOptions.SectionName));
-
-
-// ---------------------------------------------------------------------------
-// TEMPORAL: módulo de Usuarios y Cuenta.
-// Sigue funcionando con las bibliotecas antiguas hasta que Grupo 2 lo migre a
-// Libreria.Servicio.Usuarios (US-92/US-93). Entonces se elimina todo este bloque.
-// ---------------------------------------------------------------------------
-builder.Services.AddUsuariosModule();
-
-builder.Services.AddScoped<UsuarioRepositoryFactory, SqlUsuarioRepositoryFactory>();
-builder.Services.AddScoped<LoginValidator>();
-builder.Services.AddScoped<PasswordPolicyValidator>();
-builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
 
 // Seguridad y Auditoría
 builder.Services.AddDataProtection()
     .SetApplicationName("Libreria.Client");
 
 builder.Services.AddScoped<IUrlProtector, UrlProtector>();
-builder.Services.AddScoped<IContrasenaHasher, Libreria.Infrastructure.Security.ContrasenaHasher>();
 
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IUsuarioActual, Libreria.Infrastructure.Security.UsuarioActual>();
 builder.Services.AddScoped<
     Libreria.Client.Services.Auditoria.IAuditoriaService,
     Libreria.Client.Services.Auditoria.AuditoriaService>();
@@ -102,17 +77,6 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddScoped<ValidarEstadoUsuarioCookieEvents>();
 
-// Cadena de conexión que usa el módulo de Usuarios mientras viva en el Front.
-var connectionString = builder.Configuration["DB_CONNECTION_STRING"]
-    ?? builder.Configuration.GetConnectionString("LibreriaDb")
-    ?? throw new InvalidOperationException("Falta la cadena de conexión");
-
-var connectionStringSingleton = ConnectionStringSingleton.Instancia;
-connectionStringSingleton.Configurar(connectionString);
-
-builder.Services.AddSingleton(connectionStringSingleton);
-builder.Services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
-
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -129,21 +93,3 @@ app.UseAuthorization();
 app.MapRazorPages();
 
 app.Run();
-
-public static class ServiceCollectionExtensions
-{
-    public static IServiceCollection AddUsuariosModule(this IServiceCollection services)
-    {
-        services.AddScoped<IUsuarioRepository, UsuarioRepository>();
-        services.AddScoped<IGeneradorNombreUsuario, GeneradorNombreUsuario>();
-        services.AddScoped<IEmailSender, SmtpEmailSender>();
-        services.AddScoped<IConfiguracionAplicacion, ConfiguracionAplicacion>();
-        services.AddScoped<IUsuarioService, UsuarioService>();
-        services.AddScoped<IConsultaUsuarioService, ConsultaUsuarioService>();
-        services.AddScoped<IUsuarioSeguridadRepository, UsuarioRepository>();
-        services.AddScoped<IUsuarioSeguridadService, UsuarioSeguridadService>();
-        services.AddScoped<IRolRepository, RolRepository>();
-
-        return services;
-    }
-}

@@ -1,6 +1,5 @@
 using System.Net.Http.Headers;
 using Libreria.Client.Clients.Common;
-using Libreria.Client.Clients.Reportes;
 using Libreria.Client.Clients.Usuarios;
 using Libreria.Client.Clients.Ventas;
 
@@ -27,12 +26,6 @@ public static class ServicioClientsExtensions
     public static IServiceCollection AddServicioUsuarios(this IServiceCollection services, IConfiguration configuration)
     {
         AddServicioClient<IServicioUsuariosClient, ServicioUsuariosClient>(services, configuration, "Usuarios");
-        return services;
-    }
-
-    public static IServiceCollection AddServicioReportes(this IServiceCollection services, IConfiguration configuration)
-    {
-        AddServicioClient<IServicioReportesClient, ServicioReportesClient>(services, configuration, "Reportes");
         return services;
     }
 

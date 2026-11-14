@@ -1,4 +1,4 @@
-namespace Libreria.Application.Models;
+namespace Libreria.Client.DTOs.Usuarios;
 
 public class CambioContrasenaInput
 {

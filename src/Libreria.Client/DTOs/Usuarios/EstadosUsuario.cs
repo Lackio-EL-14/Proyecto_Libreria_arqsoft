@@ -1,4 +1,4 @@
-namespace Libreria.Domain;
+namespace Libreria.Client.DTOs.Usuarios;
 
 public static class EstadosUsuario
 {

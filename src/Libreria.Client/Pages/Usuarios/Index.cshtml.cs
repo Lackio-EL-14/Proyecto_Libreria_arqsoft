@@ -1,7 +1,4 @@
-using Libreria.Application.Models;
-using Libreria.Application.Ports.Primary;
 using Libreria.Client.Seguridad;
-using Libreria.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;

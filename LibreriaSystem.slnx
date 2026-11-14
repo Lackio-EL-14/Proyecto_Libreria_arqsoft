@@ -1,16 +1,10 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/Libreria.Application/Libreria.Application.csproj" />
     <Project Path="src/Libreria.Client/Libreria.Client.csproj" />
-    <Project Path="src/Libreria.Domain/Libreria.Domain.csproj" />
-    <Project Path="src/Libreria.Infrastructure/Libreria.Infrastructure.csproj" />
-    <Project Path="src/Libreria.Servicio.Reportes/Libreria.Servicio.Reportes.csproj" />
     <Project Path="src/Libreria.Servicio.Usuarios/Libreria.Servicio.Usuarios.csproj" />
     <Project Path="src/Libreria.Servicio.Ventas/Libreria.Servicio.Ventas.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Libreria.Application.Tests/Libreria.Application.Tests.csproj" />
-    <Project Path="tests/Libreria.Servicio.Reportes.Tests/Libreria.Servicio.Reportes.Tests.csproj" />
     <Project Path="tests/Libreria.Servicio.Usuarios.Tests/Libreria.Servicio.Usuarios.Tests.csproj" />
     <Project Path="tests/Libreria.Servicio.Ventas.Tests/Libreria.Servicio.Ventas.Tests.csproj" />
   </Folder>
