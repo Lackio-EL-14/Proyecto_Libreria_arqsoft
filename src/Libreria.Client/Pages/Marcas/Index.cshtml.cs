@@ -1,5 +1,6 @@
-using Libreria.Client.Clients;
-using Libreria.Client.DTOs.Ventas;
+using Libreria.Client.Clients.Productos;
+using Libreria.Client.DTOs.Common;
+using Libreria.Client.DTOs.Productos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -7,11 +8,11 @@ namespace Libreria.Client.Pages.Marcas;
 
 public class IndexModel : PageModel
 {
-    private readonly IVentasApiClient _ventas;
+    private readonly IServicioProductosClient _productos;
 
-    public IndexModel(IVentasApiClient ventas)
+    public IndexModel(IServicioProductosClient productos)
     {
-        _ventas = ventas;
+        _productos = productos;
     }
 
     public IReadOnlyList<MarcaDto> Marcas { get; private set; } = [];
@@ -21,7 +22,7 @@ public class IndexModel : PageModel
     public async Task OnGetAsync(string? nombre)
     {
         NombreBusqueda = nombre?.Trim();
-        Marcas = await _ventas.ObtenerMarcasAsync(NombreBusqueda);
+        Marcas = await _productos.ObtenerMarcasAsync(NombreBusqueda);
 
         MarcasConProductosActivos = Marcas
             .Where(marca => marca.TieneProductosActivos)
@@ -31,7 +32,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostDarDeBajaAsync(Guid publicId)
     {
-        var resultado = await _ventas.CambiarEstadoMarcaAsync(publicId, false);
+        var resultado = await _productos.CambiarEstadoMarcaAsync(publicId, false);
         if (!resultado.Exitoso)
         {
             return NotFound();

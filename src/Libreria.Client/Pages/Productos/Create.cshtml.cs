@@ -1,5 +1,6 @@
-using Libreria.Client.Clients;
-using Libreria.Client.DTOs.Ventas;
+using Libreria.Client.Clients.Productos;
+using Libreria.Client.DTOs.Common;
+using Libreria.Client.DTOs.Productos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -7,11 +8,11 @@ namespace Libreria.Client.Pages.Productos;
 
 public class CreateModel : PageModel
 {
-    private readonly IVentasApiClient _ventas;
+    private readonly IServicioProductosClient _productos;
 
-    public CreateModel(IVentasApiClient ventas)
+    public CreateModel(IServicioProductosClient productos)
     {
-        _ventas = ventas;
+        _productos = productos;
     }
 
     [BindProperty]
@@ -27,7 +28,7 @@ public class CreateModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var resultado = await _ventas.RegistrarProductoAsync(Input);
+        var resultado = await _productos.RegistrarProductoAsync(Input);
 
         if (!resultado.Exitoso)
         {
@@ -42,7 +43,7 @@ public class CreateModel : PageModel
 
     private async Task CargarFormularioAsync()
     {
-        var formulario = await _ventas.ObtenerFormularioProductoAsync();
+        var formulario = await _productos.ObtenerFormularioProductoAsync();
         Categorias = formulario.Categorias;
         Marcas = formulario.Marcas;
     }

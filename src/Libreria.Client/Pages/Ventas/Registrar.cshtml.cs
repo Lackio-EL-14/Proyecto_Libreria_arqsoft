@@ -1,7 +1,9 @@
 
 using System.Text.Json;
+using Libreria.Client.Clients.Clientes;
 using Libreria.Client.Clients.Common;
 using Libreria.Client.Clients.Ventas;
+using Libreria.Client.DTOs.Clientes;
 using Libreria.Client.DTOs.Ventas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -11,13 +13,16 @@ namespace Libreria.Client.Pages.Ventas;
 public class RegistrarModel : PageModel
 {
     private readonly IServicioVentasClient _ventasApi;
+    private readonly IServicioClientesClient _clientesApi;
     private readonly ILogger<RegistrarModel> _logger;
 
     public RegistrarModel(
         IServicioVentasClient ventasApi,
+        IServicioClientesClient clientesApi,
         ILogger<RegistrarModel> logger)
     {
         _ventasApi = ventasApi;
+        _clientesApi = clientesApi;
         _logger = logger;
     }
 
@@ -68,7 +73,7 @@ public class RegistrarModel : PageModel
 
         try
         {
-            var resultado = await _ventasApi
+            var resultado = await _clientesApi
                 .PostAsync<ClienteInput, ClienteRegistroResult>(
                     "api/clientes", Input);
 

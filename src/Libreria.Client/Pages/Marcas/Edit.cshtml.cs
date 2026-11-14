@@ -1,7 +1,7 @@
-// TODO US-123: reconectar con el MS Productos vía gateway (página excluida del build en Libreria.Client.csproj).
 using Libreria.Client.DTOs.Common;
-using Libreria.Client.Clients;
-using Libreria.Client.DTOs.Ventas;
+using Libreria.Client.Clients.Productos;
+using Libreria.Client.Services.Auditoria;
+using Libreria.Client.DTOs.Productos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -9,14 +9,14 @@ namespace Libreria.Client.Pages.Marcas;
 
 public class EditModel : PageModel
 {
-    private readonly IVentasApiClient _ventas;
+    private readonly IServicioProductosClient _productos;
     private readonly IAuditoriaService _auditoriaService;
 
     public EditModel(
-        IVentasApiClient ventas,
+        IServicioProductosClient productos,
         IAuditoriaService auditoriaService)
     {
-        _ventas = ventas;
+        _productos = productos;
         _auditoriaService = auditoriaService;
     }
 
@@ -32,7 +32,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        var marca = await _ventas.ObtenerMarcaAsync(id, true);
+        var marca = await _productos.ObtenerMarcaAsync(id, true);
         if (marca is null)
         {
             return NotFound();
@@ -60,7 +60,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var resultado = await _ventas.ActualizarMarcaAsync(PublicId, Input);
+        var resultado = await _productos.ActualizarMarcaAsync(PublicId, Input);
         if (resultado.NoEncontrado)
         {
             return NotFound();
@@ -79,7 +79,7 @@ public class EditModel : PageModel
 
     private async Task CargarPaisesAsync()
     {
-        Paises = await _ventas.ObtenerPaisesMarcaAsync();
+        Paises = await _productos.ObtenerPaisesMarcaAsync();
     }
 
     private void AgregarErrores(IReadOnlyDictionary<string, string> errores)

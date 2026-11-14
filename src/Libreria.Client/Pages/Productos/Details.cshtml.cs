@@ -1,7 +1,7 @@
-// TODO US-123: reconectar con el MS Productos vía gateway (página excluida del build en Libreria.Client.csproj).
 using Libreria.Client.DTOs.Common;
-using Libreria.Client.Clients;
-using Libreria.Client.DTOs.Ventas;
+using Libreria.Client.Clients.Productos;
+using Libreria.Client.Services.Auditoria;
+using Libreria.Client.DTOs.Productos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -9,14 +9,14 @@ namespace Libreria.Client.Pages.Productos;
 
 public class DetailsModel : PageModel
 {
-    private readonly IVentasApiClient _ventas;
+    private readonly IServicioProductosClient _productos;
     private readonly IAuditoriaService _auditoriaService;
 
     public DetailsModel(
-        IVentasApiClient ventas,
+        IServicioProductosClient productos,
         IAuditoriaService auditoriaService)
     {
-        _ventas = ventas;
+        _productos = productos;
         _auditoriaService = auditoriaService;
     }
 
@@ -27,7 +27,7 @@ public class DetailsModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
-        var producto = await _ventas.ObtenerProductoAsync(id);
+        var producto = await _productos.ObtenerProductoAsync(id);
         if (producto is null)
         {
             return NotFound();
@@ -45,7 +45,7 @@ public class DetailsModel : PageModel
 
     public async Task<IActionResult> OnPostDarDeBajaAsync(Guid publicId)
     {
-        var resultado = await _ventas.DarDeBajaProductoAsync(publicId);
+        var resultado = await _productos.DarDeBajaProductoAsync(publicId);
         if (!resultado.Exitoso)
         {
             return NotFound();

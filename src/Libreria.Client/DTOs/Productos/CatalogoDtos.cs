@@ -1,4 +1,4 @@
-namespace Libreria.Client.DTOs.Ventas;
+namespace Libreria.Client.DTOs.Productos;
 
 // DTOs propios del Front para el Servicio de Ventas. El Front NO referencia el
 // proyecto del servicio: solo conoce estos contratos JSON. Los nombres de las

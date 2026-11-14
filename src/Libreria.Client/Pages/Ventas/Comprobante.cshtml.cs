@@ -1,4 +1,5 @@
-using Libreria.Client.Clients;
+using Libreria.Client.Clients.Ventas;
+using Libreria.Client.DTOs.Common;
 using Libreria.Client.DTOs.Ventas;
 using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authorization;
@@ -11,11 +12,11 @@ namespace Libreria.Client.Pages.Ventas;
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 public class ComprobanteModel : PageModel
 {
-    private readonly IVentasApiClient _ventasApiClient;
+    private readonly IServicioVentasClient _ventasApiClient;
     private readonly ILogger<ComprobanteModel> _logger;
 
     public ComprobanteModel(
-        IVentasApiClient ventasApiClient,
+        IServicioVentasClient ventasApiClient,
         ILogger<ComprobanteModel> logger)
     {
         _ventasApiClient = ventasApiClient;

@@ -3,8 +3,9 @@ using Libreria.Gateway.Errores;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Rutas del gateway: yarp.g1.json (Grupo 1) + yarp.g2.json (Grupo 2); destinos sobrescribibles por entorno.
-builder.Configuration.AgregarRutasYarp(args);
+// 1. Rutas del gateway: yarp.g1.json (Grupo 1) + yarp.g2.json (Grupo 2); destinos sobrescribibles por
+//    appsettings.{Entorno}.json, variables de entorno o línea de comandos.
+builder.Configuration.AgregarRutasYarp(args, builder.Environment.EnvironmentName);
 
 // 2. Proxy inverso (YARP). La validación del JWT se agrega en US-126; aquí solo se enruta.
 builder.Services.AddProblemDetails();

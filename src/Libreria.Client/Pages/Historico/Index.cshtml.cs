@@ -1,5 +1,6 @@
-using Libreria.Client.Clients;
-using Libreria.Client.DTOs.Ventas;
+using Libreria.Client.Clients.Productos;
+using Libreria.Client.DTOs.Common;
+using Libreria.Client.DTOs.Productos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -7,11 +8,11 @@ namespace Libreria.Client.Pages.Historico;
 
 public class IndexModel : PageModel
 {
-    private readonly IVentasApiClient _ventas;
+    private readonly IServicioProductosClient _productos;
 
-    public IndexModel(IVentasApiClient ventas)
+    public IndexModel(IServicioProductosClient productos)
     {
-        _ventas = ventas;
+        _productos = productos;
     }
 
     public Guid PublicId { get; private set; }
@@ -28,7 +29,7 @@ public class IndexModel : PageModel
             return Page();
         }
 
-        var historico = await _ventas.ObtenerHistoricoAsync(publicId.Value);
+        var historico = await _productos.ObtenerHistoricoAsync(publicId.Value);
         if (historico is null)
         {
             MensajeError = "El producto solicitado no fue encontrado o no está disponible.";

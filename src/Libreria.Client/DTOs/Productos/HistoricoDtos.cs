@@ -1,4 +1,4 @@
-namespace Libreria.Client.DTOs.Ventas;
+namespace Libreria.Client.DTOs.Productos;
 
 public record HistoricoCostoDto(
     DateTime FechaVigencia,

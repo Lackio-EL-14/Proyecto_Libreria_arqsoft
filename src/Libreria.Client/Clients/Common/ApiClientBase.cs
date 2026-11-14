@@ -17,6 +17,65 @@ public abstract class ApiClientBase : IApiClient
         _servicio = servicio;
     }
 
+    // Operaciones tipadas que devuelven ResultadoApi (estilo que usan las páginas de
+    // inventario y de ventas). Las escrituras nunca lanzan; las lecturas lanzan
+    // ServicioNoDisponibleException si el MS o el gateway no responden (502/503/504 o red)
+    // y HttpRequestException ante cualquier otro error.
+
+    /// <summary>GET que exige 2xx.</summary>
+    protected async Task<T?> LeerAsync<T>(string url, CancellationToken ct) where T : class
+    {
+        using var respuesta = await SendCoreAsync(new HttpRequestMessage(HttpMethod.Get, url), ct);
+        AsegurarLectura(respuesta);
+        return await respuesta.Content.ReadFromJsonAsync<T>(cancellationToken: ct);
+    }
+
+    /// <summary>GET que devuelve <c>null</c> si el recurso no existe (404).</summary>
+    protected async Task<T?> LeerOpcionalAsync<T>(string url, CancellationToken ct) where T : class
+    {
+        using var respuesta = await SendCoreAsync(new HttpRequestMessage(HttpMethod.Get, url), ct);
+        if (respuesta.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        AsegurarLectura(respuesta);
+        return await respuesta.Content.ReadFromJsonAsync<T>(cancellationToken: ct);
+    }
+
+    private void AsegurarLectura(HttpResponseMessage respuesta)
+    {
+        if (EsServicioNoDisponible(respuesta.StatusCode))
+        {
+            throw CrearServicioNoDisponible(respuesta.StatusCode);
+        }
+
+        respuesta.EnsureSuccessStatusCode();
+    }
+
+    protected Task<ResultadoApi> EnviarPostAsync<TCuerpo>(string url, TCuerpo cuerpo, CancellationToken ct) =>
+        EnviarAsync(() => _httpClient.PostAsJsonAsync(url, cuerpo, ct), ct);
+
+    protected Task<ResultadoApi> EnviarPutAsync<TCuerpo>(string url, TCuerpo cuerpo, CancellationToken ct) =>
+        EnviarAsync(() => _httpClient.PutAsJsonAsync(url, cuerpo, ct), ct);
+
+    protected Task<ResultadoApi> EnviarPatchAsync(string url, CancellationToken ct) =>
+        EnviarAsync(() => _httpClient.PatchAsync(url, null, ct), ct);
+
+    private async Task<ResultadoApi> EnviarAsync(Func<Task<HttpResponseMessage>> peticion, CancellationToken ct)
+    {
+        try
+        {
+            using var respuesta = await peticion();
+            return await ResultadoApiTraductor.ConvertirAsync(respuesta, _servicio, ct);
+        }
+        catch (HttpRequestException)
+        {
+            return ResultadoApi.Invalido(
+                $"No se pudo conectar con el servicio de {_servicio}. Verifique que esté en ejecución.");
+        }
+    }
+
     public Task<TResponse?> GetAsync<TResponse>(string requestUri, CancellationToken cancellationToken = default) =>
         SendAsync<TResponse>(new HttpRequestMessage(HttpMethod.Get, requestUri), cancellationToken);
 
@@ -83,9 +142,7 @@ public abstract class ApiClientBase : IApiClient
         // Detrás del gateway, un microservicio caído llega como 502/503/504 y no como error de red.
         if (EsServicioNoDisponible(response.StatusCode))
         {
-            throw new ServicioNoDisponibleException(
-                _servicio,
-                new HttpRequestException($"El gateway respondió {(int)response.StatusCode}.", null, response.StatusCode));
+            throw CrearServicioNoDisponible(response.StatusCode);
         }
 
         ApiProblemDetailsDto? problem = null;
@@ -105,6 +162,9 @@ public abstract class ApiClientBase : IApiClient
             message,
             problem?.Errors);
     }
+
+    private ServicioNoDisponibleException CrearServicioNoDisponible(HttpStatusCode statusCode) =>
+        new(_servicio, new HttpRequestException($"El gateway respondió {(int)statusCode}.", null, statusCode));
 
     private static bool EsServicioNoDisponible(HttpStatusCode statusCode) =>
         statusCode is HttpStatusCode.BadGateway
