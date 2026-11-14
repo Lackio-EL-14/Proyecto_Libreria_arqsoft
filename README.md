@@ -12,9 +12,15 @@ Solución académica en C# y .NET 10: un Front en Razor Pages, un API Gateway y 
 | MS Usuarios | `src/Libreria.Servicio.Usuarios` | 5102 | Hexagonal (se migra en US-124) |
 | MS Clientes | `src/Libreria.Servicio.Clientes` | 5103 | Hexagonal |
 | MS Productos | `src/Libreria.Servicio.Productos` | 5104 | Clean |
-| SQL Server | `docker-compose.yml` | 1433 | — |
 
-Cada microservicio y el gateway responden `GET /salud` con `{ "servicio": "...", "estado": "ok" }`. Hasta US-111, Docker Compose levanta únicamente SQL Server. El Front y los servicios se ejecutan como proyectos .NET independientes. En este sprint no se usan Nginx, Redis ni réplicas de la aplicación.
+| Contenedor | Motor | Puerto en el host | BD | Scripts |
+| --- | --- | --- | --- | --- |
+| `ventas-db` | SQL Server 2022 | 1433 | `LibreriaVentas` | `db/ventas/` |
+| `usuarios-db` | SQL Server 2022 | 1434 | `LibreriaUsuarios` | `db/usuarios/` |
+| `clientes-db` | MySQL 8.4 | 3306 | `libreria_clientes` | `db/clientes/` |
+| `productos-db` | MongoDB 8 | 27017 | `libreria_productos` | `db/productos/` |
+
+Cada microservicio y el gateway responden `GET /salud` con `{ "servicio": "...", "estado": "ok" }`. Docker Compose levanta una base de datos por microservicio (US-111); ningún servicio lee la BD de otro y las referencias entre servicios son por `PublicId`, con los GUID fijos de `docs/contratos/datos-semilla.md`. El Front y los servicios se ejecutan como proyectos .NET independientes. En este sprint no se usan Nginx, Redis ni réplicas de la aplicación.
 
 El Front no debe agregar referencias de proyecto a los servicios. La comunicación se realiza por HTTP, con DTOs propios del Front y clientes registrados mediante `IHttpClientFactory`.
 
@@ -41,29 +47,54 @@ git pull origin develop
 dotnet restore LibreriaSystem.slnx
 ```
 
-## Levantar SQL Server
+## Levantar las bases
 
-Desde la raíz del repositorio:
+Desde la raíz del repositorio, la primera vez:
 
-```powershell
-docker compose up -d
+```bash
+cp .env.example .env      # y completar las contraseñas (no se sube a Git)
+docker compose up -d --remove-orphans
 docker compose ps
 ```
 
-Espera hasta que `libreria-db` aparezca como `healthy`. Después ejecuta los scripts versionados en orden:
+`--remove-orphans` retira el contenedor antiguo `libreria-db`. Su volumen `sql_data` queda en el disco; si ya no lo necesitas: `docker volume rm <proyecto>_sql_data` (ver `docker volume ls`).
 
-```powershell
-docker exec libreria-db bash -c 'for f in /scripts/*.sql; do echo "Ejecutando $f..."; /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Libreria2026!" -C -b -i "$f" || exit 1; done'
+Espera a que los 4 contenedores aparezcan como `healthy`.
+
+- **MySQL (`clientes-db`) y MongoDB (`productos-db`)** se inicializan solos la primera vez con los scripts de `db/clientes/` y `db/productos/`.
+- **Los dos SQL Server** necesitan que ejecutes sus scripts en orden. La contraseña se toma de la variable del propio contenedor; no hace falta escribirla:
+
+```bash
+docker exec ventas-db bash -lc 'for f in /scripts/*.sql; do echo "Ejecutando $f..."; /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -b -i "$f" || exit 1; done'
+docker exec usuarios-db bash -lc 'for f in /scripts/*.sql; do echo "Ejecutando $f..."; /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -b -i "$f" || exit 1; done'
 ```
 
-Los scripts son idempotentes y pueden actualizar una base existente. No uses `docker compose down -v` para una actualización normal porque elimina el volumen y sus datos.
+Todos los scripts son idempotentes: se pueden volver a ejecutar sin duplicar datos. Para repetir a mano los de MySQL o Mongo:
+
+```bash
+docker exec clientes-db bash -lc 'for f in /docker-entrypoint-initdb.d/*.sql; do mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < "$f" || exit 1; done'
+docker exec productos-db bash -lc 'for f in /docker-entrypoint-initdb.d/*.js; do mongosh --quiet "$f" || exit 1; done'
+```
+
+Comprobación rápida (2 usuarios, 3 clientes, 5 productos y 3 ventas):
+
+```bash
+docker exec usuarios-db bash -lc '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -d LibreriaUsuarios -Q "SELECT NombreUsuario, Estado FROM dbo.Usuario"'
+docker exec clientes-db bash -lc 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" libreria_clientes -e "SELECT CiNit, RazonSocial, Estado FROM Cliente"'
+docker exec productos-db mongosh libreria_productos --quiet --eval "db.productos.countDocuments()"
+docker exec ventas-db bash -lc '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -d LibreriaVentas -Q "SELECT PublicId, ClienteRazonSocial, Total, Estado FROM dbo.Venta"'
+```
+
+Para empezar desde cero (**borra todos los datos**): `docker compose down -v` y repetir los pasos. Para una actualización normal no uses `-v`.
+
+> Transición: hasta US-117 (Ventas) y US-124 (Usuarios), esos dos servicios todavía leen la cadena `LibreriaDb` del esquema anterior. Cada historia los cambia a `ConnectionStrings__VentasDb` y `ConnectionStrings__UsuariosDb`.
 
 ## Configuración obligatoria de Usuarios
 
 El Servicio de Usuarios no guarda contraseñas ni cadenas de conexión en Git. Cada integrante debe ejecutar una vez:
 
 ```powershell
-dotnet user-secrets set "ConnectionStrings:LibreriaDb" "Server=localhost,1433;Database=LibreriaDb;User Id=sa;Password=Libreria2026!;TrustServerCertificate=True;" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "ConnectionStrings:LibreriaDb" "Server=localhost,1433;Database=LibreriaDb;User Id=sa;Password=<contraseña>;TrustServerCertificate=True;" --project src/Libreria.Servicio.Usuarios
 ```
 
 Comprueba que quedó configurado:
