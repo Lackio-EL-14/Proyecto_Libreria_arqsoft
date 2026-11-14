@@ -7,7 +7,7 @@ Solución académica en C# y .NET 10: un Front en Razor Pages, un API Gateway y 
 | Proceso | Proyecto | Puerto | Estilo |
 | --- | --- | --- | --- |
 | Front | `src/Libreria.Client` | 5000 | Razor Pages |
-| API Gateway | `src/Libreria.Gateway` | 5080 | YARP (rutas desde US-112) |
+| API Gateway | `src/Libreria.Gateway` | 5080 | YARP (ver «API Gateway») |
 | MS Ventas | `src/Libreria.Servicio.Ventas` | 5101 | Hexagonal |
 | MS Usuarios | `src/Libreria.Servicio.Usuarios` | 5102 | Hexagonal (se migra en US-124) |
 | MS Clientes | `src/Libreria.Servicio.Clientes` | 5103 | Hexagonal |
@@ -131,6 +131,45 @@ dotnet user-secrets set "SMTP_FROM" "correo@gmail.com" --project src/Libreria.Se
 dotnet user-secrets set "BASE_URL" "http://localhost:5000" --project src/Libreria.Servicio.Usuarios
 ```
 
+## API Gateway (YARP) — US-112
+
+`Libreria.Gateway` (puerto 5080) es la única puerta de entrada a los microservicios. No tiene lógica de negocio: recibe la solicitud, elige el microservicio por la ruta y la reenvía tal cual (método, ruta, query, cuerpo y `Authorization: Bearer`). Las rutas no están en el código sino en dos archivos, uno por grupo, que el gateway fusiona al arrancar:
+
+| Archivo (dueño) | Ruta | Cluster → destino por defecto |
+| --- | --- | --- |
+| `yarp.g1.json` (Grupo 1) | `/api/clientes/{**resto}` | `clientes` → `http://localhost:5103` |
+| | `/api/ventas/{**resto}` | `ventas` → `http://localhost:5101` |
+| | `/api/productos/…`, `/api/categorias/…`, `/api/marcas/…`, `/api/historico/…` | `productos` → `http://localhost:5104` |
+| `yarp.g2.json` (Grupo 2) | `/api/auth/{**resto}` | `usuarios` → `http://localhost:5102` |
+| | `/api/usuarios/{**resto}` | `usuarios` → `http://localhost:5102` |
+
+- Cualquier otra ruta responde **404**. `GET /salud` es del propio gateway.
+- Los IDs de ruta llevan el prefijo del grupo (`g1-…`, `g2-…`) para que los dos archivos no choquen. Agregar una ruta es editar el JSON del grupo; no hay que tocar `Program.cs`.
+- **Microservicio caído:** si el destino no responde (conexión rechazada o más de 30 s sin actividad), el gateway devuelve **503** `application/problem+json` con `title` «Servicio no disponible» y `servicio` = nombre del cluster. El Front convierte 502/503/504 en `ServicioNoDisponibleException` y muestra la página **Servicio no disponible**.
+- La validación del JWT en el gateway llega en US-126; por ahora solo enruta.
+
+### Cambiar un destino sin tocar el repositorio
+
+Las variables de entorno (y los argumentos de línea de comandos) ganan sobre los JSON:
+
+```bash
+ReverseProxy__Clusters__<cluster>__Destinations__principal__Address=http://host:puerto
+# ejemplo con dotnet run:
+ReverseProxy__Clusters__productos__Destinations__principal__Address=http://localhost:5101 dotnet run --project src/Libreria.Gateway
+```
+
+**Transición (hasta US-115 y US-122):** mientras Clientes y Productos son esqueletos, Ventas (5101) sigue atendiendo `api/clientes`, `api/productos`, `api/categorias`, `api/marcas` y `api/historico`. Para usar esas pantallas a través del gateway, apunta los dos clusters a Ventas:
+
+```bash
+export ReverseProxy__Clusters__clientes__Destinations__principal__Address=http://localhost:5101
+export ReverseProxy__Clusters__productos__Destinations__principal__Address=http://localhost:5101
+dotnet run --project src/Libreria.Gateway
+```
+
+En PowerShell: `$env:ReverseProxy__Clusters__productos__Destinations__principal__Address = "http://localhost:5101"`. Cuando cada MS esté en `develop`, basta con no definir la variable.
+
+Las peticiones de prueba de cada ruta están en `src/Libreria.Gateway/Libreria.Gateway.http`, y las pruebas automáticas en `tests/Libreria.Gateway.Tests`.
+
 ## Correr todo
 
 Los 6 proyectos (Front, gateway y 4 microservicios) se levantan a la vez de cualquiera de estas dos formas.
@@ -195,7 +234,7 @@ El valor procede exclusivamente de los claims reales de la cookie. No existe usu
 
 `AuditoriaService` vive en el Front y convierte los identificadores de auditoría en nombres mediante `GET api/usuarios/nombres`. Ventas no debe consultar directamente la tabla `Usuario`.
 
-Si un servicio no responde, el Front redirige a una pantalla uniforme de servicio no disponible. Las respuestas HTTP con error se convierten en `ApiClientException`, conservando el código de estado y el mensaje de `ProblemDetails`.
+Si un servicio no responde (error de red, o 502/503/504 devuelto por el gateway), el Front redirige a una pantalla uniforme de servicio no disponible. Las demás respuestas HTTP con error se convierten en `ApiClientException`, conservando el código de estado y el mensaje de `ProblemDetails`.
 
 ## Reglas para continuar el sprint
 
