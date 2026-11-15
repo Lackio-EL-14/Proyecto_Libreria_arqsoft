@@ -7,7 +7,7 @@ public interface IMovimientoStockRepository
 {
     Task RegistrarAsync(
         int ventaId,
-        int productoId,
+        Guid productoPublicId,
         int cantidad,
         string tipoMovimiento,
         IDbConnection connection,

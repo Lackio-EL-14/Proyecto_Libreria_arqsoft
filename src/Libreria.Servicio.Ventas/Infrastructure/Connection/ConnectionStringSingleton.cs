@@ -1,8 +1,3 @@
-using Libreria.Servicio.Ventas.Domain;
-using Libreria.Servicio.Ventas.Application.Models;
-using Libreria.Servicio.Ventas.Application.Ports.Secondary;
-using Libreria.Servicio.Ventas.Application.Factories;
-using System;
 using System.Threading;
 
 namespace Libreria.Servicio.Ventas.Infrastructure;
@@ -13,7 +8,7 @@ public sealed class ConnectionStringSingleton
         new(() => new ConnectionStringSingleton(), LazyThreadSafetyMode.ExecutionAndPublication);
 
     private readonly object _bloqueo = new();
-    private string? _libreriaDb;
+    private string? _ventasDb;
 
     private ConnectionStringSingleton()
     {
@@ -21,8 +16,8 @@ public sealed class ConnectionStringSingleton
 
     public static ConnectionStringSingleton Instancia => LazyInstance.Value;
 
-    public string LibreriaDb => _libreriaDb
-        ?? throw new InvalidOperationException("La cadena de conexión 'LibreriaDb' no fue configurada.");
+    public string VentasDb => _ventasDb
+        ?? throw new InvalidOperationException("La cadena de conexión 'VentasDb' no fue configurada.");
 
     public void Configurar(string cadenaConexion)
     {
@@ -33,13 +28,13 @@ public sealed class ConnectionStringSingleton
 
         lock (_bloqueo)
         {
-            if (_libreriaDb is not null
-                && !string.Equals(_libreriaDb, cadenaConexion, StringComparison.Ordinal))
+            if (_ventasDb is not null
+                && !string.Equals(_ventasDb, cadenaConexion, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException("La cadena de conexión ya fue configurada.");
             }
 
-            _libreriaDb ??= cadenaConexion;
+            _ventasDb ??= cadenaConexion;
         }
     }
 }
