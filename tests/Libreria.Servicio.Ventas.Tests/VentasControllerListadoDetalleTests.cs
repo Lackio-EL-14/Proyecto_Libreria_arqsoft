@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Libreria.Servicio.Ventas.Application.Models;
+using Libreria.Servicio.Ventas.Application.Comun;
 using Libreria.Servicio.Ventas.Application.Ports.Primary;
 using Libreria.Servicio.Ventas.Controllers;
 using Libreria.Servicio.Ventas.Controllers.Dtos;
@@ -174,9 +175,15 @@ public class VentasControllerListadoDetalleTests
             return Task.FromResult<VentaDetalleCompletoModel?>(null);
         }
 
-        public Task AnularVentaAsync(Guid publicId, string motivoAnulacion) => Task.CompletedTask;
+        public Task<Result> AnularVentaAsync(
+            Guid publicId,
+            string motivoAnulacion,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Result.Exito());
 
-        public Task<VentaRegistradaResult> RegistrarVentaAsync(RegistrarVentaInput input) =>
+        public Task<Result<VentaRegistradaResult>> RegistrarVentaAsync(
+            RegistrarVentaInput input,
+            CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
     }
 }

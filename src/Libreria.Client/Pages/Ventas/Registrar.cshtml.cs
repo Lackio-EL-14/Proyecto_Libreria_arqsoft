@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Libreria.Client.Clients.Clientes;
 using Libreria.Client.Clients.Common;
+using Libreria.Client.Clients.Productos;
 using Libreria.Client.Clients.Ventas;
 using Libreria.Client.DTOs.Clientes;
 using Libreria.Client.DTOs.Ventas;
@@ -14,15 +15,18 @@ public class RegistrarModel : PageModel
 {
     private readonly IServicioVentasClient _ventasApi;
     private readonly IServicioClientesClient _clientesApi;
+    private readonly IServicioProductosClient _productosApi;
     private readonly ILogger<RegistrarModel> _logger;
 
     public RegistrarModel(
         IServicioVentasClient ventasApi,
         IServicioClientesClient clientesApi,
+        IServicioProductosClient productosApi,
         ILogger<RegistrarModel> logger)
     {
         _ventasApi = ventasApi;
         _clientesApi = clientesApi;
+        _productosApi = productosApi;
         _logger = logger;
     }
 
@@ -35,10 +39,10 @@ public class RegistrarModel : PageModel
 
     public async Task<IActionResult> OnGetBuscarProductosAsync(string? nombre)
     {
-        var ruta = "api/ventas/busquedas/productos?nombre="
+        var ruta = "api/productos/buscar?termino="
             + Uri.EscapeDataString(nombre ?? string.Empty);
 
-        var productos = await _ventasApi
+        var productos = await _productosApi
             .GetAsync<List<ProductoVentaBusquedaDto>>(ruta);
 
         return new JsonResult(productos ?? []);
@@ -46,10 +50,10 @@ public class RegistrarModel : PageModel
 
     public async Task<IActionResult> OnGetBuscarClientesAsync(string? ciNit)
     {
-        var ruta = "api/ventas/busquedas/clientes?ciNit="
+        var ruta = "api/clientes/buscar?ciNit="
             + Uri.EscapeDataString(ciNit ?? string.Empty);
 
-        var clientes = await _ventasApi
+        var clientes = await _clientesApi
             .GetAsync<List<ClienteVentaBusquedaDto>>(ruta);
 
         return new JsonResult(clientes ?? []);

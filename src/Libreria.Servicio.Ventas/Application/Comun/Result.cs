@@ -2,14 +2,15 @@ namespace Libreria.Servicio.Ventas.Application.Comun;
 
 /// <summary>
 /// Motivo por el que una operación de negocio no se completó.
-/// El adaptador HTTP lo traduce a 400, 404 o 409 (contrato 6.5).
+/// El adaptador HTTP lo traduce a 400, 404, 409 o 503 (contrato 6.5).
 /// </summary>
 public enum TipoError
 {
     Ninguno,
     Validacion,
     NoEncontrado,
-    Conflicto
+    Conflicto,
+    NoDisponible
 }
 
 /// <summary>
@@ -47,6 +48,9 @@ public class Result
 
     public static Result Conflicto(string campo, string mensaje) =>
         new(TipoError.Conflicto, new Dictionary<string, string> { [campo] = mensaje });
+
+    public static Result NoDisponible(string servicio, string mensaje) =>
+        new(TipoError.NoDisponible, new Dictionary<string, string> { [servicio] = mensaje });
 
     protected static IReadOnlyDictionary<string, string> ValidarErrores(
         IReadOnlyDictionary<string, string> errores)

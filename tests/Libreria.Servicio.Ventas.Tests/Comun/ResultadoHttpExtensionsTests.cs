@@ -54,4 +54,15 @@ public class ResultadoHttpExtensionsTests
         Assert.Equal(409, objeto.StatusCode);
         Assert.IsAssignableFrom<ProblemDetails>(objeto.Value);
     }
+
+    [Fact]
+    public void NoDisponible_devuelve_503()
+    {
+        var respuesta = Result.NoDisponible("Productos", "No responde.").AActionResult();
+
+        var objeto = Assert.IsType<ObjectResult>(respuesta);
+        var problema = Assert.IsType<ProblemDetails>(objeto.Value);
+        Assert.Equal(503, objeto.StatusCode);
+        Assert.Equal("No responde.", problema.Detail);
+    }
 }

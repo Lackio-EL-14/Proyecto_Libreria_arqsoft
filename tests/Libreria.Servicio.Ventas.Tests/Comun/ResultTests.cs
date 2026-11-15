@@ -54,4 +54,13 @@ public class ResultTests
     {
         Assert.Throws<ArgumentException>(() => Result<string>.Fallo(Result.Exito()));
     }
+
+    [Fact]
+    public void NoDisponible_conserva_el_servicio_y_el_mensaje()
+    {
+        var resultado = Result.NoDisponible("Productos", "No responde.");
+
+        Assert.Equal(TipoError.NoDisponible, resultado.Tipo);
+        Assert.Equal("No responde.", resultado.Errores["Productos"]);
+    }
 }

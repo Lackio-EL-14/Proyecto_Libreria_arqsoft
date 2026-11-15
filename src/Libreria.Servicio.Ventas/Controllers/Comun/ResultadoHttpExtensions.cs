@@ -6,7 +6,7 @@ namespace Libreria.Servicio.Ventas.Controllers.Comun;
 
 /// <summary>
 /// Adaptador de entrada: traduce un <see cref="Result"/> de la capa de aplicación
-/// a una respuesta HTTP (contrato 6.5): Validación → 400, NoEncontrado → 404, Conflicto → 409.
+/// a una respuesta HTTP: Validación → 400, NoEncontrado → 404, Conflicto → 409, NoDisponible → 503.
 /// </summary>
 public static class ResultadoHttpExtensions
 {
@@ -42,6 +42,12 @@ public static class ResultadoHttpExtensions
             {
                 Status = StatusCodes.Status409Conflict,
                 Title = "La operación entra en conflicto con el estado actual.",
+                Detail = PrimerMensaje(resultado)
+            },
+            TipoError.NoDisponible => new ProblemDetails
+            {
+                Status = StatusCodes.Status503ServiceUnavailable,
+                Title = "Un servicio requerido no está disponible.",
                 Detail = PrimerMensaje(resultado)
             },
             _ => throw new InvalidOperationException("Un resultado exitoso no tiene ProblemDetails.")

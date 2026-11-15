@@ -1,4 +1,5 @@
 using Libreria.Servicio.Ventas.Domain;
+using Libreria.Servicio.Ventas.Application.Comun;
 using Libreria.Servicio.Ventas.Application.Models;
 
 
@@ -6,10 +7,14 @@ namespace Libreria.Servicio.Ventas.Application.Ports.Primary;
 
 public interface IVentaFacade
 {
-    Task<VentaRegistradaResult> RegistrarVentaAsync(
-        RegistrarVentaInput input);
+    Task<Result<VentaRegistradaResult>> RegistrarVentaAsync(
+        RegistrarVentaInput input,
+        CancellationToken cancellationToken = default);
 
-    Task AnularVentaAsync(Guid publicId, string motivoAnulacion);
+    Task<Result> AnularVentaAsync(
+        Guid publicId,
+        string motivoAnulacion,
+        CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<VentaListItemModel>> ObtenerListadoAsync(
         FiltroVentasInput filtro);
