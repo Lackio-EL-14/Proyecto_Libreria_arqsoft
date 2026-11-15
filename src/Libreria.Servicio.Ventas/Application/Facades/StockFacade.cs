@@ -1,70 +1,58 @@
-using Libreria.Servicio.Ventas.Domain;
-using Libreria.Servicio.Ventas.Application.Models;
-using Libreria.Servicio.Ventas.Application.Ports.Secondary;
-using Libreria.Servicio.Ventas.Application.Factories;
 using Libreria.Servicio.Ventas.Application.Ports.Primary;
-using System.Data;
+using Libreria.Servicio.Ventas.Application.Ports.Secondary;
 
-namespace Libreria.Servicio.Ventas.Application.Facades
+namespace Libreria.Servicio.Ventas.Application.Facades;
+
+public class StockFacade : IStockFacade
 {
-    public class StockFacade : IStockFacade
+    private readonly IProductosPort _productos;
+
+    public StockFacade(IProductosPort productos)
     {
-        private readonly IProductoRepository _productoRepository;
+        _productos = productos;
+    }
 
-        public StockFacade(IProductoRepository productoRepository)
+    public async Task DescontarStockAsync(
+        Guid productoPublicId,
+        int cantidad,
+        Guid ventaPublicId)
+    {
+        if (cantidad <= 0)
         {
-            _productoRepository = productoRepository;
+            throw new ArgumentException(
+                "La cantidad a descontar debe ser mayor a cero.",
+                nameof(cantidad));
         }
 
-        public async Task DescontarStockAsync(
-            int productoId,
-            int cantidad,
-            IDbConnection connection,
-            IDbTransaction transaction)
-        {
-            if (cantidad <= 0)
-            {
-                throw new ArgumentException(
-                    "La cantidad a descontar debe ser mayor a cero.",
-                    nameof(cantidad));
-            }
-
-            var actualizado = await _productoRepository.ActualizarStockAsync(
-                productoId,
-                -cantidad,
-                connection,
-                transaction);
-
-            if (!actualizado)
-            {
-                throw new InvalidOperationException(
-                    "No existe stock suficiente para realizar la venta.");
-            }
-        }
-        public async Task RestaurarStockAsync(
-            int productoId,
-            int cantidad,
-            IDbConnection connection,
-            IDbTransaction transaction)
-        {
-            if (cantidad <= 0)
-            {
-                throw new ArgumentException(
-                    "La cantidad a restaurar debe ser mayor a cero.",
-                    nameof(cantidad));
-            }
-
-            var actualizado = await _productoRepository.RestaurarStockAsync(
-                productoId,
+        if (!await _productos.DescontarStockAsync(
+                productoPublicId,
                 cantidad,
-                connection,
-                transaction);
+                ventaPublicId))
+        {
+            throw new InvalidOperationException(
+                "No existe stock suficiente para realizar la venta.");
+        }
+    }
 
-            if (!actualizado)
-            {
-                throw new InvalidOperationException(
-                    "No se pudo restaurar el stock del producto.");
-            }
+    public async Task RestaurarStockAsync(
+        Guid productoPublicId,
+        int cantidad,
+        Guid ventaPublicId)
+    {
+        if (cantidad <= 0)
+        {
+            throw new ArgumentException(
+                "La cantidad a restaurar debe ser mayor a cero.",
+                nameof(cantidad));
+        }
+
+        if (!await _productos.RestaurarStockAsync(
+                productoPublicId,
+                cantidad,
+                ventaPublicId))
+        {
+            throw new InvalidOperationException(
+                "No se pudo restaurar el stock del producto.");
         }
     }
 }

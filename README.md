@@ -87,7 +87,21 @@ docker exec ventas-db bash -lc '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa
 
 Para empezar desde cero (**borra todos los datos**): `docker compose down -v` y repetir los pasos. Para una actualización normal no uses `-v`.
 
-> Transición: hasta US-117 (Ventas) y US-124 (Usuarios), esos dos servicios todavía leen la cadena `LibreriaDb` del esquema anterior. Cada historia los cambia a `ConnectionStrings__VentasDb` y `ConnectionStrings__UsuariosDb`.
+> Transición: hasta US-124, Usuarios todavía lee la cadena `LibreriaDb` del esquema anterior. Ventas ya usa exclusivamente `ConnectionStrings__VentasDb` y la base `LibreriaVentas`.
+
+### Configuración obligatoria de Ventas
+
+El Servicio de Ventas no guarda su contraseña de SQL Server en Git. Cada integrante debe ejecutar una vez, usando la misma contraseña definida en `VENTAS_DB_SA_PASSWORD`:
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:VentasDb" "Server=localhost,1433;Database=LibreriaVentas;User Id=sa;Password=<contraseña>;TrustServerCertificate=True;" --project src/Libreria.Servicio.Ventas
+```
+
+Comprueba que el secreto quedó registrado:
+
+```powershell
+dotnet user-secrets list --project src/Libreria.Servicio.Ventas
+```
 
 ## Configuración obligatoria de Usuarios
 

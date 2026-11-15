@@ -19,7 +19,8 @@ public class ComprobanteVentaService : IComprobanteVentaService
 
     public async Task<ComprobanteVenta?> ObtenerAsync(Guid publicId)
     {
-        if (_usuarioActual.UsuarioId is not > 0)
+        if (_usuarioActual.UsuarioId is null
+            || _usuarioActual.UsuarioId == Guid.Empty)
         {
             throw new InvalidOperationException(
                 "Debe iniciar sesión para consultar el comprobante.");
