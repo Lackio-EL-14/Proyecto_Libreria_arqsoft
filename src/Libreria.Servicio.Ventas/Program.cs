@@ -27,10 +27,7 @@ conexiones.Configurar(cadenaVentas);
 builder.Services.AddSingleton(conexiones);
 builder.Services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
 
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddSingleton<IUsuarioActual, UsuarioActualDesarrollo>();
-}
+builder.Services.AddScoped<IUsuarioActual, UsuarioActualHttpContext>();
 
 builder.Services.AddTransient<PropagarAutenticacionHandler>();
 builder.Services
