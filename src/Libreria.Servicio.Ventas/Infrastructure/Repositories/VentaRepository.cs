@@ -1,8 +1,8 @@
-﻿using Libreria.Servicio.Ventas.Domain;
-using Libreria.Servicio.Ventas.Application.Models;
-using Libreria.Servicio.Ventas.Application.Ports.Secondary;
 using System.Data;
 using System.Data.Common;
+using Libreria.Servicio.Ventas.Application.Models;
+using Libreria.Servicio.Ventas.Application.Ports.Secondary;
+using Libreria.Servicio.Ventas.Domain;
 
 namespace Libreria.Servicio.Ventas.Infrastructure;
 
@@ -23,39 +23,34 @@ public class VentaRepository : IVentaRepository
         var (dbConnection, dbTransaction) =
             ObtenerConexionYTransaccion(connection, transaction);
 
-        if (venta.PublicId == Guid.Empty)
-        {
-            venta.PublicId = Guid.NewGuid();
-        }
+        venta.PublicId = venta.PublicId == Guid.Empty
+            ? Guid.NewGuid()
+            : venta.PublicId;
 
         await using var command = dbConnection.CreateCommand();
         command.Transaction = dbTransaction;
-
         command.CommandText = @"
-            INSERT INTO Venta
-                (PublicId, ClienteId, Total, Estado,
-                FechaCreacion, UsuarioCreacionId, UsuarioAnulacionId)
+            INSERT INTO dbo.Venta
+                (PublicId, ClientePublicId, ClienteCiNit, ClienteRazonSocial,
+                 Total, Estado, Observacion, VendedorIniciales,
+                 FechaCreacion, UsuarioCreacionId)
             OUTPUT INSERTED.VentaId
             VALUES
-                (@PublicId, @ClienteId, @Total, @Estado,
-                SYSDATETIME(), @UsuarioCreacionId, @UsuarioAnulacionId)";
+                (@PublicId, @ClientePublicId, @ClienteCiNit, @ClienteRazonSocial,
+                 @Total, @Estado, @Observacion, @VendedorIniciales,
+                 SYSDATETIME(), @UsuarioCreacionId)";
 
         AgregarParametro(command, "@PublicId", venta.PublicId);
-        AgregarParametro(command, "@ClienteId", venta.ClienteId);
+        AgregarParametro(command, "@ClientePublicId", venta.ClientePublicId);
+        AgregarParametro(command, "@ClienteCiNit", venta.ClienteCiNit);
+        AgregarParametro(command, "@ClienteRazonSocial", venta.ClienteRazonSocial);
         AgregarParametro(command, "@Total", venta.Total);
         AgregarParametro(command, "@Estado", venta.Estado);
-        AgregarParametro(
-            command,
-            "@UsuarioCreacionId",
-            venta.UsuarioCreacionId);
-        AgregarParametro(
-            command,
-            "@UsuarioAnulacionId",
-            venta.UsuarioAnulacionId ?? (object)DBNull.Value);
+        AgregarParametro(command, "@Observacion", DbValor(venta.Observacion));
+        AgregarParametro(command, "@VendedorIniciales", DbValor(venta.VendedorIniciales));
+        AgregarParametro(command, "@UsuarioCreacionId", venta.UsuarioCreacionId);
 
-        var resultado = await command.ExecuteScalarAsync();
-        venta.VentaId = Convert.ToInt32(resultado);
-
+        venta.VentaId = Convert.ToInt32(await command.ExecuteScalarAsync());
         return venta.VentaId;
     }
 
@@ -69,28 +64,20 @@ public class VentaRepository : IVentaRepository
 
         await using var command = dbConnection.CreateCommand();
         command.Transaction = dbTransaction;
-
         command.CommandText = @"
-            INSERT INTO DetalleVenta
-                (VentaId, ProductoId, Cantidad,
-                 PrecioUnitarioVenta, CostoAdquisicionUnitario,
-                 Importe, Ganancia)
+            INSERT INTO dbo.DetalleVenta
+                (VentaId, ProductoPublicId, ProductoNombre, Cantidad,
+                 PrecioUnitarioVenta, CostoAdquisicionUnitario, Importe, Ganancia)
             VALUES
-                (@VentaId, @ProductoId, @Cantidad,
-                 @PrecioUnitarioVenta, @CostoAdquisicionUnitario,
-                 @Importe, @Ganancia)";
+                (@VentaId, @ProductoPublicId, @ProductoNombre, @Cantidad,
+                 @PrecioUnitarioVenta, @CostoAdquisicionUnitario, @Importe, @Ganancia)";
 
         AgregarParametro(command, "@VentaId", detalle.VentaId);
-        AgregarParametro(command, "@ProductoId", detalle.ProductoId);
+        AgregarParametro(command, "@ProductoPublicId", detalle.ProductoPublicId);
+        AgregarParametro(command, "@ProductoNombre", detalle.ProductoNombre);
         AgregarParametro(command, "@Cantidad", detalle.Cantidad);
-        AgregarParametro(
-            command,
-            "@PrecioUnitarioVenta",
-            detalle.PrecioUnitarioVenta);
-        AgregarParametro(
-            command,
-            "@CostoAdquisicionUnitario",
-            detalle.CostoAdquisicionUnitario);
+        AgregarParametro(command, "@PrecioUnitarioVenta", detalle.PrecioUnitarioVenta);
+        AgregarParametro(command, "@CostoAdquisicionUnitario", detalle.CostoAdquisicionUnitario);
         AgregarParametro(command, "@Importe", detalle.Importe);
         AgregarParametro(command, "@Ganancia", detalle.Ganancia);
 
@@ -100,7 +87,7 @@ public class VentaRepository : IVentaRepository
     public async Task<bool> ActualizarEstadoAsync(
         int ventaId,
         string estado,
-        int? usuarioAnulacionId,
+        Guid? usuarioAnulacionId,
         string? motivoAnulacion,
         IDbConnection connection,
         IDbTransaction transaction)
@@ -110,97 +97,42 @@ public class VentaRepository : IVentaRepository
 
         await using var command = dbConnection.CreateCommand();
         command.Transaction = dbTransaction;
-
         command.CommandText = @"
-            UPDATE Venta
+            UPDATE dbo.Venta
             SET Estado = @Estado,
                 UsuarioAnulacionId = @UsuarioAnulacionId,
                 MotivoAnulacion = @MotivoAnulacion,
-                FechaAnulacion = CASE WHEN @Estado = N'Anulada' THEN SYSDATETIME() ELSE FechaAnulacion END
+                FechaAnulacion = CASE
+                    WHEN @Estado = N'Anulada' THEN SYSDATETIME()
+                    ELSE FechaAnulacion
+                END
             WHERE VentaId = @VentaId";
 
         AgregarParametro(command, "@VentaId", ventaId);
         AgregarParametro(command, "@Estado", estado);
-        AgregarParametro(
-            command,
-            "@UsuarioAnulacionId",
-            usuarioAnulacionId ?? (object)DBNull.Value);
-        AgregarParametro(
-            command,
-            "@MotivoAnulacion",
-            motivoAnulacion ?? (object)DBNull.Value);
+        AgregarParametro(command, "@UsuarioAnulacionId", DbValor(usuarioAnulacionId));
+        AgregarParametro(command, "@MotivoAnulacion", DbValor(motivoAnulacion));
 
         return await command.ExecuteNonQueryAsync() == 1;
     }
 
-    public async Task<IReadOnlyList<Venta>> ObtenerActivasAsync()
-    {
-        var ventas = new List<Venta>();
+    public Task<IReadOnlyList<Venta>> ObtenerActivasAsync() =>
+        ObtenerVentasAsync(soloActivas: true);
 
-        await using var connection = await CrearConexionAbiertaAsync();
-        await using var command = connection.CreateCommand();
-
-        command.CommandText = @"
-            SELECT VentaId, PublicId, ClienteId, Total, Estado,
-                   FechaCreacion, FechaAnulacion, MotivoAnulacion,
-                   UsuarioCreacionId, UsuarioAnulacionId
-            FROM Venta
-            WHERE Estado = N'Activa'
-            ORDER BY FechaCreacion DESC, VentaId DESC";
-
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
-        {
-            ventas.Add(MapearVenta(reader));
-        }
-
-        return ventas;
-    }
-
-    public async Task<IReadOnlyList<Venta>> ObtenerTodasAsync()
-    {
-        var ventas = new List<Venta>();
-
-        await using var connection = await CrearConexionAbiertaAsync();
-        await using var command = connection.CreateCommand();
-
-        command.CommandText = @"
-            SELECT VentaId, PublicId, ClienteId, Total, Estado,
-                   FechaCreacion, FechaAnulacion, MotivoAnulacion,
-                   UsuarioCreacionId, UsuarioAnulacionId
-            FROM Venta
-            ORDER BY FechaCreacion DESC, VentaId DESC";
-
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
-        {
-            ventas.Add(MapearVenta(reader));
-        }
-
-        return ventas;
-    }
+    public Task<IReadOnlyList<Venta>> ObtenerTodasAsync() =>
+        ObtenerVentasAsync(soloActivas: false);
 
     public async Task<Venta?> ObtenerPorPublicIdAsync(Guid publicId)
     {
         await using var connection = await CrearConexionAbiertaAsync();
         await using var command = connection.CreateCommand();
-
-        command.CommandText = @"
-            SELECT VentaId, PublicId, ClienteId, Total, Estado,
-                   FechaCreacion, FechaAnulacion, MotivoAnulacion,
-                   UsuarioCreacionId, UsuarioAnulacionId
-            FROM Venta
+        command.CommandText = SeleccionVenta + @"
             WHERE PublicId = @PublicId";
 
         AgregarParametro(command, "@PublicId", publicId);
-
         await using var reader = await command.ExecuteReaderAsync();
 
-        return await reader.ReadAsync()
-            ? MapearVenta(reader)
-            : null;
+        return await reader.ReadAsync() ? MapearVenta(reader) : null;
     }
 
     public async Task<Venta?> ObtenerPorPublicIdAsync(
@@ -213,52 +145,23 @@ public class VentaRepository : IVentaRepository
 
         await using var command = dbConnection.CreateCommand();
         command.Transaction = dbTransaction;
-
-        command.CommandText = @"
-            SELECT VentaId, PublicId, ClienteId, Total, Estado,
-                   FechaCreacion, FechaAnulacion, MotivoAnulacion,
-                   UsuarioCreacionId, UsuarioAnulacionId
-            FROM Venta WITH (UPDLOCK, ROWLOCK)
+        command.CommandText = SeleccionVenta + @"
             WHERE PublicId = @PublicId";
 
         AgregarParametro(command, "@PublicId", publicId);
-
         await using var reader = await command.ExecuteReaderAsync();
 
-        return await reader.ReadAsync()
-            ? MapearVenta(reader)
-            : null;
+        return await reader.ReadAsync() ? MapearVenta(reader) : null;
     }
 
     public async Task<IReadOnlyList<DetalleVenta>> ObtenerDetallePorVentaIdAsync(
         int ventaId)
     {
-        var detalles = new List<DetalleVenta>();
-
         await using var connection = await CrearConexionAbiertaAsync();
-        await using var command = connection.CreateCommand();
-
-        command.CommandText = @"
-            SELECT DetalleVentaId, VentaId, ProductoId, Cantidad,
-                   PrecioUnitarioVenta, CostoAdquisicionUnitario,
-                   Importe, Ganancia
-            FROM DetalleVenta
-            WHERE VentaId = @VentaId
-            ORDER BY DetalleVentaId";
-
-        AgregarParametro(command, "@VentaId", ventaId);
-
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
-        {
-            detalles.Add(MapearDetalle(reader));
-        }
-
-        return detalles;
+        return await ObtenerDetallesAsync(ventaId, connection, transaction: null);
     }
 
-    public async Task<IReadOnlyList<DetalleVenta>> ObtenerDetallePorVentaIdAsync(
+    public Task<IReadOnlyList<DetalleVenta>> ObtenerDetallePorVentaIdAsync(
         int ventaId,
         IDbConnection connection,
         IDbTransaction transaction)
@@ -266,29 +169,7 @@ public class VentaRepository : IVentaRepository
         var (dbConnection, dbTransaction) =
             ObtenerConexionYTransaccion(connection, transaction);
 
-        var detalles = new List<DetalleVenta>();
-
-        await using var command = dbConnection.CreateCommand();
-        command.Transaction = dbTransaction;
-
-        command.CommandText = @"
-            SELECT DetalleVentaId, VentaId, ProductoId, Cantidad,
-                   PrecioUnitarioVenta, CostoAdquisicionUnitario,
-                   Importe, Ganancia
-            FROM DetalleVenta
-            WHERE VentaId = @VentaId
-            ORDER BY DetalleVentaId";
-
-        AgregarParametro(command, "@VentaId", ventaId);
-
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
-        {
-            detalles.Add(MapearDetalle(reader));
-        }
-
-        return detalles;
+        return ObtenerDetallesAsync(ventaId, dbConnection, dbTransaction);
     }
 
     public async Task<IReadOnlyList<VentaListItemModel>> ObtenerListadoAsync(
@@ -300,18 +181,20 @@ public class VentaRepository : IVentaRepository
         await using var command = connection.CreateCommand();
 
         var query = @"
-            SELECT v.VentaId, v.PublicId, v.Estado, v.FechaCreacion, v.FechaAnulacion,
-                c.RazonSocial AS ClienteNombre, c.CiNit AS ClienteCiNit,
-                u.NombreCompleto AS CreadoPor,
-                ua.NombreCompleto AS AnuladoPor,
-                v.Total AS Total
-            FROM Venta v
-            INNER JOIN Cliente c ON v.ClienteId = c.ClienteId
-            INNER JOIN Usuario u ON v.UsuarioCreacionId = u.UsuarioId
-            LEFT JOIN Usuario ua ON v.UsuarioAnulacionId = ua.UsuarioId
+            SELECT v.PublicId, v.FechaCreacion, v.FechaAnulacion,
+                   v.ClienteRazonSocial AS ClienteNombre,
+                   v.ClienteCiNit, v.Total, v.Estado,
+                   COALESCE(NULLIF(v.VendedorIniciales, N''),
+                            CONVERT(nvarchar(36), v.UsuarioCreacionId)) AS CreadoPor,
+                   CASE
+                       WHEN v.UsuarioAnulacionId IS NULL THEN NULL
+                       ELSE CONVERT(nvarchar(36), v.UsuarioAnulacionId)
+                   END AS AnuladoPor
+            FROM dbo.Venta v
             WHERE 1 = 1";
 
-        if (!string.IsNullOrWhiteSpace(filtro.Estado) && !filtro.Estado.Equals("Todas", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(filtro.Estado)
+            && !filtro.Estado.Equals("Todas", StringComparison.OrdinalIgnoreCase))
         {
             query += " AND v.Estado = @Estado";
             AgregarParametro(command, "@Estado", filtro.Estado);
@@ -319,42 +202,39 @@ public class VentaRepository : IVentaRepository
 
         if (filtro.FechaDesde.HasValue)
         {
-            var inicioDia = filtro.FechaDesde.Value.ToDateTime(TimeOnly.MinValue);
             query += " AND v.FechaCreacion >= @FechaDesde";
-            AgregarParametro(command, "@FechaDesde", inicioDia);
+            AgregarParametro(
+                command,
+                "@FechaDesde",
+                filtro.FechaDesde.Value.ToDateTime(TimeOnly.MinValue));
         }
 
         if (filtro.FechaHasta.HasValue)
         {
-            var finDia = filtro.FechaHasta.Value.ToDateTime(TimeOnly.MaxValue);
             query += " AND v.FechaCreacion <= @FechaHasta";
-            AgregarParametro(command, "@FechaHasta", finDia);
+            AgregarParametro(
+                command,
+                "@FechaHasta",
+                filtro.FechaHasta.Value.ToDateTime(TimeOnly.MaxValue));
         }
 
-        query += @"
+        command.CommandText = query + @"
             ORDER BY v.FechaCreacion DESC, v.VentaId DESC";
 
-        command.CommandText = query;
-
         await using var reader = await command.ExecuteReaderAsync();
-
         while (await reader.ReadAsync())
         {
             items.Add(new VentaListItemModel
             {
                 PublicId = reader.GetGuid(reader.GetOrdinal("PublicId")),
                 FechaCreacion = reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
-                FechaAnulacion = reader.IsDBNull(reader.GetOrdinal("FechaAnulacion"))
-                    ? null
-                    : reader.GetDateTime(reader.GetOrdinal("FechaAnulacion")),
+                FechaAnulacion = GetNullableDateTime(reader, "FechaAnulacion"),
                 ClienteNombre = reader.GetString(reader.GetOrdinal("ClienteNombre")),
                 ClienteCiNit = reader.GetString(reader.GetOrdinal("ClienteCiNit")),
                 Total = reader.GetDecimal(reader.GetOrdinal("Total")),
                 Estado = reader.GetString(reader.GetOrdinal("Estado")),
                 CreadoPor = reader.GetString(reader.GetOrdinal("CreadoPor")),
-                AnuladoPor = reader.IsDBNull(reader.GetOrdinal("AnuladoPor"))
-                    ? null
-                    : reader.GetString(reader.GetOrdinal("AnuladoPor"))
+                AnuladoPor = GetNullableString(reader, "AnuladoPor")
             });
         }
 
@@ -368,23 +248,24 @@ public class VentaRepository : IVentaRepository
         await using var connection = await CrearConexionAbiertaAsync();
 
         int ventaId;
-        VentaDetalleCompletoModel detalleModel;
+        VentaDetalleCompletoModel detalle;
 
         await using (var command = connection.CreateCommand())
         {
             command.CommandText = @"
-                SELECT v.VentaId, v.PublicId, v.Total, v.Estado, v.FechaCreacion, v.FechaAnulacion, v.MotivoAnulacion,
-                       c.RazonSocial AS ClienteNombre, c.CiNit AS ClienteCiNit,
-                       u.NombreCompleto AS CreadoPor,
-                       ua.NombreCompleto AS AnuladoPor
-                FROM Venta v
-                INNER JOIN Cliente c ON v.ClienteId = c.ClienteId
-                INNER JOIN Usuario u ON v.UsuarioCreacionId = u.UsuarioId
-                LEFT JOIN Usuario ua ON v.UsuarioAnulacionId = ua.UsuarioId
+                SELECT v.VentaId, v.PublicId, v.FechaCreacion, v.FechaAnulacion,
+                       v.MotivoAnulacion, v.Estado, v.ClienteRazonSocial,
+                       v.ClienteCiNit, v.Total,
+                       COALESCE(NULLIF(v.VendedorIniciales, N''),
+                                CONVERT(nvarchar(36), v.UsuarioCreacionId)) AS CreadoPor,
+                       CASE
+                           WHEN v.UsuarioAnulacionId IS NULL THEN NULL
+                           ELSE CONVERT(nvarchar(36), v.UsuarioAnulacionId)
+                       END AS AnuladoPor
+                FROM dbo.Venta v
                 WHERE v.PublicId = @PublicId";
 
             AgregarParametro(command, "@PublicId", publicId);
-
             await using var reader = await command.ExecuteReaderAsync();
 
             if (!await reader.ReadAsync())
@@ -393,83 +274,63 @@ public class VentaRepository : IVentaRepository
             }
 
             ventaId = reader.GetInt32(reader.GetOrdinal("VentaId"));
-            detalleModel = new VentaDetalleCompletoModel
+            detalle = new VentaDetalleCompletoModel
             {
                 PublicId = reader.GetGuid(reader.GetOrdinal("PublicId")),
                 FechaCreacion = reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
-                FechaAnulacion = reader.IsDBNull(reader.GetOrdinal("FechaAnulacion"))
-                    ? null
-                    : reader.GetDateTime(reader.GetOrdinal("FechaAnulacion")),
-                MotivoAnulacion = reader.IsDBNull(reader.GetOrdinal("MotivoAnulacion"))
-                    ? null
-                    : reader.GetString(reader.GetOrdinal("MotivoAnulacion")),
-                Total = reader.GetDecimal(reader.GetOrdinal("Total")),
+                FechaAnulacion = GetNullableDateTime(reader, "FechaAnulacion"),
+                MotivoAnulacion = GetNullableString(reader, "MotivoAnulacion"),
                 Estado = reader.GetString(reader.GetOrdinal("Estado")),
-                ClienteNombre = reader.GetString(reader.GetOrdinal("ClienteNombre")),
+                ClienteNombre = reader.GetString(reader.GetOrdinal("ClienteRazonSocial")),
                 ClienteCiNit = reader.GetString(reader.GetOrdinal("ClienteCiNit")),
                 CreadoPor = reader.GetString(reader.GetOrdinal("CreadoPor")),
-                AnuladoPor = reader.IsDBNull(reader.GetOrdinal("AnuladoPor"))
-                    ? null
-                    : reader.GetString(reader.GetOrdinal("AnuladoPor"))
+                AnuladoPor = GetNullableString(reader, "AnuladoPor"),
+                Total = reader.GetDecimal(reader.GetOrdinal("Total"))
             };
         }
 
-        await using (var commandDetalle = connection.CreateCommand())
+        await using var detalleCommand = connection.CreateCommand();
+        detalleCommand.CommandText = @"
+            SELECT ProductoNombre, Cantidad, PrecioUnitarioVenta, Importe, Ganancia
+            FROM dbo.DetalleVenta
+            WHERE VentaId = @VentaId
+            ORDER BY DetalleVentaId";
+
+        AgregarParametro(detalleCommand, "@VentaId", ventaId);
+        await using var detalleReader = await detalleCommand.ExecuteReaderAsync();
+
+        decimal gananciaTotal = 0m;
+        while (await detalleReader.ReadAsync())
         {
-            commandDetalle.CommandText = @"
-                SELECT d.Cantidad, d.PrecioUnitarioVenta, d.Importe, d.Ganancia,
-                       p.Nombre AS ProductoNombre
-                FROM DetalleVenta d
-                INNER JOIN Producto p ON d.ProductoId = p.ProductoId
-                WHERE d.VentaId = @VentaId
-                ORDER BY d.DetalleVentaId";
+            var ganancia = detalleReader.GetDecimal(detalleReader.GetOrdinal("Ganancia"));
+            gananciaTotal += ganancia;
 
-            AgregarParametro(commandDetalle, "@VentaId", ventaId);
-
-            await using var readerDetalle = await commandDetalle.ExecuteReaderAsync();
-
-            decimal totalGanancia = 0m;
-
-            while (await readerDetalle.ReadAsync())
+            detalle.Lineas.Add(new VentaLineaDetalleModel
             {
-                var cantidad = readerDetalle.GetInt32(readerDetalle.GetOrdinal("Cantidad"));
-                var precioUnitario = readerDetalle.GetDecimal(readerDetalle.GetOrdinal("PrecioUnitarioVenta"));
-                var importe = readerDetalle.GetDecimal(readerDetalle.GetOrdinal("Importe"));
-                var ganancia = readerDetalle.GetDecimal(readerDetalle.GetOrdinal("Ganancia"));
-                var productoNombre = readerDetalle.GetString(readerDetalle.GetOrdinal("ProductoNombre"));
-
-                totalGanancia += ganancia;
-
-                detalleModel.Lineas.Add(new VentaLineaDetalleModel
-                {
-                    ProductoNombre = productoNombre,
-                    Cantidad = cantidad,
-                    PrecioUnitario = precioUnitario,
-                    Subtotal = importe,
-                    Ganancia = esAdministrador ? ganancia : null
-                });
-            }
-
-            detalleModel.GananciaTotal = esAdministrador ? totalGanancia : null;
+                ProductoNombre = detalleReader.GetString(
+                    detalleReader.GetOrdinal("ProductoNombre")),
+                Cantidad = detalleReader.GetInt32(detalleReader.GetOrdinal("Cantidad")),
+                PrecioUnitario = detalleReader.GetDecimal(
+                    detalleReader.GetOrdinal("PrecioUnitarioVenta")),
+                Subtotal = detalleReader.GetDecimal(detalleReader.GetOrdinal("Importe")),
+                Ganancia = esAdministrador ? ganancia : null
+            });
         }
 
-        return detalleModel;
+        detalle.GananciaTotal = esAdministrador ? gananciaTotal : null;
+        return detalle;
     }
 
     public async Task<ComprobanteVenta?> ObtenerComprobanteAsync(Guid publicId)
     {
         await using var connection = await CrearConexionAbiertaAsync();
         await using var command = connection.CreateCommand();
-
         command.CommandText = @"
             SELECT v.PublicId, v.Estado, v.Total, v.FechaCreacion,
-                   c.CiNit AS CiNitCliente, c.RazonSocial AS RazonSocialCliente,
-                   p.Nombre AS NombreProducto,
-                   d.Cantidad, d.PrecioUnitarioVenta, d.Importe
-            FROM Venta v
-            INNER JOIN Cliente c ON c.ClienteId = v.ClienteId
-            INNER JOIN DetalleVenta d ON d.VentaId = v.VentaId
-            INNER JOIN Producto p ON p.ProductoId = d.ProductoId
+                   v.ClienteCiNit, v.ClienteRazonSocial,
+                   d.ProductoNombre, d.Cantidad, d.PrecioUnitarioVenta, d.Importe
+            FROM dbo.Venta v
+            INNER JOIN dbo.DetalleVenta d ON d.VentaId = v.VentaId
             WHERE v.PublicId = @PublicId
             ORDER BY d.DetalleVentaId";
 
@@ -481,36 +342,78 @@ public class VentaRepository : IVentaRepository
             return null;
         }
 
-        var referencia = reader.GetGuid(reader.GetOrdinal("PublicId"));
-        var estado = reader.GetString(reader.GetOrdinal("Estado"));
-        var total = reader.GetDecimal(reader.GetOrdinal("Total"));
-        DateTimeOffset? fechaVenta = reader.IsDBNull(reader.GetOrdinal("FechaCreacion"))
-            ? null
-            : new DateTimeOffset(DateTime.SpecifyKind(reader.GetDateTime(reader.GetOrdinal("FechaCreacion")), DateTimeKind.Utc));
-        var ciNit = reader.GetString(reader.GetOrdinal("CiNitCliente"));
-        var razonSocial = reader.GetString(reader.GetOrdinal("RazonSocialCliente"));
         var detalles = new List<DetalleComprobanteVenta>();
+        var comprobante = new ComprobanteVenta
+        {
+            PublicId = reader.GetGuid(reader.GetOrdinal("PublicId")),
+            Estado = reader.GetString(reader.GetOrdinal("Estado")),
+            CiNitCliente = reader.GetString(reader.GetOrdinal("ClienteCiNit")),
+            RazonSocialCliente = reader.GetString(reader.GetOrdinal("ClienteRazonSocial")),
+            Total = reader.GetDecimal(reader.GetOrdinal("Total")),
+            FechaVenta = new DateTimeOffset(
+                DateTime.SpecifyKind(
+                    reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
+                    DateTimeKind.Utc))
+        };
 
         do
         {
             detalles.Add(new DetalleComprobanteVenta(
-                reader.GetString(reader.GetOrdinal("NombreProducto")),
+                reader.GetString(reader.GetOrdinal("ProductoNombre")),
                 reader.GetInt32(reader.GetOrdinal("Cantidad")),
                 reader.GetDecimal(reader.GetOrdinal("PrecioUnitarioVenta")),
                 reader.GetDecimal(reader.GetOrdinal("Importe"))));
         }
         while (await reader.ReadAsync());
 
-        return new ComprobanteVenta
+        return comprobante with { Detalles = detalles };
+    }
+
+    private async Task<IReadOnlyList<Venta>> ObtenerVentasAsync(bool soloActivas)
+    {
+        var ventas = new List<Venta>();
+
+        await using var connection = await CrearConexionAbiertaAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = SeleccionVenta
+            + (soloActivas ? " WHERE Estado = N'Activa'" : string.Empty)
+            + " ORDER BY FechaCreacion DESC, VentaId DESC";
+
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
         {
-            PublicId = referencia,
-            Estado = estado,
-            CiNitCliente = ciNit,
-            RazonSocialCliente = razonSocial,
-            Detalles = detalles.ToArray(),
-            Total = total,
-            FechaVenta = fechaVenta
-        };
+            ventas.Add(MapearVenta(reader));
+        }
+
+        return ventas;
+    }
+
+    private static async Task<IReadOnlyList<DetalleVenta>> ObtenerDetallesAsync(
+        int ventaId,
+        DbConnection connection,
+        DbTransaction? transaction)
+    {
+        var detalles = new List<DetalleVenta>();
+
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = @"
+            SELECT DetalleVentaId, VentaId, ProductoPublicId, ProductoNombre,
+                   Cantidad, PrecioUnitarioVenta, CostoAdquisicionUnitario,
+                   Importe, Ganancia
+            FROM dbo.DetalleVenta
+            WHERE VentaId = @VentaId
+            ORDER BY DetalleVentaId";
+
+        AgregarParametro(command, "@VentaId", ventaId);
+        await using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            detalles.Add(MapearDetalle(reader));
+        }
+
+        return detalles;
     }
 
     private async Task<DbConnection> CrearConexionAbiertaAsync()
@@ -522,55 +425,45 @@ public class VentaRepository : IVentaRepository
             await connection.OpenAsync();
         }
 
-        return (DbConnection)connection;
+        return connection;
     }
 
-    private static Venta MapearVenta(DbDataReader reader)
-    {
-        return new Venta
+    private static Venta MapearVenta(DbDataReader reader) =>
+        new()
         {
             VentaId = reader.GetInt32(reader.GetOrdinal("VentaId")),
             PublicId = reader.GetGuid(reader.GetOrdinal("PublicId")),
-            ClienteId = reader.GetInt32(reader.GetOrdinal("ClienteId")),
-            Estado = reader.GetString(reader.GetOrdinal("Estado")),
+            ClientePublicId = reader.GetGuid(reader.GetOrdinal("ClientePublicId")),
+            ClienteCiNit = reader.GetString(reader.GetOrdinal("ClienteCiNit")),
+            ClienteRazonSocial = reader.GetString(reader.GetOrdinal("ClienteRazonSocial")),
             Total = reader.GetDecimal(reader.GetOrdinal("Total")),
-            FechaCreacion = reader.IsDBNull(reader.GetOrdinal("FechaCreacion"))
-                ? DateTime.MinValue
-                : reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
-            FechaAnulacion = reader.IsDBNull(reader.GetOrdinal("FechaAnulacion"))
-                ? null
-                : reader.GetDateTime(reader.GetOrdinal("FechaAnulacion")),
-            MotivoAnulacion = reader.IsDBNull(reader.GetOrdinal("MotivoAnulacion"))
-                ? null
-                : reader.GetString(reader.GetOrdinal("MotivoAnulacion")),
-            UsuarioCreacionId =
-                reader.GetInt32(reader.GetOrdinal("UsuarioCreacionId")),
-            UsuarioAnulacionId =
-                reader.IsDBNull(reader.GetOrdinal("UsuarioAnulacionId"))
-                    ? null
-                    : reader.GetInt32(
-                        reader.GetOrdinal("UsuarioAnulacionId"))
+            Estado = reader.GetString(reader.GetOrdinal("Estado")),
+            Observacion = GetNullableString(reader, "Observacion"),
+            MotivoAnulacion = GetNullableString(reader, "MotivoAnulacion"),
+            VendedorIniciales = GetNullableString(reader, "VendedorIniciales"),
+            FechaCreacion = reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
+            UsuarioCreacionId = reader.GetGuid(reader.GetOrdinal("UsuarioCreacionId")),
+            FechaModificacion = GetNullableDateTime(reader, "FechaModificacion"),
+            UsuarioModificacionId = GetNullableGuid(reader, "UsuarioModificacionId"),
+            FechaAnulacion = GetNullableDateTime(reader, "FechaAnulacion"),
+            UsuarioAnulacionId = GetNullableGuid(reader, "UsuarioAnulacionId")
         };
-    }
 
-    private static DetalleVenta MapearDetalle(DbDataReader reader)
-    {
-        return new DetalleVenta
+    private static DetalleVenta MapearDetalle(DbDataReader reader) =>
+        new()
         {
-            DetalleVentaId =
-                reader.GetInt32(reader.GetOrdinal("DetalleVentaId")),
+            DetalleVentaId = reader.GetInt32(reader.GetOrdinal("DetalleVentaId")),
             VentaId = reader.GetInt32(reader.GetOrdinal("VentaId")),
-            ProductoId = reader.GetInt32(reader.GetOrdinal("ProductoId")),
+            ProductoPublicId = reader.GetGuid(reader.GetOrdinal("ProductoPublicId")),
+            ProductoNombre = reader.GetString(reader.GetOrdinal("ProductoNombre")),
             Cantidad = reader.GetInt32(reader.GetOrdinal("Cantidad")),
-            PrecioUnitarioVenta =
-                reader.GetDecimal(reader.GetOrdinal("PrecioUnitarioVenta")),
-            CostoAdquisicionUnitario =
-                reader.GetDecimal(
-                    reader.GetOrdinal("CostoAdquisicionUnitario")),
+            PrecioUnitarioVenta = reader.GetDecimal(
+                reader.GetOrdinal("PrecioUnitarioVenta")),
+            CostoAdquisicionUnitario = reader.GetDecimal(
+                reader.GetOrdinal("CostoAdquisicionUnitario")),
             Importe = reader.GetDecimal(reader.GetOrdinal("Importe")),
             Ganancia = reader.GetDecimal(reader.GetOrdinal("Ganancia"))
         };
-    }
 
     private static (DbConnection Connection, DbTransaction Transaction)
         ObtenerConexionYTransaccion(
@@ -594,6 +487,26 @@ public class VentaRepository : IVentaRepository
         return (dbConnection, dbTransaction);
     }
 
+    private static string? GetNullableString(DbDataReader reader, string columna)
+    {
+        var ordinal = reader.GetOrdinal(columna);
+        return reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+    }
+
+    private static DateTime? GetNullableDateTime(DbDataReader reader, string columna)
+    {
+        var ordinal = reader.GetOrdinal(columna);
+        return reader.IsDBNull(ordinal) ? null : reader.GetDateTime(ordinal);
+    }
+
+    private static Guid? GetNullableGuid(DbDataReader reader, string columna)
+    {
+        var ordinal = reader.GetOrdinal(columna);
+        return reader.IsDBNull(ordinal) ? null : reader.GetGuid(ordinal);
+    }
+
+    private static object DbValor(object? valor) => valor ?? DBNull.Value;
+
     private static void AgregarParametro(
         DbCommand command,
         string nombre,
@@ -604,4 +517,12 @@ public class VentaRepository : IVentaRepository
         parametro.Value = valor;
         command.Parameters.Add(parametro);
     }
+
+    private const string SeleccionVenta = @"
+        SELECT VentaId, PublicId, ClientePublicId, ClienteCiNit,
+               ClienteRazonSocial, Total, Estado, Observacion,
+               MotivoAnulacion, VendedorIniciales, FechaCreacion,
+               UsuarioCreacionId, FechaModificacion, UsuarioModificacionId,
+               FechaAnulacion, UsuarioAnulacionId
+        FROM dbo.Venta";
 }

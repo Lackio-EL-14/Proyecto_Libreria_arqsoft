@@ -1,7 +1,4 @@
-using Libreria.Servicio.Ventas.Domain;
-using Libreria.Servicio.Ventas.Application.Models;
 using Libreria.Servicio.Ventas.Application.Ports.Secondary;
-using Libreria.Servicio.Ventas.Application.Factories;
 using System.Data.Common;
 using Microsoft.Data.SqlClient;
 
@@ -18,7 +15,7 @@ public class SqlConnectionFactory : IDbConnectionFactory
 
     public DbConnection CreateConnection()
     {
-        var connection = new SqlConnection(_connectionStrings.LibreriaDb);
+        var connection = new SqlConnection(_connectionStrings.VentasDb);
         connection.Open();
         return connection;
     }

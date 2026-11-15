@@ -1,72 +1,31 @@
 @host = http://localhost:5101
+@ventaPublicId = e0000000-0000-0000-0000-000000000001
 
-### Salud del servicio (US-110)
+### Salud del microservicio
 GET {{host}}/salud
 
-@usuario = 1
-
-### Estado del servicio
+### Estado de la API de Ventas
 GET {{host}}/api/ventas/ping
 
-### ---------- Ventas (US-89: Listado y Detalle) ----------
+### Listado armado solo desde LibreriaVentas
 GET {{host}}/api/ventas
 
-### Listado filtrado por estado
-GET {{host}}/api/ventas?estado=Activa
+### Listado filtrado
+GET {{host}}/api/ventas?estado=Activa&fechaDesde=2026-01-01&fechaHasta=2026-12-31
 
-### Listado filtrado por rango de fechas
-GET {{host}}/api/ventas?fechaDesde=2026-01-01&fechaHasta=2026-12-31
-
-### Detalle de venta como Administrador (con ganancia)
-# Reemplazar con el PublicId de una venta existente
-@ventaPublicId = 00000000-0000-0000-0000-000000000000
+### Detalle como administrador
 GET {{host}}/api/ventas/{{ventaPublicId}}?esAdministrador=true
 
-### Detalle de venta como Vendedor (sin ganancia)
+### Detalle como vendedor
 GET {{host}}/api/ventas/{{ventaPublicId}}?esAdministrador=false
 
-### ---------- Ventas (US-88: Anulación lógica) ----------
+### Comprobante armado con las copias locales
+GET {{host}}/api/ventas/{{ventaPublicId}}/comprobante
+
+### Anulación lógica
 POST {{host}}/api/ventas/{{ventaPublicId}}/anular
 Content-Type: application/json
-X-Usuario-Id: {{usuario}}
 
 {
-  "motivo": "Cliente solicitó devolución de la compra por error en caja"
+  "motivo": "Cliente solicitó la devolución completa de la compra"
 }
-
-### ---------- Categorías ----------
-GET {{host}}/api/categorias
-###
-GET {{host}}/api/categorias?busqueda=libros
-###
-GET {{host}}/api/categorias/ubicaciones
-###
-POST {{host}}/api/categorias
-Content-Type: application/json
-X-Usuario-Id: {{usuario}}
-
-{ "nombre": "Útiles de prueba", "descripcion": "Creada desde .http", "ubicacion": "Bodega" }
-
-### ---------- Marcas ----------
-GET {{host}}/api/marcas
-###
-GET {{host}}/api/marcas/paises
-###
-POST {{host}}/api/marcas
-Content-Type: application/json
-X-Usuario-Id: {{usuario}}
-
-{ "nombre": "Marca de prueba", "descripcion": null, "paisOrigen": "Bolivia", "sitioWeb": null }
-
-### ---------- Productos ----------
-GET {{host}}/api/productos
-###
-GET {{host}}/api/productos?busqueda=lapiz
-###
-GET {{host}}/api/productos/formulario
-
-### ---------- Histórico (reemplazar el GUID de un producto) ----------
-GET {{host}}/api/historico/00000000-0000-0000-0000-000000000000
-
-### ---------- Clientes ----------
-GET {{host}}/api/clientes/buscar?ciNit=123

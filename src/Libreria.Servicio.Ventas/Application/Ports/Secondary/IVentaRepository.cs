@@ -19,7 +19,7 @@ public interface IVentaRepository
     Task<bool> ActualizarEstadoAsync(
         int ventaId,
         string estado,
-        int? usuarioAnulacionId,
+        Guid? usuarioAnulacionId,
         string? motivoAnulacion,
         IDbConnection connection,
         IDbTransaction transaction);

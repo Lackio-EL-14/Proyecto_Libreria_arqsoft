@@ -9,13 +9,13 @@ public class MovimientoStockRepository : IMovimientoStockRepository
 {
     public async Task RegistrarAsync(
         int ventaId,
-        int productoId,
+        Guid productoPublicId,
         int cantidad,
         string tipoMovimiento,
         IDbConnection connection,
         IDbTransaction transaction)
     {
-        if (ventaId <= 0 || productoId <= 0 || cantidad <= 0)
+        if (ventaId <= 0 || productoPublicId == Guid.Empty || cantidad <= 0)
             throw new ArgumentException("Datos del movimiento inválidos.");
 
         if (tipoMovimiento != "Venta" && tipoMovimiento != "Anulacion")
@@ -30,12 +30,12 @@ public class MovimientoStockRepository : IMovimientoStockRepository
 
         command.CommandText = @"
             INSERT INTO dbo.HistoricoMovimientoStock
-                (VentaId, ProductoId, Cantidad, TipoMovimiento)
+                (VentaId, ProductoPublicId, Cantidad, TipoMovimiento)
             VALUES
-                (@VentaId, @ProductoId, @Cantidad, @TipoMovimiento)";
+                (@VentaId, @ProductoPublicId, @Cantidad, @TipoMovimiento)";
 
         AgregarParametro(command, "@VentaId", ventaId);
-        AgregarParametro(command, "@ProductoId", productoId);
+        AgregarParametro(command, "@ProductoPublicId", productoPublicId);
         AgregarParametro(command, "@Cantidad", cantidad);
         AgregarParametro(command, "@TipoMovimiento", tipoMovimiento);
 

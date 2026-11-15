@@ -4,7 +4,8 @@
     {
         public int DetalleVentaId { get; set; }
         public int VentaId { get; set; }
-        public int ProductoId { get; set; }
+        public Guid ProductoPublicId { get; set; }
+        public string ProductoNombre { get; set; } = string.Empty;
         public int Cantidad { get; set; }
         public decimal PrecioUnitarioVenta { get; set; }
         public decimal CostoAdquisicionUnitario { get; set; }
