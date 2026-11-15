@@ -1,0 +1,116 @@
+@page "{id:guid}"
+@model Libreria.Client.Pages.Productos.DetailsModel
+@using Libreria.Client.Pages.Shared.Models
+
+@{
+    ViewData["Title"] = "Detalle del producto";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Detalle del producto</h1>
+        <p>Información completa del artículo en inventario.</p>
+    </div>
+</div>
+
+@if (TempData["MensajeExito"] is string mensaje)
+{
+    <div style="background-color: #E8F0EB; color: var(--color-accent); padding: 1rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #A3C2B1;">
+        @mensaje
+    </div>
+}
+
+<div class="form-card" style="max-width: 800px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+
+        <div>
+            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">Nombre</p>
+            <p style="font-weight: 600; font-size: 1.1rem;">@Model.Producto.Nombre</p>
+        </div>
+
+        <div>
+            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">Descripción</p>
+            <p>@(string.IsNullOrWhiteSpace(Model.Producto.DescripcionEspecifica) ? "Sin descripción" : Model.Producto.DescripcionEspecifica)</p>
+        </div>
+
+        <div>
+            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">Categoría y Marca</p>
+            <p>@Model.Producto.Categoria | @Model.Producto.Marca</p>
+        </div>
+
+        <div>
+            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">Stock disponible</p>
+            <p><span class="badge @(Model.Producto.Stock <= 5 ? "badge--accent" : "")" style="font-size: 1rem;">@Model.Producto.Stock unidades</span></p>
+        </div>
+
+        <div>
+            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">Precio de venta</p>
+            <p style="font-weight: 600; color: var(--color-primary); font-size: 1.1rem;">Bs. @Model.Producto.PrecioVenta.ToString("0.00")</p>
+        </div>
+
+        <div>
+            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">Costo de adquisición</p>
+            <p>Bs. @Model.Producto.CostoAdquisicionActual.ToString("0.00")</p>
+        </div>
+
+        <div>
+            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">
+                Perecedero
+            </p>
+            <p>@(Model.Producto.EsPerecedero ? "Sí" : "No")</p>
+        </div>
+
+        @if (Model.Producto.EsPerecedero)
+        {
+            <div>
+                <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">
+                    Fecha de vencimiento
+                </p>
+                <p>
+                    @(Model.Producto.FechaVencimiento.HasValue
+                        ? Model.Producto.FechaVencimiento.Value.ToString("dd/MM/yyyy")
+                        : "Sin fecha de vencimiento")
+                </p>
+            </div>
+        }
+
+    </div>
+
+    @if (Model.Auditoria is not null)
+    {
+        <partial name="_AuditoriaInfo" model="Model.Auditoria" />
+    }
+
+    <div style="border-top: 1px solid var(--color-border); padding-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+        <a asp-page="Edit" asp-route-id="@Model.PublicId" class="btn btn--primary">Editar producto</a>
+
+        <a asp-page="/Historico/Index" asp-route-publicId="@Model.PublicId" class="btn btn--secondary">Ver histórico</a>
+
+        <a asp-page="Index" class="btn btn--secondary">Volver al catálogo</a>
+
+        <button
+            type="button"
+            class="btn"
+            style="background-color: #FEF2F2; color: #991B1B; border: 1px solid #FCA5A5; margin-left: auto;"
+            data-confirm-trigger
+            data-modal-target="producto-baja-modal"
+            data-entity-id="@Model.PublicId"
+            data-entity-name="@Model.Producto.Nombre">
+            Dar de baja
+        </button>
+    </div>
+</div>
+
+@await Html.PartialAsync(
+    "_ConfirmModal",
+    new ConfirmModalModel
+    {
+        Id = "producto-baja-modal",
+        Titulo = "Confirmar baja de producto",
+        MensajePrincipal = "¿Está seguro de dar de baja el producto",
+        Handler = "DarDeBaja",
+        CampoIdentificador = "publicId",
+        TextoBotonConfirmar = "Confirmar baja",
+        TextoBotonCancelar = "Cancelar",
+        MensajeAdvertencia = "El producto no aparecerá en el catálogo activo pero su historial de costos y registros previos se conservarán."
+    })

@@ -1,0 +1,37 @@
+@page
+@model Libreria.Client.Pages.IndexModel
+@{
+    ViewData["Title"] = "Panel Principal";
+}
+
+<!-- Hero Section Principal -->
+<header class="home-hero">
+    <img src="~/images/icono.svg" alt="Logotipo Librería" class="home-hero__logo" />
+    <div>
+        <h1>Sistema de Gestión de Librería</h1>
+        <p>Acceso central a los servicios de ventas, usuarios y reportes.</p>
+    </div>
+</header>
+
+<section class="dashboard-panel">
+    <div class="dashboard-panel__header">
+        <h2>Bienvenido, @(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity?.Name)</h2>
+        <p>El Front está preparado para consumir los módulos mediante sus APIs independientes.</p>
+    </div>
+    <div class="quick-actions-grid">
+        <div class="quick-action-item">
+            <span class="quick-action-item__icon">🧾</span>
+            <div>
+                <strong>Servicio de Ventas</strong>
+                <p>Puerto configurado en http://localhost:5101</p>
+            </div>
+        </div>
+        <div class="quick-action-item">
+            <span class="quick-action-item__icon">👤</span>
+            <div>
+                <strong>Servicio de Usuarios</strong>
+                <p>Puerto configurado en http://localhost:5102</p>
+            </div>
+        </div>
+    </div>
+</section>

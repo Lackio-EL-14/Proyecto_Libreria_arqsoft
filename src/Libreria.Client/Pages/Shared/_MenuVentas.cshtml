@@ -1,0 +1,36 @@
+@model Libreria.Client.Pages.Shared.Models.MenuModuleViewModel
+@{
+    var urlRegistrarVenta = Url.Page("/Ventas/Registrar");
+    var urlListadoVentas = Url.Page("/Ventas/Index");
+}
+
+@if (Model.PuedeVender && (urlRegistrarVenta is not null || urlListadoVentas is not null))
+{
+    <div class="sidebar-section">
+        <button
+            type="button"
+            class="sidebar-section__toggle"
+            data-sidebar-section-toggle
+            aria-controls="sidebar-section-ventas"
+            aria-expanded="true">
+            <span class="sidebar-section__title">Ventas</span>
+            <span class="sidebar-section__chevron" aria-hidden="true">▾</span>
+        </button>
+        <div class="sidebar-section__items" id="sidebar-section-ventas">
+            @if (urlRegistrarVenta is not null)
+            {
+                <a class="sidebar-link @Model.ActiveClass("/Ventas/Registrar")" href="@urlRegistrarVenta" title="Registrar venta">
+                    <span class="sidebar-link__icon" aria-hidden="true">🧾</span>
+                    <span class="sidebar-link__text">Registrar venta</span>
+                </a>
+            }
+            @if (urlListadoVentas is not null)
+            {
+                <a class="sidebar-link @Model.ActiveClass("/Ventas/Index")" href="@urlListadoVentas" title="Listado de ventas">
+                    <span class="sidebar-link__icon" aria-hidden="true">💵</span>
+                    <span class="sidebar-link__text">Ventas</span>
+                </a>
+            }
+        </div>
+    </div>
+}

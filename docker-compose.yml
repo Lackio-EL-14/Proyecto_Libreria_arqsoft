@@ -1,21 +1,81 @@
+# Una base de datos por microservicio (US-111).
+# Las contraseñas se leen de .env (copiar .env.example); no tienen valor por defecto.
+
 services:
-  db:
+  ventas-db:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: libreria-db
+    container_name: ventas-db
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "Libreria2026!"
-      MSSQL_PID: "Express"
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${VENTAS_DB_SA_PASSWORD:?Defina VENTAS_DB_SA_PASSWORD en .env}
     ports:
       - "1433:1433"
     volumes:
-      - mssql_data:/var/opt/mssql
-      - ./db/schema.sql:/scripts/schema.sql:ro
+      - ventas_data:/var/opt/mssql
+      - ./db/ventas:/scripts:ro
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  usuarios-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: usuarios-db
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${USUARIOS_DB_SA_PASSWORD:?Defina USUARIOS_DB_SA_PASSWORD en .env}
+    ports:
+      - "1434:1433"
+    volumes:
+      - usuarios_data:/var/opt/mssql
+      - ./db/usuarios:/scripts:ro
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  clientes-db:
+    image: mysql:8.4
+    container_name: clientes-db
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
+    environment:
+      - MYSQL_ROOT_PASSWORD=${CLIENTES_DB_ROOT_PASSWORD:?Defina CLIENTES_DB_ROOT_PASSWORD en .env}
+      - MYSQL_DATABASE=libreria_clientes
+      - MYSQL_USER=${CLIENTES_DB_USUARIO:?Defina CLIENTES_DB_USUARIO en .env}
+      - MYSQL_PASSWORD=${CLIENTES_DB_PASSWORD:?Defina CLIENTES_DB_PASSWORD en .env}
+    ports:
+      - "3306:3306"
+    volumes:
+      - clientes_data:/var/lib/mysql
+      - ./db/clientes:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # Por TCP: durante la inicialización MySQL solo escucha por socket, así que
+      # el contenedor no queda «healthy» hasta que terminan los scripts.
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  productos-db:
+    image: mongo:8.0
+    container_name: productos-db
+    environment:
+      - MONGO_INITDB_DATABASE=libreria_productos
+    ports:
+      - "27017:27017"
+    volumes:
+      - productos_data:/data/db
+      - ./db/productos:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.adminCommand('ping').ok === 1 ? 0 : 1)"]
       interval: 10s
       timeout: 5s
       retries: 10
 
 volumes:
-  mssql_data:
+  ventas_data:
+  usuarios_data:
+  clientes_data:
+  productos_data:

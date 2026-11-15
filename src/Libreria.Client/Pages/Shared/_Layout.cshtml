@@ -1,0 +1,116 @@
+@using Libreria.Client.Seguridad
+@using Libreria.Client.Pages.Shared.Models
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
+@{
+    var esAdministrador = (await AuthorizationService.AuthorizeAsync(User, PoliticasAcceso.SoloAdministrador)).Succeeded;
+    var puedeVender = (await AuthorizationService.AuthorizeAsync(User, PoliticasAcceso.Ventas)).Succeeded;
+    var currentPage = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
+    var menuModel = new MenuModuleViewModel(currentPage, esAdministrador, puedeVender);
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Sistema Librería</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+
+<body class="app-body">
+    <header class="app-header">
+        <div class="app-header__left">
+            <!-- Botón para alternar sidebar móvil / colapso desktop -->
+            <button
+                type="button"
+                class="menu-toggle"
+                id="menuToggle"
+                aria-label="Alternar menú de navegación"
+                aria-controls="sidebar"
+                aria-expanded="false"
+                title="Alternar menú">
+                <span aria-hidden="true">☰</span>
+            </button>
+
+            <div class="app-header__brand">
+                <a asp-page="/Index" aria-label="Ir al inicio" class="brand-link">
+                    <img src="~/images/icono.svg" alt="Librería" class="brand-logo" />
+                    <span class="brand-name">Librería</span>
+                </a>
+            </div>
+        </div>
+
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <div class="app-header__user">
+                <div class="user-chip" title="Sesión activa">
+                    <span class="user-chip__name">@(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity.Name)</span>
+                    <span class="user-chip__role">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                </div>
+                <a asp-page="/Cuenta/CambiarContrasena" class="btn btn--secondary">Cambiar contraseña</a>
+                <form method="post" asp-page="/Cuenta/Logout" class="logout-form">
+                    <button type="submit" class="btn-logout" title="Cerrar sesión">Cerrar sesión</button>
+                </form>
+            </div>
+        }
+    </header>
+
+    <div class="app-layout">
+        <!-- Mini-Sidebar Colapsable -->
+        <aside
+            class="app-sidebar"
+            id="sidebar"
+            aria-label="Navegación principal">
+
+            <div class="sidebar-header">
+                <span class="sidebar-header__title">Navegación</span>
+                <button
+                    type="button"
+                    class="sidebar-collapse-btn"
+                    id="sidebarCollapseBtn"
+                    aria-label="Colapsar o expandir menú lateral"
+                    title="Alternar vista mini-sidebar">
+                    <span class="collapse-icon">◀</span>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <!-- Sección Principal -->
+                <div class="sidebar-section">
+                    <span class="sidebar-section__title">General</span>
+                    <a class="sidebar-link @menuModel.ActiveClass("/Index")" asp-page="/Index" title="Inicio / Dashboard">
+                        <span class="sidebar-link__icon" aria-hidden="true">📊</span>
+                        <span class="sidebar-link__text">Inicio</span>
+                    </a>
+                </div>
+
+                <partial name="_MenuVentas" model="menuModel" />
+                <partial name="_MenuClientes" model="menuModel" />
+                <partial name="_MenuInventario" model="menuModel" />
+                <partial name="_MenuUsuarios" model="menuModel" />
+            </nav>
+        </aside>
+
+        <button
+            type="button"
+            class="sidebar-overlay"
+            id="sidebarOverlay"
+            aria-label="Cerrar menú">
+        </button>
+
+        <div class="app-content-wrapper">
+            <main class="app-main" id="main-content">
+            @RenderBody()
+            </main>
+
+            <footer class="app-footer">
+                <p>Proyecto Académico — Clean Code &amp; SOLID | Razor Pages &amp; ADO.NET</p>
+            </footer>
+        </div>
+    </div>
+
+    <script src="~/js/site.js"></script>
+    <script src="~/js/confirm-modal.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

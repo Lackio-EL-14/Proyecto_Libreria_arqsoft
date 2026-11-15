@@ -1,0 +1,26 @@
+@model Libreria.Client.Pages.Shared.Models.MenuModuleViewModel
+@{
+    // US-116: Administrador y Vendedor (política Ventas). Si la página no existiera, Url.Page devuelve null y el menú no se muestra.
+    var urlClientes = Url.Page("/Clientes/Index");
+}
+
+@if (Model.PuedeVender && urlClientes is not null)
+{
+    <div class="sidebar-section">
+        <button
+            type="button"
+            class="sidebar-section__toggle"
+            data-sidebar-section-toggle
+            aria-controls="sidebar-section-clientes"
+            aria-expanded="true">
+            <span class="sidebar-section__title">Clientes</span>
+            <span class="sidebar-section__chevron" aria-hidden="true">▾</span>
+        </button>
+        <div class="sidebar-section__items" id="sidebar-section-clientes">
+            <a class="sidebar-link @Model.ActiveClass("/Clientes")" href="@urlClientes" title="Consultar clientes">
+                <span class="sidebar-link__icon" aria-hidden="true">👥</span>
+                <span class="sidebar-link__text">Clientes</span>
+            </a>
+        </div>
+    </div>
+}

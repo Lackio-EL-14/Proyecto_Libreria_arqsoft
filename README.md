@@ -1,138 +1,265 @@
 # Sistema de inventario y ventas — Librería
 
-Proyecto académico: Razor Pages + C# + ADO.NET sobre .NET 10, con SQL Server
-en Docker. Aplica Clean Code y principios SOLID.
+Solución académica en C# y .NET 10: un Front en Razor Pages, un API Gateway y cuatro microservicios, cada uno con su propia base de datos (en construcción durante el sprint de microservicios; ver `docs/Planning_Sprint_Microservicios.md`).
 
-## Estructura del repo
+## Arquitectura actual
 
+| Proceso | Proyecto | Puerto | Estilo |
+| --- | --- | --- | --- |
+| Front | `src/Libreria.Client` | 5000 | Razor Pages |
+| API Gateway | `src/Libreria.Gateway` | 5080 | YARP (ver «API Gateway») |
+| MS Ventas | `src/Libreria.Servicio.Ventas` | 5101 | Hexagonal |
+| MS Usuarios | `src/Libreria.Servicio.Usuarios` | 5102 | Hexagonal (se migra en US-124) |
+| MS Clientes | `src/Libreria.Servicio.Clientes` | 5103 | Hexagonal |
+| MS Productos | `src/Libreria.Servicio.Productos` | 5104 | Clean |
+
+| Contenedor | Motor | Puerto en el host | BD | Scripts |
+| --- | --- | --- | --- | --- |
+| `ventas-db` | SQL Server 2022 | 1433 | `LibreriaVentas` | `db/ventas/` |
+| `usuarios-db` | SQL Server 2022 | 1434 | `LibreriaUsuarios` | `db/usuarios/` |
+| `clientes-db` | MySQL 8.4 | 3306 | `libreria_clientes` | `db/clientes/` |
+| `productos-db` | MongoDB 8 | 27017 | `libreria_productos` | `db/productos/` |
+
+Cada microservicio y el gateway responden `GET /salud` con `{ "servicio": "...", "estado": "ok" }`. Docker Compose levanta una base de datos por microservicio (US-111); ningún servicio lee la BD de otro y las referencias entre servicios son por `PublicId`, con los GUID fijos de `docs/contratos/datos-semilla.md`. El Front y los servicios se ejecutan como proyectos .NET independientes. En este sprint no se usan Nginx, Redis ni réplicas de la aplicación.
+
+El Front no debe agregar referencias de proyecto a los servicios. La comunicación se realiza por HTTP, con DTOs propios del Front y clientes registrados mediante `IHttpClientFactory`.
+
+## Requisitos
+
+- .NET 10 SDK.
+- Docker Desktop abierto.
+- Git.
+- Visual Studio con la carga de trabajo ASP.NET y desarrollo web.
+
+Comprueba la instalación:
+
+```powershell
+dotnet --version
+docker --version
+docker compose version
 ```
-LibreriaSystem/
-├── docker-compose.yml       # Contenedor de SQL Server
-├── db/
-│   └── schema.sql            # Las 4 tablas + datos semilla opcionales
-└── src/
-    └── Libreria.Web/         # Proyecto Razor Pages
-        ├── Data/              # Capa ADO.NET (IDbConnectionFactory)
-        ├── Pages/
-        │   ├── Categorias/    # US-01 a US-04 — YA tiene un ejemplo funcional
-        │   ├── Marcas/        # US-05 a US-08
-        │   ├── Productos/     # US-09 a US-13
-        │   └── Historico/     # US-14
-        └── wwwroot/css/       # Estilos (paleta sobria, sin plantilla default)
+
+## Preparar el repositorio
+
+```powershell
+git switch develop
+git pull origin develop
+dotnet restore LibreriaSystem.slnx
 ```
 
-## 1. Requisitos previos (instalar una sola vez)
+## Levantar las bases
 
-- [.NET SDK 10](https://dotnet.microsoft.com/download) — verificar con `dotnet --version`
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — verificar con `docker --version`
-- Git
-- Editor: Visual Studio, VS Code (con la extensión C# Dev Kit) o Rider — cualquiera sirve
-
-## 2. Clonar el repositorio
+Desde la raíz del repositorio, la primera vez:
 
 ```bash
-git clone <URL-del-repo>
-cd LibreriaSystem
+cp .env.example .env      # y completar las contraseñas (no se sube a Git)
+docker compose up -d --remove-orphans
+docker compose ps
 ```
 
-## 3. Levantar la base de datos con Docker
+`--remove-orphans` retira el contenedor antiguo `libreria-db`. Su volumen `sql_data` queda en el disco; si ya no lo necesitas: `docker volume rm <proyecto>_sql_data` (ver `docker volume ls`).
+
+Espera a que los 4 contenedores aparezcan como `healthy`.
+
+- **MySQL (`clientes-db`) y MongoDB (`productos-db`)** se inicializan solos la primera vez con los scripts de `db/clientes/` y `db/productos/`.
+- **Los dos SQL Server** necesitan que ejecutes sus scripts en orden. La contraseña se toma de la variable del propio contenedor; no hace falta escribirla:
 
 ```bash
-docker compose up -d
+docker exec ventas-db bash -lc 'for f in /scripts/*.sql; do echo "Ejecutando $f..."; /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -b -i "$f" || exit 1; done'
+docker exec usuarios-db bash -lc 'for f in /scripts/*.sql; do echo "Ejecutando $f..."; /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -b -i "$f" || exit 1; done'
 ```
 
-Espera unos 15-20 segundos a que el contenedor esté "healthy":
+Todos los scripts son idempotentes: se pueden volver a ejecutar sin duplicar datos. Para repetir a mano los de MySQL o Mongo:
 
 ```bash
-docker ps
+docker exec clientes-db bash -lc 'for f in /docker-entrypoint-initdb.d/*.sql; do mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < "$f" || exit 1; done'
+docker exec productos-db bash -lc 'for f in /docker-entrypoint-initdb.d/*.js; do mongosh --quiet "$f" || exit 1; done'
 ```
 
-## 4. Aplicar el esquema (las 4 tablas)
+Comprobación rápida (2 usuarios, 3 clientes, 5 productos y 3 ventas):
 
 ```bash
-docker exec libreria-db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Libreria2026!" -C -i /scripts/schema.sql
+docker exec usuarios-db bash -lc '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -d LibreriaUsuarios -Q "SELECT NombreUsuario, Estado FROM dbo.Usuario"'
+docker exec clientes-db bash -lc 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" libreria_clientes -e "SELECT CiNit, RazonSocial, Estado FROM Cliente"'
+docker exec productos-db mongosh libreria_productos --quiet --eval "db.productos.countDocuments()"
+docker exec ventas-db bash -lc '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -d LibreriaVentas -Q "SELECT PublicId, ClienteRazonSocial, Total, Estado FROM dbo.Venta"'
 ```
-> Si no les crea las columnas intenten con comillas simples 'Libreria2026!' en esta parte
 
-> Si da error de que no existe `/opt/mssql-tools18`, corre
-> `docker exec libreria-db ls /opt` para ver el nombre exacto de la carpeta
-> en tu versión de imagen (puede ser `mssql-tools` sin el 18) y ajusta la ruta.
+Para empezar desde cero (**borra todos los datos**): `docker compose down -v` y repetir los pasos. Para una actualización normal no uses `-v`.
 
-Solo se necesita correr este paso **una vez** (o cada vez que borres el volumen
-`mssql_data`). El script es seguro de re-ejecutar: no duplica tablas ni datos.
+> Transición: hasta US-117 (Ventas) y US-124 (Usuarios), esos dos servicios todavía leen la cadena `LibreriaDb` del esquema anterior. Cada historia los cambia a `ConnectionStrings__VentasDb` y `ConnectionStrings__UsuariosDb`.
 
-## 5. Ejecutar el proyecto
+## Configuración obligatoria de Usuarios
+
+El Servicio de Usuarios no guarda contraseñas ni cadenas de conexión en Git. Cada integrante debe ejecutar una vez:
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:LibreriaDb" "Server=localhost,1433;Database=LibreriaDb;User Id=sa;Password=<contraseña>;TrustServerCertificate=True;" --project src/Libreria.Servicio.Usuarios
+```
+
+Comprueba que quedó configurado:
+
+```powershell
+dotnet user-secrets list --project src/Libreria.Servicio.Usuarios
+```
+
+Visual Studio y `dotnet run` leen automáticamente ese secreto cuando el ambiente es `Development`. Un archivo `.env` de la raíz solo es leído automáticamente por Docker Compose; las aplicaciones .NET no lo cargan por sí solas.
+
+### Correo de activación en desarrollo
+
+En Development no hace falta una cuenta de Gmail. S2 usa `PickupDirectory` y guarda cada correo como archivo `.eml` dentro de:
+
+```text
+src/Libreria.Servicio.Usuarios/bin/Development/mail
+```
+
+Abre el archivo generado y usa el enlace de activación. Esto permite demostrar el flujo sin internet ni contraseña SMTP.
+
+Si el usuario continúa en estado `Pendiente`, un administrador puede usar **Reenviar activación** desde la pantalla de Usuarios. El sistema genera un token nuevo, invalida el anterior y permite otro reenvío después de un minuto.
+
+El cambio de contraseña no utiliza correo: exige una sesión iniciada, la contraseña actual y la nueva contraseña escrita dos veces.
+
+Para enviar correos reales con Gmail, configura secretos y usa una contraseña de aplicación de Google, no la contraseña normal de la cuenta:
+
+```powershell
+dotnet user-secrets set "EMAIL_DELIVERY_MODE" "Smtp" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_HOST" "smtp.gmail.com" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_PORT" "587" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_USER" "correo@gmail.com" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_PASS" "contraseña-de-aplicación" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "SMTP_FROM" "correo@gmail.com" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "BASE_URL" "http://localhost:5000" --project src/Libreria.Servicio.Usuarios
+```
+
+## API Gateway (YARP) — US-112
+
+`Libreria.Gateway` (puerto 5080) es la única puerta de entrada a los microservicios. No tiene lógica de negocio: recibe la solicitud, elige el microservicio por la ruta y la reenvía tal cual (método, ruta, query, cuerpo y `Authorization: Bearer`). Las rutas no están en el código sino en dos archivos, uno por grupo, que el gateway fusiona al arrancar:
+
+| Archivo (dueño) | Ruta | Cluster → destino por defecto |
+| --- | --- | --- |
+| `yarp.g1.json` (Grupo 1) | `/api/clientes/{**resto}` | `clientes` → `http://localhost:5103` |
+| | `/api/ventas/{**resto}` | `ventas` → `http://localhost:5101` |
+| | `/api/productos/…`, `/api/categorias/…`, `/api/marcas/…`, `/api/historico/…` | `productos` → `http://localhost:5104` |
+| `yarp.g2.json` (Grupo 2) | `/api/auth/{**resto}` | `usuarios` → `http://localhost:5102` |
+| | `/api/usuarios/{**resto}` | `usuarios` → `http://localhost:5102` |
+
+- Cualquier otra ruta responde **404**. `GET /salud` es del propio gateway.
+- Los IDs de ruta llevan el prefijo del grupo (`g1-…`, `g2-…`) para que los dos archivos no choquen. Agregar una ruta es editar el JSON del grupo; no hay que tocar `Program.cs`.
+- **Microservicio caído:** si el destino no responde (conexión rechazada o más de 30 s sin actividad), el gateway devuelve **503** `application/problem+json` con `title` «Servicio no disponible» y `servicio` = nombre del cluster. El Front convierte 502/503/504 en `ServicioNoDisponibleException` y muestra la página **Servicio no disponible**.
+- La validación del JWT en el gateway llega en US-126; por ahora solo enruta.
+
+### Cambiar un destino sin tocar el repositorio
+
+Orden de precedencia (gana el último): `yarp.g1.json` / `yarp.g2.json` → `appsettings.{Entorno}.json` → variables de entorno → argumentos de línea de comandos:
 
 ```bash
-cd src/Libreria.Web
-dotnet restore
-dotnet run
+ReverseProxy__Clusters__<cluster>__Destinations__principal__Address=http://host:puerto
+# ejemplo con dotnet run:
+ReverseProxy__Clusters__productos__Destinations__principal__Address=http://localhost:5101 dotnet run --project src/Libreria.Gateway
 ```
 
-Abre la URL que muestra la consola (algo como `https://localhost:5001` o
-`http://localhost:5000`).
+**Transición (hasta US-122):** mientras Productos es un esqueleto, Ventas (5101) sigue atendiendo `api/productos`, `api/categorias`, `api/marcas` y `api/historico`. Por eso `src/Libreria.Gateway/appsettings.Development.json` apunta el clúster `productos` a Ventas: en Development el Front completo funciona sin configurar nada. Al mergear US-122, su dueño borra ese clúster y el gateway vuelve a 5104. Clientes ya salió de la transición (US-115): `api/clientes` va a 5103.
 
-Si todo salió bien, deberías ver el Home con el menú y, al entrar a
-**Categorías**, la lista con las 3 categorías semilla del script SQL — esa
-página ya está conectada de verdad a la base de datos vía ADO.NET.
-
-#### Para Ingresar al contenerdor de la DB
+Para probar un MS nuevo antes de borrar su clúster, se fuerza su destino real con una variable (gana sobre el `appsettings`):
 
 ```bash
-docker exec -it libreria-db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Libreria2026!' -C
+ReverseProxy__Clusters__productos__Destinations__principal__Address=http://localhost:5104 dotnet run --project src/Libreria.Gateway
 ```
-Una vez dentro hagan las consultas que necesiten
 
-## 6. Cómo trabajar en equipo sin bloquearse
+En PowerShell: `$env:ReverseProxy__Clusters__productos__Destinations__principal__Address = "http://localhost:5104"`.
 
-- **No trabajes directo sobre `main`.** Cada persona crea su rama:
-  ```bash
-  git checkout -b feature/categorias-crud
-  ```
-- Haz commits pequeños y frecuentes, y sube tu rama:
-  ```bash
-  git push origin feature/categorias-crud
-  ```
-- Abre un Pull Request a `main` cuando tu historia de usuario esté lista.
-  Así evitamos que alguien sobrescriba el trabajo de otro.
-- **Antes de empezar a programar cada día**, trae los últimos cambios:
-  ```bash
-  git checkout main
-  git pull
-  git checkout tu-rama
-  git merge main
-  ```
+Las peticiones de prueba de cada ruta están en `src/Libreria.Gateway/Libreria.Gateway.http`, y las pruebas automáticas en `tests/Libreria.Gateway.Tests`.
 
-### Quién trabaja en qué carpeta (evita conflictos de archivos)
+## Correr todo
 
-| Persona | Carpeta | Historias |
-|---|---|---|
-| 1 | `Pages/Categorias/` | US-01 a US-04 |
-| 2 | `Pages/Marcas/` | US-05 a US-08 |
-| 3 | `Pages/Productos/` (Alta + Consulta) | US-09, US-10, US-13 |
-| 4 | `Pages/Productos/` (Edición + Baja) | US-11, US-12 |
-| 5 | `Pages/Historico/` | US-14 |
-| 6 | `Pages/Shared/_Layout.cshtml`, `wwwroot/css` | US-15 |
+Los 6 proyectos (Front, gateway y 4 microservicios) se levantan a la vez de cualquiera de estas dos formas.
 
-> Persona 3 y 4 comparten la carpeta `Productos/` — conviene que se
-> pongan de acuerdo primero en el nombre y los parámetros del método que
-> registra el histórico (en `Data/`), antes de escribir código, para no
-> pisarse cuando junten sus ramas.
+### Desde Visual Studio
 
-## 7. Agregar al docente como colaborador
+1. Abre `LibreriaSystem.slnx`.
+2. En el selector de inicio elige el perfil **Correr todo** (definido en `LibreriaSystem.slnLaunch`).
+3. Inicia con o sin depuración y abre `http://localhost:5000`.
 
-En GitHub/GitLab: **Settings → Collaborators (o Members) → Add people**, y
-agregar el usuario que indique el docente. Recuerda que esto es obligatorio
-según la consigna del trabajo.
+### Con `run-all.ps1`
 
-## 8. Notas de diseño
+Desde la raíz del repositorio, en PowerShell 7 (`pwsh`) en Windows, Linux o macOS:
 
-- El acceso a datos usa `IDbConnectionFactory` (interfaz) en vez de crear
-  `SqlConnection` directamente en cada página — es un ejemplo concreto de
-  **Inversión de Dependencias (SOLID)** que se puede mencionar en el informe.
-- `Pages/Categorias/Index.cshtml.cs` es un ejemplo funcional completo de
-  consulta con ADO.NET puro (parametrizado, sin concatenar SQL) — úsenlo
-  como plantilla para el resto de los módulos.
-- La contraseña de SQL Server (`Libreria2026!`) está en texto plano en
-  `docker-compose.yml` y `appsettings.json` porque el proyecto corre solo en
-  local para fines académicos. No es una práctica recomendada para producción.
+```powershell
+./run-all.ps1            # compila una vez y arranca los 6
+./run-all.ps1 -SinCompilar
+```
+
+El script compila la solución, arranca cada proyecto con `dotnet run --no-build`, comprueba `GET /salud` de cada servicio y `GET /` del Front, y muestra una tabla con el estado de cada uno. En Windows cada proyecto abre su propia ventana; en Linux y macOS los logs quedan en la carpeta temporal `libreria-run-all`. **Ctrl+C** detiene los 6 procesos.
+
+### Un proyecto suelto
+
+```powershell
+dotnet run --project src/<proyecto>
+```
+
+Los puertos están fijados en el `Properties/launchSettings.json` de cada proyecto (tabla de arriba). Los `.http` de cada proyecto traen la petición de `/salud` para probarlo.
+
+## Base compartida del Front — US-80
+
+La estructura preparada para cada módulo es:
+
+```text
+src/Libreria.Client/
+├── Clients/
+│   ├── Ventas/
+│   ├── Usuarios/
+│   ├── Common/
+│   └── DependencyInjection/
+├── DTOs/
+│   ├── Ventas/
+│   └── Usuarios/
+└── Pages/
+    ├── Ventas/
+    └── Usuarios/
+```
+
+Los endpoints base viven en `src/Libreria.Client/appsettings.json`. `Program.cs` registra cada módulo mediante:
+
+```csharp
+AddServicioVentas(configuration)
+AddServicioUsuarios(configuration)
+```
+
+Cada solicitud autenticada realizada por esos clientes envía:
+
+- `X-Usuario-Id`
+- `X-Usuario-Nombre`
+
+El valor procede exclusivamente de los claims reales de la cookie. No existe usuario fijo de desarrollo. El login del Front llama a `POST api/auth/login` de S2 y la vigencia de la cookie se revisa mediante `GET api/usuarios/{id}/sesion-activa`, con una caché local de 20 segundos.
+
+`AuditoriaService` vive en el Front y convierte los identificadores de auditoría en nombres mediante `GET api/usuarios/nombres`. Ventas no debe consultar directamente la tabla `Usuario`.
+
+Si un servicio no responde (error de red, o 502/503/504 devuelto por el gateway), el Front redirige a una pantalla uniforme de servicio no disponible. Las demás respuestas HTTP con error se convierten en `ApiClientException`, conservando el código de estado y el mensaje de `ProblemDetails`.
+
+## Reglas para continuar el sprint
+
+- Cada módulo coloca sus DTOs y clientes en su carpeta; no modifica las carpetas de otro grupo.
+- No se comparten entidades de dominio entre Front y servicios.
+- Los servicios exponen JSON mediante rutas `api/<recurso>`.
+- Se usan `Guid PublicId` en los contratos HTTP; no se exponen identificadores internos.
+- Los códigos esperados son 200, 201, 400, 404 y 409.
+- Los errores de API usan `ProblemDetails`.
+- Las fechas se envían en ISO 8601 y los decimales como números JSON.
+- Las URLs y credenciales se obtienen de configuración; no se escriben secretos en el repositorio.
+
+Las páginas antiguas de Ventas, Productos, Categorías, Marcas e Histórico permanecen versionadas como referencia, pero están temporalmente excluidas de la compilación. US-83 debe migrarlas a los clientes HTTP y retirar esas exclusiones del archivo `Libreria.Client.csproj`. El login ya consume S2; las demás páginas de Usuarios se migran en US-95 a US-98.
+
+## Validación
+
+```powershell
+dotnet build LibreriaSystem.slnx
+dotnet test tests/Libreria.Servicio.Usuarios.Tests/Libreria.Servicio.Usuarios.Tests.csproj
+dotnet test tests/Libreria.Servicio.Ventas.Tests/Libreria.Servicio.Ventas.Tests.csproj
+```
+
+Usuarios de datos semilla:
+
+| Usuario | Contraseña | Rol |
+| --- | --- | --- |
+| `admin` | `Admin2026!` | Administrador |
+| `vendedor` | `Vendedor2026!` | Vendedor |

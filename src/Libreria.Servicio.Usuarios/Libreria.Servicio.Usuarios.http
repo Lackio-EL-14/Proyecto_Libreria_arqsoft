@@ -1,0 +1,4 @@
+@host = http://localhost:5102
+
+### Salud del servicio (US-110)
+GET {{host}}/salud

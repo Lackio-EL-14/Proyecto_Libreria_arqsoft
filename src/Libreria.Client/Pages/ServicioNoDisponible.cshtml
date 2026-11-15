@@ -1,0 +1,17 @@
+@page
+@model Libreria.Client.Pages.ServicioNoDisponibleModel
+@{
+    ViewData["Title"] = "Servicio no disponible";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Servicio no disponible</h1>
+        <p>El servicio de @Model.Servicio no respondió a tiempo.</p>
+    </div>
+</div>
+
+<div class="form-card" style="max-width: 640px;">
+    <p>No se perdió información. Verifica que el servicio esté iniciado e intenta nuevamente en unos momentos.</p>
+    <a asp-page="/Index" class="btn btn--primary">Volver al inicio</a>
+</div>

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5101",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DB_CONNECTION_STRING": "Server=localhost,1433;Database=LibreriaDb;User Id=sa;Password=Libreria2026!;TrustServerCertificate=True;"
+      }
+    },
+    "Libreria.Servicio.Ventas": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5101",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DB_CONNECTION_STRING": "Server=localhost,1433;Database=LibreriaDb;User Id=sa;Password=Libreria2026!;TrustServerCertificate=True;"
+      }
+    }
+  }
+}

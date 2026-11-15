@@ -1,0 +1,234 @@
+/* US-50: documento de venta con la identidad y los tokens visuales del sistema. */
+.comprobante-body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+}
+
+.comprobante-contenedor {
+    width: min(100%, 920px);
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+.comprobante-acciones {
+    margin-bottom: 1rem;
+    color: var(--color-secondary);
+    font-size: 0.85rem;
+}
+
+.comprobante-acciones kbd {
+    font-family: inherit;
+    font-weight: 600;
+}
+
+.comprobante-documento {
+    padding: 2.5rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-base);
+    box-shadow: var(--shadow-sm);
+}
+
+.comprobante-encabezado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--color-accent);
+}
+
+.comprobante-marca {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    color: var(--color-primary);
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+.comprobante-marca img {
+    display: block;
+    flex: 0 0 auto;
+}
+
+.comprobante-encabezado h1 {
+    color: var(--color-primary);
+    font-size: 1.45rem;
+    line-height: 1.25;
+    text-align: right;
+}
+
+.comprobante-seccion {
+    margin-bottom: 1.5rem;
+}
+
+.comprobante-documento h2,
+.comprobante-tabla caption {
+    margin-bottom: 0.65rem;
+    color: var(--color-primary);
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-align: left;
+}
+
+.comprobante-datos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem 1.5rem;
+}
+
+.comprobante-datos dt {
+    margin-bottom: 0.15rem;
+    color: var(--color-secondary);
+    font-size: 0.78rem;
+}
+
+.comprobante-datos dd {
+    font-size: 0.9rem;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+.comprobante-referencia {
+    grid-column: 1 / -1;
+}
+
+.comprobante-referencia dd {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.82rem;
+}
+
+.comprobante-cliente {
+    padding: 1rem 1.25rem;
+    background: var(--color-bg);
+    border-left: 3px solid var(--color-primary);
+}
+
+.comprobante-tabla {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.comprobante-tabla caption {
+    padding-bottom: 0.35rem;
+}
+
+.comprobante-col-producto { width: 46%; }
+.comprobante-col-cantidad { width: 14%; }
+.comprobante-col-precio { width: 20%; }
+.comprobante-col-importe { width: 20%; }
+
+.comprobante-tabla th,
+.comprobante-tabla td {
+    padding: 0.7rem 0.6rem;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    vertical-align: top;
+}
+
+.comprobante-tabla thead {
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.comprobante-tabla tbody tr:hover {
+    background: transparent;
+}
+
+.comprobante-numero {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.comprobante-total {
+    display: flex;
+    justify-content: flex-end;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
+    margin-top: 1rem;
+    padding: 1rem 0;
+    border-top: 2px solid var(--color-primary);
+}
+
+.comprobante-total span {
+    font-weight: 600;
+}
+
+.comprobante-total strong {
+    color: var(--color-primary);
+    font-size: 1.45rem;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.comprobante-generacion {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.comprobante-zona {
+    margin-top: 0.65rem;
+    color: var(--color-secondary);
+    font-size: 0.75rem;
+}
+
+.comprobante-error p {
+    margin-bottom: 1rem;
+}
+
+@media screen and (max-width: 600px) {
+    .comprobante-contenedor { padding: 0.75rem; }
+    .comprobante-documento { padding: 1.25rem; }
+    .comprobante-encabezado { flex-wrap: wrap; }
+    .comprobante-encabezado h1 { text-align: left; }
+    .comprobante-datos { grid-template-columns: minmax(0, 1fr); }
+    .comprobante-tabla th,
+    .comprobante-tabla td { padding: 0.5rem 0.3rem; font-size: 0.76rem; }
+}
+
+@page {
+    size: A4;
+    margin: 12mm;
+}
+
+@media print {
+    .comprobante-body {
+        background: #FFFFFF;
+        color: #1C1917;
+        font-size: 10pt;
+    }
+
+    .comprobante-contenedor {
+        width: auto;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .comprobante-documento {
+        padding: 0;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .comprobante-acciones { display: none; }
+    .comprobante-cliente { background: transparent; }
+    .comprobante-tabla { overflow: visible; }
+    .comprobante-tabla thead { display: table-header-group; background: transparent; }
+    .comprobante-tabla tr { break-inside: avoid; page-break-inside: avoid; }
+    .comprobante-encabezado,
+    .comprobante-seccion,
+    .comprobante-total,
+    .comprobante-generacion { break-inside: avoid; page-break-inside: avoid; }
+    .comprobante-documento h2,
+    .comprobante-tabla caption { break-after: avoid; page-break-after: avoid; }
+}

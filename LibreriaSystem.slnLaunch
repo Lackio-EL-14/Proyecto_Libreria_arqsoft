@@ -1,0 +1,13 @@
+[
+  {
+    "Name": "Correr todo",
+    "Projects": [
+      { "Path": "src\\Libreria.Servicio.Ventas\\Libreria.Servicio.Ventas.csproj", "Action": "Start" },
+      { "Path": "src\\Libreria.Servicio.Usuarios\\Libreria.Servicio.Usuarios.csproj", "Action": "Start" },
+      { "Path": "src\\Libreria.Servicio.Clientes\\Libreria.Servicio.Clientes.csproj", "Action": "Start" },
+      { "Path": "src\\Libreria.Servicio.Productos\\Libreria.Servicio.Productos.csproj", "Action": "Start" },
+      { "Path": "src\\Libreria.Gateway\\Libreria.Gateway.csproj", "Action": "Start" },
+      { "Path": "src\\Libreria.Client\\Libreria.Client.csproj", "Action": "Start" }
+    ]
+  }
+]

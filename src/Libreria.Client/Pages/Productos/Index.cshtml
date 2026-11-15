@@ -1,0 +1,144 @@
+@page
+@model Libreria.Client.Pages.Productos.IndexModel
+@using Libreria.Client.Pages.Shared.Models
+
+@{
+    ViewData["Title"] = "Productos";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Productos</h1>
+        <p>Gestión del catálogo de productos e inventario.</p>
+    </div>
+    <a asp-page="Create" class="btn btn--primary">+ Registrar producto</a>
+</div>
+
+@if (TempData["MensajeExito"] is string mensaje)
+{
+    <div style="background-color: #E8F0EB; color: var(--color-accent); padding: 1rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #A3C2B1;">
+        @mensaje
+    </div>
+}
+
+<!-- Filtros en Grilla Horizontal -->
+<form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; background-color: var(--color-surface); padding: 1.25rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+    
+    <div class="form-group" style="margin-bottom: 0; flex: 2; min-width: 200px;">
+        <label for="Busqueda">Buscar producto</label>
+        <input type="text" id="Busqueda" name="Busqueda" class="form-control" value="@Model.Busqueda" placeholder="Nombre o descripción" />
+    </div>
+
+    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+        <label for="CategoriaId">Categoría</label>
+        <select id="CategoriaId" name="CategoriaId" class="form-control">
+            <option value="">Todas</option>
+            @foreach (var categoria in Model.Categorias)
+            {
+                <option value="@categoria.CategoriaId" selected="@(Model.CategoriaId == categoria.CategoriaId)">
+                    @categoria.Nombre
+                </option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+        <label for="MarcaId">Marca</label>
+        <select id="MarcaId" name="MarcaId" class="form-control">
+            <option value="">Todas</option>
+            @foreach (var marca in Model.Marcas)
+            {
+                <option value="@marca.MarcaId" selected="@(Model.MarcaId == marca.MarcaId)">
+                    @marca.Nombre
+                </option>
+            }
+        </select>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem;">
+        <button type="submit" class="btn btn--secondary">Filtrar</button>
+        @if (!string.IsNullOrWhiteSpace(Model.Busqueda) || Model.CategoriaId.HasValue || Model.MarcaId.HasValue)
+        {
+            <a asp-page="./Index" class="btn btn--secondary">Limpiar</a>
+        }
+    </div>
+</form>
+
+@if (Model.Productos.Count == 0)
+{
+    <div style="text-align: center; color: var(--color-secondary); padding: 2rem; background-color: var(--color-surface); border-radius: var(--radius-base); border: 1px solid var(--color-border);">
+        @if (!string.IsNullOrWhiteSpace(Model.Busqueda) || Model.CategoriaId.HasValue || Model.MarcaId.HasValue)
+        {
+            <p>No se encontraron productos que coincidan con los filtros seleccionados.</p>
+        }
+        else
+        {
+            <p>No hay productos registrados todavía.</p>
+        }
+    </div>
+}
+else
+{
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Categoría</th>
+                    <th>Marca</th>
+                    <th>Perecedero</th>
+                    <th>Stock</th>
+                    <th>Precio venta</th>
+                    <th>Costo adquisición</th>
+                    <th style="text-align: right;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var producto in Model.Productos)
+                {
+                    <tr>
+                        <td style="font-weight: 600;">@producto.Nombre</td>
+                        <td>@producto.Categoria</td>
+                        <td>@producto.Marca</td>
+                        <td>@(producto.EsPerecedero ? "Sí" : "No")</td>
+                        <td>
+                            <span class="badge @(producto.Stock <= 5 ? "badge--accent" : "")">@producto.Stock</span>
+                        </td>
+                        <td>Bs. @producto.PrecioVenta.ToString("0.00")</td>
+                        <td>Bs. @producto.CostoAdquisicionActual.ToString("0.00")</td>
+                        <td>
+                            <div class="table-actions">
+                                <a asp-page="Details" asp-route-id="@producto.PublicId" class="btn-table">Ver</a>
+                                <a asp-page="/Historico/Index" asp-route-publicId="@producto.PublicId" class="btn-table">Histórico</a>
+                                <a asp-page="Edit" asp-route-id="@producto.PublicId" class="btn-table">Editar</a>
+                                <button
+                                    type="button"
+                                    class="btn-table btn-table--danger"
+                                    data-confirm-trigger
+                                    data-modal-target="producto-baja-modal"
+                                    data-entity-id="@producto.PublicId"
+                                    data-entity-name="@producto.Nombre">
+                                    Dar de baja
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@await Html.PartialAsync(
+    "_ConfirmModal",
+    new ConfirmModalModel
+    {
+        Id = "producto-baja-modal",
+        Titulo = "Confirmar baja de producto",
+        MensajePrincipal = "¿Está seguro de dar de baja el producto",
+        Handler = "DarDeBaja",
+        CampoIdentificador = "publicId",
+        TextoBotonConfirmar = "Confirmar baja",
+        TextoBotonCancelar = "Cancelar",
+        MensajeAdvertencia = "El producto no aparecerá en el catálogo activo pero su historial de costos y registros previos se conservarán."
+    })

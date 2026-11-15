@@ -1,0 +1,172 @@
+@page
+@model Libreria.Client.Pages.Clientes.IndexModel
+@using Libreria.Client.DTOs.Clientes
+@using Libreria.Client.Pages.Shared.Models
+
+@{
+    ViewData["Title"] = "Clientes";
+
+    var rutaActual = new Dictionary<string, string?>
+    {
+        ["busqueda"] = Model.Busqueda,
+        ["estado"] = Model.Estado.ToString(),
+        ["orden"] = Model.Orden.ToString(),
+        ["descendente"] = Model.Descendente.ToString().ToLowerInvariant()
+    };
+
+    var columnas = new (OrdenClientes Orden, string Titulo)[]
+    {
+        (OrdenClientes.CiNit, "CI/NIT"),
+        (OrdenClientes.RazonSocial, "Razón social"),
+        (OrdenClientes.Correo, "Correo"),
+        (OrdenClientes.FechaCreacion, "Fecha de registro")
+    };
+}
+
+<div class="page-header">
+    <div>
+        <h1>Clientes</h1>
+        <p>Consulta y gestión de los clientes registrados en el sistema.</p>
+    </div>
+    <a asp-page="./Create" class="btn btn--primary">+ Registrar nuevo cliente</a>
+</div>
+
+@if (TempData["MensajeExito"] is string exito)
+{
+    <div class="mensaje mensaje--exito" role="status">@exito</div>
+}
+@if (TempData["MensajeError"] is string error)
+{
+    <div class="mensaje mensaje--error" role="alert">@error</div>
+}
+
+<form method="get" class="filtro-barra">
+    <input type="hidden" name="orden" value="@Model.Orden" />
+    <input type="hidden" name="descendente" value="@Model.Descendente.ToString().ToLowerInvariant()" />
+
+    <div class="form-group filtro-barra__campo">
+        <label for="busqueda">Buscar por CI/NIT, razón social o correo:</label>
+        <input type="text" id="busqueda" name="busqueda" class="form-control" value="@Model.Busqueda" maxlength="200" placeholder="Ej. 4567890 o Quispe" />
+    </div>
+
+    <div class="form-group filtro-barra__estado">
+        <label for="estado">Estado:</label>
+        <select id="estado" name="estado" class="form-control">
+            <option value="@EstadoFiltroClientes.Activos" selected="@(Model.Estado == EstadoFiltroClientes.Activos)">Activos</option>
+            <option value="@EstadoFiltroClientes.Inactivos" selected="@(Model.Estado == EstadoFiltroClientes.Inactivos)">Inactivos</option>
+            <option value="@EstadoFiltroClientes.Todos" selected="@(Model.Estado == EstadoFiltroClientes.Todos)">Todos</option>
+        </select>
+    </div>
+
+    <div class="filtro-barra__acciones">
+        <button type="submit" class="btn btn--secondary">Buscar</button>
+        <a asp-page="./Index" asp-all-route-data="rutaActual" class="btn btn--secondary" title="Volver a consultar el listado con los mismos filtros">Actualizar</a>
+        @if (Model.HayFiltros)
+        {
+            <a asp-page="./Index" class="btn btn--secondary">Limpiar</a>
+        }
+    </div>
+</form>
+
+@if (Model.Clientes.Count == 0)
+{
+    <div class="estado-vacio">
+        @if (string.IsNullOrWhiteSpace(Model.Busqueda))
+        {
+            <p>No hay clientes @(Model.Estado == EstadoFiltroClientes.Inactivos ? "inactivos" : "registrados") para mostrar.</p>
+        }
+        else
+        {
+            <p>No se encontraron clientes que coincidan con «<strong>@Model.Busqueda</strong>».</p>
+        }
+    </div>
+}
+else
+{
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    @foreach (var columna in columnas)
+                    {
+                        <th aria-sort="@Model.AriaSort(columna.Orden)">
+                            <a asp-page="./Index" asp-all-route-data="Model.RutaOrden(columna.Orden)" class="tabla-orden" title="Ordenar por @columna.Titulo.ToLowerInvariant()">
+                                @columna.Titulo <span aria-hidden="true">@Model.IndicadorOrden(columna.Orden)</span>
+                            </a>
+                        </th>
+                    }
+                    <th>Estado</th>
+                    <th style="text-align: right;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cliente in Model.Clientes)
+                {
+                    <tr>
+                        <td>@cliente.CiNit</td>
+                        <td style="font-weight: 600;">@cliente.RazonSocial</td>
+                        <td>@(cliente.Correo ?? "—")</td>
+                        <td>@cliente.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>
+                            <span class="badge @(cliente.Estado ? "badge--accent" : "")">@(cliente.Estado ? "Activo" : "Inactivo")</span>
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                @if (cliente.Estado)
+                                {
+                                    <a asp-page="./Edit" asp-route-id="@cliente.PublicId" class="btn-table">Editar</a>
+                                    @if (Model.PuedeCambiarEstado)
+                                    {
+                                        <button type="button" class="btn-table btn-table--danger"
+                                                data-confirm-trigger
+                                                data-modal-target="cliente-baja-modal"
+                                                data-entity-id="@cliente.PublicId"
+                                                data-entity-name="@cliente.RazonSocial">
+                                            Dar de baja
+                                        </button>
+                                    }
+                                }
+                                else if (Model.PuedeCambiarEstado)
+                                {
+                                    <button type="button" class="btn-table"
+                                            data-confirm-trigger
+                                            data-modal-target="cliente-reactivar-modal"
+                                            data-entity-id="@cliente.PublicId"
+                                            data-entity-name="@cliente.RazonSocial">
+                                        Reactivar
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (Model.PuedeCambiarEstado)
+{
+    @await Html.PartialAsync(
+        "_ConfirmModal",
+        new ConfirmModalModel
+        {
+            Id = "cliente-baja-modal",
+            Titulo = "Confirmar baja de cliente",
+            MensajePrincipal = "¿Desea dar de baja al cliente",
+            Handler = "DarDeBaja",
+            TextoBotonConfirmar = "Confirmar baja"
+        })
+
+    @await Html.PartialAsync(
+        "_ConfirmModal",
+        new ConfirmModalModel
+        {
+            Id = "cliente-reactivar-modal",
+            Titulo = "Confirmar reactivación de cliente",
+            MensajePrincipal = "¿Desea reactivar al cliente",
+            Handler = "Reactivar",
+            TextoBotonConfirmar = "Reactivar",
+            ClaseBotonConfirmar = "btn--primary"
+        })
+}

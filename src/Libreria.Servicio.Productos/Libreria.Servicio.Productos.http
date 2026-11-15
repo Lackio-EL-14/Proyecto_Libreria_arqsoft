@@ -1,0 +1,7 @@
+@host = http://localhost:5104
+
+### Salud del servicio
+GET {{host}}/salud
+
+### Swagger
+GET {{host}}/swagger/index.html

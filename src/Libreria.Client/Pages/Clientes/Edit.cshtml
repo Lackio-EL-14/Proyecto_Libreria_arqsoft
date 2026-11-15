@@ -1,0 +1,31 @@
+@page "{id:guid}"
+@model Libreria.Client.Pages.Clientes.EditModel
+
+@{
+    ViewData["Title"] = "Editar cliente";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Editar cliente</h1>
+        <p>Modifique los datos del cliente seleccionado.</p>
+    </div>
+</div>
+
+<div class="form-card">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors" role="alert"></div>
+
+        <partial name="_ClienteFormularioCampos" model="Model.Input" />
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn--primary">Guardar cambios</button>
+            <a asp-page="./Index" class="btn btn--secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+@if (Model.Auditoria is not null)
+{
+    <partial name="_AuditoriaInfo" model="Model.Auditoria" />
+}
