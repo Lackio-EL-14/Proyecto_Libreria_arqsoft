@@ -146,6 +146,7 @@ public class VentaRepository : IVentaRepository
         await using var command = dbConnection.CreateCommand();
         command.Transaction = dbTransaction;
         command.CommandText = SeleccionVenta + @"
+            WITH (UPDLOCK, ROWLOCK)
             WHERE PublicId = @PublicId";
 
         AgregarParametro(command, "@PublicId", publicId);
