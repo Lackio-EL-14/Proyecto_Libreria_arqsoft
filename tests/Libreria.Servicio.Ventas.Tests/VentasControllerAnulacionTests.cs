@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Libreria.Servicio.Ventas.Application.Models;
+using Libreria.Servicio.Ventas.Application.Comun;
 using Libreria.Servicio.Ventas.Application.Ports.Primary;
 using Libreria.Servicio.Ventas.Controllers;
 using Libreria.Servicio.Ventas.Controllers.Dtos;
@@ -24,8 +25,8 @@ public class VentasControllerAnulacionTests
         var result = await controller.AnularVenta(Guid.Empty, request);
 
         // Assert
-        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.NotNull(badRequest.Value);
+        var badRequest = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(400, badRequest.StatusCode);
     }
 
     [Theory]
@@ -43,7 +44,8 @@ public class VentasControllerAnulacionTests
         var result = await controller.AnularVenta(Guid.NewGuid(), request);
 
         // Assert
-        Assert.IsType<BadRequestObjectResult>(result);
+        var badRequest = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(400, badRequest.StatusCode);
     }
 
     [Fact]
@@ -52,7 +54,7 @@ public class VentasControllerAnulacionTests
         // Arrange
         var fakeFacade = new FakeVentaFacade
         {
-            OnAnular = (id, motivo) => throw new KeyNotFoundException("La venta especificada no existe.")
+            OnAnular = (id, motivo) => Task.FromResult(Result.NoEncontrado("La venta especificada no existe."))
         };
         var controller = new VentasController(fakeFacade);
         var request = new AnularVentaRequest("Cliente devolvió los productos");
@@ -61,7 +63,8 @@ public class VentasControllerAnulacionTests
         var result = await controller.AnularVenta(Guid.NewGuid(), request);
 
         // Assert
-        Assert.IsType<NotFoundObjectResult>(result);
+        var notFound = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(404, notFound.StatusCode);
     }
 
     [Fact]
@@ -70,7 +73,7 @@ public class VentasControllerAnulacionTests
         // Arrange
         var fakeFacade = new FakeVentaFacade
         {
-            OnAnular = (id, motivo) => throw new InvalidOperationException("La venta ya se encuentra anulada.")
+            OnAnular = (id, motivo) => Task.FromResult(Result.Conflicto("Venta", "La venta ya se encuentra anulada."))
         };
         var controller = new VentasController(fakeFacade);
         var request = new AnularVentaRequest("Cliente devolvió los productos");
@@ -79,7 +82,8 @@ public class VentasControllerAnulacionTests
         var result = await controller.AnularVenta(Guid.NewGuid(), request);
 
         // Assert
-        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        var conflict = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(409, conflict.StatusCode);
         Assert.NotNull(conflict.Value);
     }
 
@@ -97,7 +101,7 @@ public class VentasControllerAnulacionTests
             {
                 idAnulado = id;
                 motivoRegistrado = motivo;
-                return Task.CompletedTask;
+                return Task.FromResult(Result.Exito());
             }
         };
 
@@ -116,18 +120,39 @@ public class VentasControllerAnulacionTests
 
     private class FakeVentaFacade : IVentaFacade
     {
-        public Func<Guid, string, Task>? OnAnular { get; set; }
+        public Func<Guid, string, Task<Result>>? OnAnular { get; set; }
 
-        public Task AnularVentaAsync(Guid publicId, string motivoAnulacion)
+        public Task<Result> AnularVentaAsync(
+            Guid publicId,
+            string motivoAnulacion,
+            CancellationToken cancellationToken = default)
         {
             if (OnAnular != null)
             {
                 return OnAnular(publicId, motivoAnulacion);
             }
-            return Task.CompletedTask;
+
+            if (publicId == Guid.Empty)
+            {
+                return Task.FromResult(Result.Validacion(
+                    "PublicId",
+                    "El identificador de la venta es inválido."));
+            }
+
+            var motivo = motivoAnulacion?.Trim();
+            if (motivo is null || motivo.Length is < 10 or > 250)
+            {
+                return Task.FromResult(Result.Validacion(
+                    "Motivo",
+                    "El motivo de la anulación debe tener entre 10 y 250 caracteres."));
+            }
+
+            return Task.FromResult(Result.Exito());
         }
 
-        public Task<VentaRegistradaResult> RegistrarVentaAsync(RegistrarVentaInput input) =>
+        public Task<Result<VentaRegistradaResult>> RegistrarVentaAsync(
+            RegistrarVentaInput input,
+            CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
         public Task<IReadOnlyList<VentaListItemModel>> ObtenerListadoAsync(FiltroVentasInput filtro) =>

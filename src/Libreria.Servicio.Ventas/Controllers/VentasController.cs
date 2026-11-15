@@ -150,7 +150,7 @@ public class VentasController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> RegistrarVenta(
         [FromBody] RegistrarVentaInput input,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
         var resultado = await _ventaFacade.RegistrarVentaAsync(input, cancellationToken);
         return resultado.AActionResult(venta => Ok(venta));
@@ -160,7 +160,7 @@ public class VentasController : ControllerBase
     public async Task<IActionResult> AnularVenta(
         Guid publicId,
         [FromBody] AnularVentaRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
         var resultado = await _ventaFacade.AnularVentaAsync(
             publicId,
