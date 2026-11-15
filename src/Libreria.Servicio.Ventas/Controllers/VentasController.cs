@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Libreria.Servicio.Ventas.Application.Models;
 using Libreria.Servicio.Ventas.Application.Ports.Primary;
+using Libreria.Servicio.Ventas.Controllers.Comun;
 using Libreria.Servicio.Ventas.Controllers.Dtos;
 using System;
 using System.Collections.Generic;
@@ -148,78 +149,28 @@ public class VentasController : ControllerBase
 
     [HttpPost]
     public async Task<IActionResult> RegistrarVenta(
-        [FromBody] RegistrarVentaInput input)
+        [FromBody] RegistrarVentaInput input,
+        CancellationToken cancellationToken)
     {
-        if (input is null || input.SolicitudId == Guid.Empty)
-        {
-            return Problem(
-                statusCode: 400,
-                title: "Solicitud de venta inválida.",
-                detail: "Debe proporcionar un SolicitudId válido.");
-        }
-
-        try
-        {
-            var resultado = await _ventaFacade.RegistrarVentaAsync(input);
-            return Ok(resultado);
-        }
-        catch (ArgumentException error)
-        {
-            return Problem(
-                statusCode: 400,
-                title: "Datos de venta inválidos.",
-                detail: error.Message);
-        }
-        catch (VentaRegistroException error)
-        {
-            return Problem(
-                statusCode: error.ResultadoIncierto ? 503 : 409,
-                title: error.ResultadoIncierto
-                    ? "No se pudo confirmar el resultado de la venta."
-                    : "No se pudo registrar la venta.",
-                detail: error.Message);
-        }
+        var resultado = await _ventaFacade.RegistrarVentaAsync(input, cancellationToken);
+        return resultado.AActionResult(venta => Ok(venta));
     }
 
     [HttpPost("{publicId:guid}/anular")]
-    public async Task<IActionResult> AnularVenta(Guid publicId, [FromBody] AnularVentaRequest request)
+    public async Task<IActionResult> AnularVenta(
+        Guid publicId,
+        [FromBody] AnularVentaRequest request,
+        CancellationToken cancellationToken)
     {
-        if (publicId == Guid.Empty)
-        {
-            return BadRequest(new { mensaje = "El identificador de la venta es inválido." });
-        }
+        var resultado = await _ventaFacade.AnularVentaAsync(
+            publicId,
+            request?.Motivo ?? string.Empty,
+            cancellationToken);
 
-        if (request is null || string.IsNullOrWhiteSpace(request.Motivo))
+        return resultado.AActionResult(() => Ok(new
         {
-            return BadRequest(new { mensaje = "Debe ingresar el motivo de la anulación." });
-        }
-
-        var motivo = request.Motivo.Trim();
-        if (motivo.Length < 10 || motivo.Length > 250)
-        {
-            return BadRequest(new { mensaje = "El motivo de la anulación debe tener entre 10 y 250 caracteres." });
-        }
-
-        try
-        {
-            await _ventaFacade.AnularVentaAsync(publicId, motivo);
-            return Ok(new { exito = true, mensaje = "La venta fue anulada exitosamente y el stock ha sido restaurado." });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { mensaje = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { mensaje = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { mensaje = ex.Message });
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, new { mensaje = "Ocurrió un error inesperado al procesar la anulación de la venta." });
-        }
+            exito = true,
+            mensaje = "La venta fue anulada exitosamente y el stock ha sido restaurado."
+        }));
     }
 }

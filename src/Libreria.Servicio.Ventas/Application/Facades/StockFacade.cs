@@ -1,9 +1,11 @@
+using Libreria.Servicio.Ventas.Application.Comun;
+using Libreria.Servicio.Ventas.Application.Models;
 using Libreria.Servicio.Ventas.Application.Ports.Primary;
 using Libreria.Servicio.Ventas.Application.Ports.Secondary;
 
 namespace Libreria.Servicio.Ventas.Application.Facades;
 
-public class StockFacade : IStockFacade
+public sealed class StockFacade : IStockFacade
 {
     private readonly IProductosPort _productos;
 
@@ -12,47 +14,113 @@ public class StockFacade : IStockFacade
         _productos = productos;
     }
 
-    public async Task DescontarStockAsync(
-        Guid productoPublicId,
-        int cantidad,
-        Guid ventaPublicId)
+    public Task<Result> DescontarAsync(
+        IReadOnlyList<StockOperacionItem> lineas,
+        Guid ventaPublicId,
+        CancellationToken cancellationToken = default) =>
+        EjecutarConCompensacionAsync(
+            lineas,
+            ventaPublicId,
+            _productos.DescontarStockAsync,
+            _productos.RestaurarStockAsync,
+            "descontar",
+            cancellationToken);
+
+    public Task<Result> RestaurarAsync(
+        IReadOnlyList<StockOperacionItem> lineas,
+        Guid ventaPublicId,
+        CancellationToken cancellationToken = default) =>
+        EjecutarConCompensacionAsync(
+            lineas,
+            ventaPublicId,
+            _productos.RestaurarStockAsync,
+            _productos.DescontarStockAsync,
+            "restaurar",
+            cancellationToken);
+
+    private static async Task<Result> EjecutarConCompensacionAsync(
+        IReadOnlyList<StockOperacionItem> lineas,
+        Guid ventaPublicId,
+        Func<Guid, int, Guid, CancellationToken, Task<Result>> operacion,
+        Func<Guid, int, Guid, CancellationToken, Task<Result>> compensacion,
+        string nombreOperacion,
+        CancellationToken cancellationToken)
     {
-        if (cantidad <= 0)
+        var validacion = Validar(lineas, ventaPublicId);
+        if (!validacion.EsExito)
         {
-            throw new ArgumentException(
-                "La cantidad a descontar debe ser mayor a cero.",
-                nameof(cantidad));
+            return validacion;
         }
 
-        if (!await _productos.DescontarStockAsync(
-                productoPublicId,
-                cantidad,
-                ventaPublicId))
+        var completadas = new List<StockOperacionItem>(lineas.Count);
+
+        foreach (var linea in lineas)
         {
-            throw new InvalidOperationException(
-                "No existe stock suficiente para realizar la venta.");
+            var resultado = await operacion(
+                linea.ProductoPublicId,
+                linea.Cantidad,
+                ventaPublicId,
+                cancellationToken);
+
+            if (resultado.EsExito)
+            {
+                completadas.Add(linea);
+                continue;
+            }
+
+            var resultadoCompensacion = await CompensarAsync(
+                completadas,
+                ventaPublicId,
+                compensacion,
+                cancellationToken);
+
+            return resultadoCompensacion.EsExito
+                ? resultado
+                : Result.NoDisponible(
+                    "Productos",
+                    $"Falló la operación de {nombreOperacion} stock y no fue posible compensarla por completo.");
         }
+
+        return Result.Exito();
     }
 
-    public async Task RestaurarStockAsync(
-        Guid productoPublicId,
-        int cantidad,
-        Guid ventaPublicId)
+    private static async Task<Result> CompensarAsync(
+        IReadOnlyList<StockOperacionItem> completadas,
+        Guid ventaPublicId,
+        Func<Guid, int, Guid, CancellationToken, Task<Result>> compensacion,
+        CancellationToken cancellationToken)
     {
-        if (cantidad <= 0)
+        foreach (var linea in completadas.Reverse())
         {
-            throw new ArgumentException(
-                "La cantidad a restaurar debe ser mayor a cero.",
-                nameof(cantidad));
+            var resultado = await compensacion(
+                linea.ProductoPublicId,
+                linea.Cantidad,
+                ventaPublicId,
+                cancellationToken);
+
+            if (!resultado.EsExito)
+            {
+                return resultado;
+            }
         }
 
-        if (!await _productos.RestaurarStockAsync(
-                productoPublicId,
-                cantidad,
-                ventaPublicId))
+        return Result.Exito();
+    }
+
+    private static Result Validar(IReadOnlyList<StockOperacionItem>? lineas, Guid ventaPublicId)
+    {
+        if (ventaPublicId == Guid.Empty)
         {
-            throw new InvalidOperationException(
-                "No se pudo restaurar el stock del producto.");
+            return Result.Validacion("VentaPublicId", "El identificador de la venta es obligatorio.");
         }
+
+        if (lineas is null || lineas.Count == 0)
+        {
+            return Result.Validacion("Lineas", "Debe proporcionar al menos un movimiento de stock.");
+        }
+
+        return lineas.Any(linea => linea.ProductoPublicId == Guid.Empty || linea.Cantidad <= 0)
+            ? Result.Validacion("Lineas", "Los productos y cantidades del movimiento deben ser válidos.")
+            : Result.Exito();
     }
 }
