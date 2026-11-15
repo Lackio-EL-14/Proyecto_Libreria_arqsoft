@@ -7,6 +7,10 @@ using Libreria.Servicio.Productos.Domain.Entities;
 using Libreria.Servicio.Productos.Infrastructure.Factories;
 using Libreria.Servicio.Productos.Infrastructure.Repositories;
 using Libreria.Servicio.Productos.Application.UseCases.Productos;
+using Libreria.Servicio.Productos.Application.Validators;
+using Libreria.Servicio.Productos.Application.UseCases.Categorias;
+using Libreria.Servicio.Productos.Application.UseCases.Marcas;
+using Libreria.Servicio.Productos.Application.UseCases.Historico;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,10 +66,40 @@ builder.Services.AddScoped<
     MongoHistoricoRepositoryFactory>();
 
 
-// Casos de uso de Application.
 builder.Services.AddScoped<ObtenerListadoProductosUseCase>();
 builder.Services.AddScoped<ObtenerDetalleProductoUseCase>();
 
+builder.Services.AddScoped<BuscarProductosUseCase>();
+builder.Services.AddScoped<DescontarStockUseCase>();
+builder.Services.AddScoped<RestaurarStockUseCase>();
+
+builder.Services.AddScoped<
+    ICrudRepository<Categoria>,
+    MongoCategoriaRepository>();
+
+builder.Services.AddScoped<
+    ICrudRepository<Marca>,
+    MongoMarcaRepository>();
+builder.Services.AddScoped<CategoriaValidator>();
+builder.Services.AddScoped<MarcaValidator>();
+
+builder.Services.AddScoped<ListarCategoriasUseCase>();
+builder.Services.AddScoped<ObtenerCategoriaUseCase>();
+builder.Services.AddScoped<CrearCategoriaUseCase>();
+builder.Services.AddScoped<ActualizarCategoriaUseCase>();
+builder.Services.AddScoped<CambiarEstadoCategoriaUseCase>();
+builder.Services.AddScoped<ListarMarcasUseCase>();
+builder.Services.AddScoped<ObtenerMarcaUseCase>();
+builder.Services.AddScoped<CrearMarcaUseCase>();
+builder.Services.AddScoped<ActualizarMarcaUseCase>();
+builder.Services.AddScoped<CambiarEstadoMarcaUseCase>();
+builder.Services.AddScoped<ProductoValidator>();
+builder.Services.AddScoped<ObtenerFormularioProductoUseCase>();
+builder.Services.AddScoped<CrearProductoUseCase>();
+builder.Services.AddScoped<ObtenerProductoEdicionUseCase>();
+builder.Services.AddScoped<ActualizarProductoUseCase>();
+builder.Services.AddScoped<CambiarEstadoProductoUseCase>();
+builder.Services.AddScoped<ObtenerHistoricoProductoUseCase>();
 // 1. API REST + Swagger
 builder.Services.AddControllers(opciones =>
     opciones.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);

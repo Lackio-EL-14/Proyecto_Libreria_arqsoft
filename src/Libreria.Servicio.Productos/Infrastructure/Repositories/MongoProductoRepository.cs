@@ -360,4 +360,49 @@ public sealed class MongoProductoRepository : IProductoRepository
             ?? throw new InvalidOperationException(
                 "No existe un usuario actual para registrar la auditoría.");
     }
+
+    public async Task<IReadOnlyList<Producto>> ObtenerActivasFiltradasAsync(
+        string? busqueda,
+        Guid? categoriaPublicId,
+        Guid? marcaPublicId)
+    {
+        var filtro = Builders<Producto>.Filter.Eq(
+            producto => producto.Estado,
+            true);
+
+        if (!string.IsNullOrWhiteSpace(busqueda))
+        {
+            var regex = new BsonRegularExpression(
+                Regex.Escape(busqueda.Trim()),
+                "i");
+
+            filtro &=
+                Builders<Producto>.Filter.Regex(
+                    producto => producto.Nombre,
+                    regex)
+                |
+                Builders<Producto>.Filter.Regex(
+                    producto => producto.DescripcionEspecifica,
+                    regex);
+        }
+
+        if (categoriaPublicId.HasValue)
+        {
+            filtro &= Builders<Producto>.Filter.Eq(
+                producto => producto.Categoria.PublicId,
+                categoriaPublicId.Value);
+        }
+
+        if (marcaPublicId.HasValue)
+        {
+            filtro &= Builders<Producto>.Filter.Eq(
+                producto => producto.Marca.PublicId,
+                marcaPublicId.Value);
+        }
+
+        return await _context.Productos
+            .Find(filtro)
+            .SortBy(producto => producto.Nombre)
+            .ToListAsync();
+    }
 }

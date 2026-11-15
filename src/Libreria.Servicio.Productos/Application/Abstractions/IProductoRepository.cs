@@ -21,4 +21,9 @@ public interface IProductoRepository : ICrudRepository<Producto>
     Task ActualizarMarcaEmbebidaAsync(
         Guid marcaPublicId,
         string nuevoNombre);
+
+    Task<IReadOnlyList<Producto>> ObtenerActivasFiltradasAsync(
+    string? busqueda,
+    Guid? categoriaPublicId,
+    Guid? marcaPublicId);
 }

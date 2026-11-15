@@ -5,19 +5,35 @@ namespace Libreria.Servicio.Productos.Application.UseCases.Productos;
 
 public sealed class ObtenerListadoProductosUseCase
 {
-    private readonly IProductoRepository _repository;
+    private readonly IProductoRepository _productos;
+    private readonly ICatalogoProductoRepository _catalogos;
 
-    public ObtenerListadoProductosUseCase(IProductoRepository repository)
+    public ObtenerListadoProductosUseCase(
+        IProductoRepository productos,
+        ICatalogoProductoRepository catalogos)
     {
-        _repository = repository;
+        _productos = productos;
+        _catalogos = catalogos;
     }
 
-    public async Task<IReadOnlyList<ProductoListItem>> EjecutarAsync(
-        string? busqueda = null)
+    public async Task<ProductoListado> EjecutarAsync(
+        string? busqueda = null,
+        Guid? categoriaPublicId = null,
+        Guid? marcaPublicId = null)
     {
-        var productos = await _repository.ObtenerActivasAsync(busqueda);
+        var productos =
+            await _productos.ObtenerActivasFiltradasAsync(
+                busqueda,
+                categoriaPublicId,
+                marcaPublicId);
 
-        return productos
+        var categorias =
+            await _catalogos.ObtenerCategoriasActivasAsync();
+
+        var marcas =
+            await _catalogos.ObtenerMarcasActivasAsync();
+
+        var items = productos
             .Select(producto => new ProductoListItem(
                 producto.PublicId,
                 producto.Nombre,
@@ -30,5 +46,20 @@ public sealed class ObtenerListadoProductosUseCase
                 producto.Marca.Nombre,
                 producto.EsPerecedero))
             .ToList();
+
+        return new ProductoListado(
+            items,
+            categorias
+                .Select(categoria =>
+                    new CategoriaProductoOption(
+                        categoria.PublicId,
+                        categoria.Nombre))
+                .ToList(),
+            marcas
+                .Select(marca =>
+                    new MarcaProductoOption(
+                        marca.PublicId,
+                        marca.Nombre))
+                .ToList());
     }
 }

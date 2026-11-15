@@ -20,12 +20,17 @@ public sealed class ProductoUseCaseTests
             "Producto inactivo",
             estado: false));
 
+       var catalogos =
+        new CatalogoProductoRepositoryFalso();
+
         var useCase =
-            new ObtenerListadoProductosUseCase(repository);
+            new ObtenerListadoProductosUseCase(
+                repository,
+                catalogos);
 
         var resultado = await useCase.EjecutarAsync();
 
-        var producto = Assert.Single(resultado);
+        var producto = Assert.Single(resultado.Productos);
         Assert.Equal("Cuaderno", producto.Nombre);
     }
 
@@ -37,12 +42,17 @@ public sealed class ProductoUseCaseTests
         repository.Agregar(CrearProducto("Cuaderno Espiral"));
         repository.Agregar(CrearProducto("Calculadora Científica"));
 
+       var catalogos =
+            new CatalogoProductoRepositoryFalso();
+
         var useCase =
-            new ObtenerListadoProductosUseCase(repository);
+            new ObtenerListadoProductosUseCase(
+                repository,
+                catalogos);
 
         var resultado = await useCase.EjecutarAsync("cuaderno");
 
-        var producto = Assert.Single(resultado);
+        var producto = Assert.Single(resultado.Productos);
         Assert.Equal("Cuaderno Espiral", producto.Nombre);
     }
 
