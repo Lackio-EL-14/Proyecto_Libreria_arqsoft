@@ -11,7 +11,7 @@
     <p role="status">@mensaje</p>
 }
 
-<form method="post">
+<form method="post" id="cambiar-contrasena">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <div class="form-group">
         <label asp-for="Input.ContrasenaActual">Contraseña actual</label>
@@ -24,13 +24,24 @@
         <input asp-for="Input.NuevaContrasena" type="password" class="form-control"
                autocomplete="new-password" maxlength="128" required />
         <span asp-validation-for="Input.NuevaContrasena" class="text-danger"></span>
-        <p>Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.</p>
+        <ul id="reglas-contrasena" aria-live="polite">
+            <li data-regla="longitud">Pendiente: Mínimo 8 caracteres.</li>
+            <li data-regla="mayuscula">Pendiente: Al menos una mayúscula.</li>
+            <li data-regla="minuscula">Pendiente: Al menos una minúscula.</li>
+            <li data-regla="numero">Pendiente: Al menos un número.</li>
+            <li data-regla="especial">Pendiente: Al menos un carácter especial.</li>
+        </ul>
     </div>
     <div class="form-group">
         <label asp-for="Input.Confirmacion">Confirmación de nueva contraseña</label>
         <input asp-for="Input.Confirmacion" type="password" class="form-control"
                autocomplete="new-password" maxlength="128" required />
         <span asp-validation-for="Input.Confirmacion" class="text-danger"></span>
+        <p id="estado-confirmacion" role="status"></p>
     </div>
-    <button type="submit" class="btn btn--primary">Cambiar contraseña</button>
+    <button type="submit" class="btn btn--primary" disabled>Cambiar contraseña</button>
 </form>
+
+@section Scripts {
+    <script src="~/js/cambiar-contrasena.js" asp-append-version="true"></script>
+}
