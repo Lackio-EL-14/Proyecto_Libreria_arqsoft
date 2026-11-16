@@ -1,18 +1,23 @@
+using Libreria.Servicio.Ventas.Application.Comun;
 using Libreria.Servicio.Ventas.Application.Models;
 
 namespace Libreria.Servicio.Ventas.Application.Ports.Secondary;
 
 public interface IProductosPort
 {
-    Task<ProductoVentaSnapshot?> ObtenerPorPublicIdAsync(Guid publicId);
+    Task<Result<ProductoVentaSnapshot>> ObtenerPorPublicIdAsync(
+        Guid publicId,
+        CancellationToken cancellationToken = default);
 
-    Task<bool> DescontarStockAsync(
+    Task<Result> DescontarStockAsync(
         Guid productoPublicId,
         int cantidad,
-        Guid ventaPublicId);
+        Guid ventaPublicId,
+        CancellationToken cancellationToken = default);
 
-    Task<bool> RestaurarStockAsync(
+    Task<Result> RestaurarStockAsync(
         Guid productoPublicId,
         int cantidad,
-        Guid ventaPublicId);
+        Guid ventaPublicId,
+        CancellationToken cancellationToken = default);
 }

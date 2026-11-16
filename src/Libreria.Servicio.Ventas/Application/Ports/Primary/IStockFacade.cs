@@ -1,14 +1,17 @@
-namespace Libreria.Servicio.Ventas.Application.Ports.Primary
+using Libreria.Servicio.Ventas.Application.Comun;
+using Libreria.Servicio.Ventas.Application.Models;
+
+namespace Libreria.Servicio.Ventas.Application.Ports.Primary;
+
+public interface IStockFacade
 {
-    public interface IStockFacade
-    {
-        Task DescontarStockAsync(
-            Guid productoPublicId,
-            int cantidad,
-            Guid ventaPublicId);
-        Task RestaurarStockAsync(
-            Guid productoPublicId,
-            int cantidad,
-            Guid ventaPublicId);
-    }
+    Task<Result> DescontarAsync(
+        IReadOnlyList<StockOperacionItem> lineas,
+        Guid ventaPublicId,
+        CancellationToken cancellationToken = default);
+
+    Task<Result> RestaurarAsync(
+        IReadOnlyList<StockOperacionItem> lineas,
+        Guid ventaPublicId,
+        CancellationToken cancellationToken = default);
 }
