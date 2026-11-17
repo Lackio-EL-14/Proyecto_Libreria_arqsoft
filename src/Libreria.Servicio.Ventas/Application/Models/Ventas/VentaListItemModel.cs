@@ -7,6 +7,7 @@ public class VentaListItemModel
     public string ClienteNombre { get; set; } = string.Empty;
     public string ClienteCiNit { get; set; } = string.Empty;
     public decimal Total { get; set; }
+    public decimal? GananciaTotal { get; set; }
     public string Estado { get; set; } = "Activa";
     public string CreadoPor { get; set; } = string.Empty;
     public string? AnuladoPor { get; set; }

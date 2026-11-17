@@ -116,6 +116,40 @@ public class VentaRepository : IVentaRepository
         return await command.ExecuteNonQueryAsync() == 1;
     }
 
+    public async Task<bool> ActualizarDatosAsync(
+        int ventaId,
+        ClienteVentaSnapshot cliente,
+        string? observacion,
+        Guid usuarioModificacionId,
+        IDbConnection connection,
+        IDbTransaction transaction)
+    {
+        var (dbConnection, dbTransaction) =
+            ObtenerConexionYTransaccion(connection, transaction);
+
+        await using var command = dbConnection.CreateCommand();
+        command.Transaction = dbTransaction;
+        command.CommandText = @"
+            UPDATE dbo.Venta
+            SET ClientePublicId = @ClientePublicId,
+                ClienteCiNit = @ClienteCiNit,
+                ClienteRazonSocial = @ClienteRazonSocial,
+                Observacion = @Observacion,
+                UsuarioModificacionId = @UsuarioModificacionId,
+                FechaModificacion = SYSDATETIME()
+            WHERE VentaId = @VentaId
+              AND Estado = N'Activa'";
+
+        AgregarParametro(command, "@VentaId", ventaId);
+        AgregarParametro(command, "@ClientePublicId", cliente.PublicId);
+        AgregarParametro(command, "@ClienteCiNit", cliente.CiNit);
+        AgregarParametro(command, "@ClienteRazonSocial", cliente.RazonSocial);
+        AgregarParametro(command, "@Observacion", DbValor(observacion));
+        AgregarParametro(command, "@UsuarioModificacionId", usuarioModificacionId);
+
+        return await command.ExecuteNonQueryAsync() == 1;
+    }
+
     public Task<IReadOnlyList<Venta>> ObtenerActivasAsync() =>
         ObtenerVentasAsync(soloActivas: true);
 
@@ -174,7 +208,8 @@ public class VentaRepository : IVentaRepository
     }
 
     public async Task<IReadOnlyList<VentaListItemModel>> ObtenerListadoAsync(
-        FiltroVentasInput filtro)
+        FiltroVentasInput filtro,
+        bool esAdministrador)
     {
         var items = new List<VentaListItemModel>();
 
@@ -185,6 +220,12 @@ public class VentaRepository : IVentaRepository
             SELECT v.PublicId, v.FechaCreacion, v.FechaAnulacion,
                    v.ClienteRazonSocial AS ClienteNombre,
                    v.ClienteCiNit, v.Total, v.Estado,
+                   CASE WHEN @EsAdministrador = 1
+                       THEN (SELECT COALESCE(SUM(d.Ganancia), 0)
+                             FROM dbo.DetalleVenta d
+                             WHERE d.VentaId = v.VentaId)
+                       ELSE NULL
+                   END AS GananciaTotal,
                    COALESCE(NULLIF(v.VendedorIniciales, N''),
                             CONVERT(nvarchar(36), v.UsuarioCreacionId)) AS CreadoPor,
                    CASE
@@ -193,6 +234,8 @@ public class VentaRepository : IVentaRepository
                    END AS AnuladoPor
             FROM dbo.Venta v
             WHERE 1 = 1";
+
+        AgregarParametro(command, "@EsAdministrador", esAdministrador);
 
         if (!string.IsNullOrWhiteSpace(filtro.Estado)
             && !filtro.Estado.Equals("Todas", StringComparison.OrdinalIgnoreCase))
@@ -219,8 +262,13 @@ public class VentaRepository : IVentaRepository
                 filtro.FechaHasta.Value.ToDateTime(TimeOnly.MaxValue));
         }
 
-        command.CommandText = query + @"
-            ORDER BY v.FechaCreacion DESC, v.VentaId DESC";
+        var columnaOrden = filtro.Orden == OrdenVentas.Total
+            ? "v.Total"
+            : "v.FechaCreacion";
+        var direccion = filtro.Descendente ? "DESC" : "ASC";
+
+        command.CommandText = query
+            + $" ORDER BY {columnaOrden} {direccion}, v.VentaId {direccion}";
 
         await using var reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())
@@ -233,6 +281,7 @@ public class VentaRepository : IVentaRepository
                 ClienteNombre = reader.GetString(reader.GetOrdinal("ClienteNombre")),
                 ClienteCiNit = reader.GetString(reader.GetOrdinal("ClienteCiNit")),
                 Total = reader.GetDecimal(reader.GetOrdinal("Total")),
+                GananciaTotal = GetNullableDecimal(reader, "GananciaTotal"),
                 Estado = reader.GetString(reader.GetOrdinal("Estado")),
                 CreadoPor = reader.GetString(reader.GetOrdinal("CreadoPor")),
                 AnuladoPor = GetNullableString(reader, "AnuladoPor")
@@ -255,8 +304,13 @@ public class VentaRepository : IVentaRepository
         {
             command.CommandText = @"
                 SELECT v.VentaId, v.PublicId, v.FechaCreacion, v.FechaAnulacion,
-                       v.MotivoAnulacion, v.Estado, v.ClienteRazonSocial,
+                       v.MotivoAnulacion, v.Observacion, v.Estado, v.ClienteRazonSocial,
                        v.ClienteCiNit, v.Total,
+                       v.FechaModificacion,
+                       CASE
+                           WHEN v.UsuarioModificacionId IS NULL THEN NULL
+                           ELSE CONVERT(nvarchar(36), v.UsuarioModificacionId)
+                       END AS ModificadoPor,
                        COALESCE(NULLIF(v.VendedorIniciales, N''),
                                 CONVERT(nvarchar(36), v.UsuarioCreacionId)) AS CreadoPor,
                        CASE
@@ -281,11 +335,14 @@ public class VentaRepository : IVentaRepository
                 FechaCreacion = reader.GetDateTime(reader.GetOrdinal("FechaCreacion")),
                 FechaAnulacion = GetNullableDateTime(reader, "FechaAnulacion"),
                 MotivoAnulacion = GetNullableString(reader, "MotivoAnulacion"),
+                Observacion = GetNullableString(reader, "Observacion"),
                 Estado = reader.GetString(reader.GetOrdinal("Estado")),
                 ClienteNombre = reader.GetString(reader.GetOrdinal("ClienteRazonSocial")),
                 ClienteCiNit = reader.GetString(reader.GetOrdinal("ClienteCiNit")),
                 CreadoPor = reader.GetString(reader.GetOrdinal("CreadoPor")),
                 AnuladoPor = GetNullableString(reader, "AnuladoPor"),
+                ModificadoPor = GetNullableString(reader, "ModificadoPor"),
+                FechaModificacion = GetNullableDateTime(reader, "FechaModificacion"),
                 Total = reader.GetDecimal(reader.GetOrdinal("Total"))
             };
         }
@@ -504,6 +561,12 @@ public class VentaRepository : IVentaRepository
     {
         var ordinal = reader.GetOrdinal(columna);
         return reader.IsDBNull(ordinal) ? null : reader.GetGuid(ordinal);
+    }
+
+    private static decimal? GetNullableDecimal(DbDataReader reader, string columna)
+    {
+        var ordinal = reader.GetOrdinal(columna);
+        return reader.IsDBNull(ordinal) ? null : reader.GetDecimal(ordinal);
     }
 
     private static object DbValor(object? valor) => valor ?? DBNull.Value;

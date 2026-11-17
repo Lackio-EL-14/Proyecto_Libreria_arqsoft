@@ -11,6 +11,7 @@ public sealed class UsuarioActualHttpContext : IUsuarioActual
 {
     public const string SeccionDesarrollo = "UsuarioDesarrollo";
     private const string ClaimIniciales = "iniciales";
+    private const string RolAdministrador = "Administrador";
 
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IConfiguration _configuration;
@@ -39,6 +40,10 @@ public sealed class UsuarioActualHttpContext : IUsuarioActual
     public string? Iniciales =>
         LeerClaim(ClaimIniciales)
         ?? LeerDesarrollo("Iniciales");
+
+    public bool EsAdministrador =>
+        (LeerClaim(ClaimTypes.Role) ?? LeerClaim("role") ?? LeerDesarrollo("Rol"))
+        ?.Equals(RolAdministrador, StringComparison.OrdinalIgnoreCase) == true;
 
     private string? LeerClaim(string tipo) =>
         _httpContextAccessor.HttpContext?.User.FindFirstValue(tipo);
