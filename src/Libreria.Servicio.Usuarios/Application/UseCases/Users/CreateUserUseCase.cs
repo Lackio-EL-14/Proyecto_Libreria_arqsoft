@@ -1,5 +1,6 @@
+using Libreria.Servicio.Usuarios.Application.Ports.Primary;
 using System.Net.Mail;
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Application.Facades;
 using Libreria.Servicio.Usuarios.Domain.Constants;
@@ -7,7 +8,7 @@ using Libreria.Servicio.Usuarios.Domain.Entities;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Users;
 
-public sealed class CreateUserUseCase
+public sealed class CreateUserUseCase : ICreateUserUseCase
 {
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUser _currentUser;
@@ -31,7 +32,7 @@ public sealed class CreateUserUseCase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (_currentUser.UserId is not int currentUserId ||
+        if (_currentUser.UserId is not Guid currentUserId ||
             !await _userRepository
                 .IsActiveAdministratorAsync(currentUserId))
         {
@@ -62,24 +63,26 @@ public sealed class CreateUserUseCase
                 nameof(request));
         }
 
-        var activation =
-            await _usuarioFacade.PrepareActivationAsync(
-                firstName,
-                lastName);
+        var username = await _usuarioFacade.GenerateUsernameAsync(
+            firstName,
+            lastName);
+        var maternalLastName = string.IsNullOrWhiteSpace(request.MaternalLastName)
+            ? null
+            : request.MaternalLastName.Trim();
 
         var user = new User
         {
             FirstName = firstName,
             LastName = lastName,
+            MaternalLastName = maternalLastName,
             Email = email,
-            Username = activation.Username,
-            FullName = $"{firstName} {lastName}",
+            Username = username,
+            FullName = string.Join(" ", new[] { firstName, lastName, maternalLastName }
+                .Where(part => !string.IsNullOrWhiteSpace(part))),
             PasswordHash = string.Empty,
+            TemporaryPasswordExpiresAt = null,
             RoleId = roleId.Value,
             Status = UserStatuses.Pending,
-            ActivationTokenHash = activation.TokenHash,
-            ActivationTokenExpiresAt = activation.ExpiresAt,
-            ActivationTokenUsedAt = null,
             CreatedByUserId = currentUserId
         };
 
@@ -92,15 +95,9 @@ public sealed class CreateUserUseCase
                         await _userRepository
                             .CreatePendingAsync(user);
 
-                    await _usuarioFacade
-                        .SendActivationEmailAsync(
-                            email,
-                            firstName,
-                            activation);
-
                     return new CreateUserResultDto(
                         publicId,
-                        activation.Username);
+                        username);
                 });
         }
         catch (Exception exception)
@@ -153,6 +150,14 @@ public sealed class CreateUserUseCase
         {
             throw new ArgumentException(
                 "El apellido solo permite letras, incluyendo acentos y ñ.",
+                nameof(request));
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.MaternalLastName) &&
+            !request.MaternalLastName.Trim().All(char.IsLetter))
+        {
+            throw new ArgumentException(
+                "El apellido materno solo permite letras, incluyendo acentos y ñ.",
                 nameof(request));
         }
 

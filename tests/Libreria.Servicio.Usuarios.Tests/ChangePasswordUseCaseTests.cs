@@ -17,7 +17,7 @@ public sealed class ChangePasswordUseCaseTests
 
         var currentUser = new FakeCurrentUser
         {
-            UserId = 10,
+            UserId = Guid.Parse("a0000000-0000-0000-0000-000000000010"),
             Username = "usuario"
         };
 
@@ -40,7 +40,7 @@ public sealed class ChangePasswordUseCaseTests
 
         Assert.True(result);
         Assert.Equal(1, repository.UpdatePasswordCalls);
-        Assert.Equal(10, repository.UpdatedPasswordUserId);
+        Assert.Equal(Guid.Parse("a0000000-0000-0000-0000-000000000010"), repository.UpdatedPasswordUserId);
         Assert.Equal(
             "hash-anterior",
             repository.PreviousPasswordHash);
@@ -76,7 +76,7 @@ public sealed class ChangePasswordUseCaseTests
     {
         var useCase = CreateUseCase(
             new FakeUserRepository(),
-            new FakeCurrentUser { UserId = 10 },
+            new FakeCurrentUser { UserId = Guid.Parse("a0000000-0000-0000-0000-000000000010") },
             new FakePasswordHasher());
 
         var exception =
@@ -97,7 +97,7 @@ public sealed class ChangePasswordUseCaseTests
     {
         var useCase = CreateUseCase(
             new FakeUserRepository(),
-            new FakeCurrentUser { UserId = 10 },
+            new FakeCurrentUser { UserId = Guid.Parse("a0000000-0000-0000-0000-000000000010") },
             new FakePasswordHasher());
 
         var exception =
@@ -118,7 +118,7 @@ public sealed class ChangePasswordUseCaseTests
     {
         var useCase = CreateUseCase(
             new FakeUserRepository(),
-            new FakeCurrentUser { UserId = 10 },
+            new FakeCurrentUser { UserId = Guid.Parse("a0000000-0000-0000-0000-000000000010") },
             new FakePasswordHasher());
 
         var exception =
@@ -149,7 +149,7 @@ public sealed class ChangePasswordUseCaseTests
 
         var useCase = CreateUseCase(
             repository,
-            new FakeCurrentUser { UserId = 10 },
+            new FakeCurrentUser { UserId = Guid.Parse("a0000000-0000-0000-0000-000000000010") },
             hasher);
 
         var exception =
@@ -182,7 +182,7 @@ public sealed class ChangePasswordUseCaseTests
 
         var useCase = CreateUseCase(
             repository,
-            new FakeCurrentUser { UserId = 10 },
+            new FakeCurrentUser { UserId = Guid.Parse("a0000000-0000-0000-0000-000000000010") },
             hasher);
 
         var exception =
@@ -216,7 +216,7 @@ public sealed class ChangePasswordUseCaseTests
 
         var useCase = CreateUseCase(
             repository,
-            new FakeCurrentUser { UserId = 10 },
+            new FakeCurrentUser { UserId = Guid.Parse("a0000000-0000-0000-0000-000000000010") },
             hasher);
 
         var exception =

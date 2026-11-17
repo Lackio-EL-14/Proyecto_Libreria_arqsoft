@@ -25,7 +25,7 @@ public sealed class ListUsersUseCaseTests
 
         var currentUser = new FakeCurrentUser
         {
-            UserId = 1,
+            UserId = Guid.Parse("a0000000-0000-0000-0000-000000000001"),
             Username = "admin"
         };
 
@@ -55,7 +55,7 @@ public sealed class ListUsersUseCaseTests
 
         var currentUser = new FakeCurrentUser
         {
-            UserId = 2,
+            UserId = Guid.Parse("a0000000-0000-0000-0000-000000000002"),
             Username = "vendedor"
         };
 
@@ -78,7 +78,7 @@ public sealed class ListUsersUseCaseTests
 
         var currentUser = new FakeCurrentUser
         {
-            UserId = 1
+            UserId = Guid.Parse("a0000000-0000-0000-0000-000000000001")
         };
 
         var useCase =
@@ -101,7 +101,7 @@ public sealed class ListUsersUseCaseTests
 
         var currentUser = new FakeCurrentUser
         {
-            UserId = 1
+            UserId = Guid.Parse("a0000000-0000-0000-0000-000000000001")
         };
 
         var useCase =

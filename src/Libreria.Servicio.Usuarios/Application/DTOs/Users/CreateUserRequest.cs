@@ -4,4 +4,5 @@ public sealed record CreateUserRequest(
     string FirstName,
     string LastName,
     string Email,
-    string Role);
+    string Role,
+    string? MaternalLastName = null);

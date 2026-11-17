@@ -1,8 +1,9 @@
+using Libreria.Servicio.Usuarios.Application.Ports.Primary;
 using Libreria.Servicio.Usuarios.Application.DTOs.Auth;
 using Libreria.Servicio.Usuarios.Application.UseCases.Auth;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Libreria.Servicio.Usuarios.Presentation.Controllers;
+namespace Libreria.Servicio.Usuarios.Controllers;
 
 [ApiController]
 [Route("api/auth")]
@@ -11,9 +12,9 @@ public sealed class AuthController : ControllerBase
     private const string InvalidCredentialsMessage =
         "Usuario o contraseña incorrectos.";
 
-    private readonly LoginUseCase _loginUseCase;
+    private readonly ILoginUseCase _loginUseCase;
 
-    public AuthController(LoginUseCase loginUseCase)
+    public AuthController(ILoginUseCase loginUseCase)
     {
         _loginUseCase = loginUseCase;
     }

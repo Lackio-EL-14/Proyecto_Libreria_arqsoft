@@ -1,10 +1,11 @@
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Primary;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Domain.Constants;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Users;
 
-public sealed class ListUsersUseCase
+public sealed class ListUsersUseCase : IListUsersUseCase
 {
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUser _currentUser;
@@ -20,7 +21,7 @@ public sealed class ListUsersUseCase
     public async Task<IReadOnlyList<UserListItemDto>?> ExecuteAsync(
         string? status = null)
     {
-        if (_currentUser.UserId is not int currentUserId ||
+        if (_currentUser.UserId is not Guid currentUserId ||
             !await _userRepository.IsActiveAdministratorAsync(currentUserId))
         {
             return null;

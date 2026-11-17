@@ -30,6 +30,9 @@ public class CreateModel : PageModel
     public string Apellido { get; set; } = string.Empty;
 
     [BindProperty]
+    public string ApellidoMaterno { get; set; } = string.Empty;
+
+    [BindProperty]
     public string Correo { get; set; } = string.Empty;
 
     [BindProperty]
@@ -74,7 +77,8 @@ public class CreateModel : PageModel
                         Nombre,
                         Apellido,
                         Correo,
-                        Rol));
+                        Rol,
+                        ApellidoMaterno));
 
             if (result is null)
             {
@@ -89,7 +93,7 @@ public class CreateModel : PageModel
 
             MensajeExito =
                 $"Usuario {NombreUsuario} creado correctamente. " +
-                "Se generó el enlace de activación para el correo registrado.";
+                "La cuenta permanece pendiente hasta configurar el primer ingreso.";
 
             return Page();
         }

@@ -1,11 +1,12 @@
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Primary;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Application.DTOs.Auth;
 using Libreria.Servicio.Usuarios.Application.Validation;
 using Libreria.Servicio.Usuarios.Domain.Constants;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Auth;
 
-public sealed class LoginUseCase
+public sealed class LoginUseCase : ILoginUseCase
 {
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
@@ -48,7 +49,7 @@ public sealed class LoginUseCase
         }
 
         await TryRehashPasswordAsync(
-            user.Id,
+            user.PublicId,
             user.PasswordHash,
             request.Password);
 
@@ -61,7 +62,7 @@ public sealed class LoginUseCase
     }
 
     private async Task TryRehashPasswordAsync(
-        int userId,
+        Guid userId,
         string currentHash,
         string password)
     {

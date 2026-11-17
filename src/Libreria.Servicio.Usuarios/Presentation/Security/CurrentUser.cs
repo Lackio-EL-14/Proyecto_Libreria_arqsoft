@@ -1,4 +1,4 @@
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Presentation.Middleware;
 
 namespace Libreria.Servicio.Usuarios.Presentation.Security;
@@ -12,7 +12,7 @@ public sealed class CurrentUser : ICurrentUser
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public int? UserId
+    public Guid? UserId
     {
         get
         {
@@ -21,7 +21,7 @@ public sealed class CurrentUser : ICurrentUser
             if (context?.Items.TryGetValue(
                     CurrentUserMiddleware.UserIdItem,
                     out var value) == true &&
-                value is int userId)
+                value is Guid userId)
             {
                 return userId;
             }

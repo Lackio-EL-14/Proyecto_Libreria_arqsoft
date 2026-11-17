@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Konscious.Security.Cryptography;
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 

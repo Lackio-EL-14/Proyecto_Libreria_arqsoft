@@ -1,8 +1,9 @@
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Primary;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Users;
 
-public sealed class CheckActiveSessionUseCase
+public sealed class CheckActiveSessionUseCase : ICheckActiveSessionUseCase
 {
     private readonly IUserRepository _userRepository;
 

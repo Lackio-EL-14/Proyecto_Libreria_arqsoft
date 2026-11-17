@@ -1,4 +1,4 @@
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Domain.Entities;
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 
@@ -27,29 +27,9 @@ public sealed class FakeUserRepository : IUserRepository
     public Dictionary<string, int> ActiveRoles { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 
-    public User? ActivationUser { get; set; }
-
     public User? UserByPublicId { get; set; }
 
-    public bool UpdateActivationTokenResult { get; set; } = true;
-
-    public string? UpdatedActivationTokenHash { get; private set; }
-
-    public DateTime? UpdatedActivationExpiresAt { get; private set; }
-
-    public int? ActivationModifiedByUserId { get; private set; }
-
-    public DateTime? ActivationModifiedAt { get; private set; }
-
     public User? CreatedUser { get; private set; }
-
-    public bool ActivateResult { get; set; } = true;
-
-    public int? ActivatedUserId { get; private set; }
-
-    public string? ActivatedPasswordHash { get; private set; }
-
-    public DateTime? ActivatedAt { get; private set; }
 
     public List<UserDeactivationData> UsersForDeactivation { get; } = [];
 
@@ -57,14 +37,14 @@ public sealed class FakeUserRepository : IUserRepository
 
     public int? DeactivatedUserId { get; private set; }
 
-    public int? DeactivatedByUserId { get; private set; }
+    public Guid? DeactivatedByUserId { get; private set; }
 
     public HashSet<string> ExistingUsernames { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 
     public int UpdatePasswordCalls { get; private set; }
 
-    public int? UpdatedPasswordUserId { get; private set; }
+    public Guid? UpdatedPasswordUserId { get; private set; }
 
     public string? PreviousPasswordHash { get; private set; }
 
@@ -75,13 +55,13 @@ public sealed class FakeUserRepository : IUserRepository
         return Task.FromResult(UserByUsername);
     }
 
-    public Task<string?> GetActivePasswordHashAsync(int userId)
+    public Task<string?> GetActivePasswordHashAsync(Guid userId)
     {
         return Task.FromResult(ActivePasswordHash);
     }
 
     public Task<bool> UpdatePasswordAsync(
-        int userId,
+        Guid userId,
         string previousHash,
         string newHash)
     {
@@ -110,6 +90,17 @@ public sealed class FakeUserRepository : IUserRepository
         return Task.FromResult(result);
     }
 
+    public Dictionary<Guid, string> PublicNames { get; } = new();
+
+    public Task<IReadOnlyDictionary<Guid, string>> GetFullNamesByPublicIdsAsync(
+        IReadOnlyCollection<Guid> publicIds)
+    {
+        IReadOnlyDictionary<Guid, string> result = PublicNames
+            .Where(pair => publicIds.Contains(pair.Key))
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
+        return Task.FromResult(result);
+    }
+
     public Task<bool> UsernameExistsAsync(string username)
     {
         return Task.FromResult(
@@ -117,7 +108,7 @@ public sealed class FakeUserRepository : IUserRepository
     }
 
 
-    public Task<bool> IsActiveAdministratorAsync(int userId)
+    public Task<bool> IsActiveAdministratorAsync(Guid userId)
     {
         return Task.FromResult(IsActiveAdministrator);
     }
@@ -169,45 +160,12 @@ public sealed class FakeUserRepository : IUserRepository
         return Task.FromResult(publicId);
     }
 
-    public Task<User?> GetByActivationTokenHashAsync(
-        string tokenHash)
-    {
-        return Task.FromResult(ActivationUser);
-    }
-
     public Task<User?> GetByPublicIdAsync(Guid publicId)
     {
         return Task.FromResult(
             UserByPublicId?.PublicId == publicId
                 ? UserByPublicId
                 : null);
-    }
-
-    public Task<bool> UpdateActivationTokenAsync(
-        int userId,
-        string tokenHash,
-        DateTime expiresAt,
-        int modifiedByUserId,
-        DateTime modifiedAt)
-    {
-        UpdatedActivationTokenHash = tokenHash;
-        UpdatedActivationExpiresAt = expiresAt;
-        ActivationModifiedByUserId = modifiedByUserId;
-        ActivationModifiedAt = modifiedAt;
-
-        return Task.FromResult(UpdateActivationTokenResult);
-    }
-
-    public Task<bool> ActivateAsync(
-        int userId,
-        string passwordHash,
-        DateTime activatedAt)
-    {
-        ActivatedUserId = userId;
-        ActivatedPasswordHash = passwordHash;
-        ActivatedAt = activatedAt;
-
-        return Task.FromResult(ActivateResult);
     }
 
     public Task<IReadOnlyList<UserDeactivationData>>
@@ -219,7 +177,7 @@ public sealed class FakeUserRepository : IUserRepository
 
     public Task<bool> DeactivateAsync(
         int userId,
-        int modifiedByUserId)
+        Guid modifiedByUserId)
     {
         DeactivatedUserId = userId;
         DeactivatedByUserId = modifiedByUserId;

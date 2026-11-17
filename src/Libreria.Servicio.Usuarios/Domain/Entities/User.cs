@@ -12,6 +12,8 @@ public class User
 
     public string LastName { get; set; } = string.Empty;
 
+    public string? MaternalLastName { get; set; }
+
     public string Email { get; set; } = string.Empty;
 
     public string Username { get; set; } = string.Empty;
@@ -26,17 +28,13 @@ public class User
 
     public string Status { get; set; } = UserStatuses.Pending;
 
-    public string? ActivationTokenHash { get; set; }
-
-    public DateTime? ActivationTokenExpiresAt { get; set; }
-
-    public DateTime? ActivationTokenUsedAt { get; set; }
+    public DateTime? TemporaryPasswordExpiresAt { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
     public DateTime? ModifiedAt { get; set; }
 
-    public int? CreatedByUserId { get; set; }
+    public Guid? CreatedByUserId { get; set; }
 
-    public int? ModifiedByUserId { get; set; }
+    public Guid? ModifiedByUserId { get; set; }
 }

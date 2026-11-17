@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text;
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 
 namespace Libreria.Servicio.Usuarios.Application.Services;
 

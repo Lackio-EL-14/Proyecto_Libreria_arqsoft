@@ -1,43 +1,38 @@
+using Libreria.Servicio.Usuarios.Application.Ports.Primary;
 using Libreria.Servicio.Usuarios.Application.UseCases.Users;
 using Microsoft.AspNetCore.Mvc;
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 
-namespace Libreria.Servicio.Usuarios.Presentation.Controllers;
+namespace Libreria.Servicio.Usuarios.Controllers;
 
 [ApiController]
 [Route("api/usuarios")]
 public sealed class UsersController : ControllerBase
 {
-    private readonly CheckActiveSessionUseCase _checkActiveSessionUseCase;
-    private readonly GetUserNamesUseCase _getUserNamesUseCase;
-    private readonly ListUsersUseCase _listUsersUseCase;
-    private readonly CreateUserUseCase _createUserUseCase;
-    private readonly ActivateUserUseCase _activateUserUseCase;
-    private readonly GetUserRolesUseCase _getUserRolesUseCase;
-    private readonly ChangePasswordUseCase _changePasswordUseCase;
-    private readonly DeactivateUserUseCase _deactivateUserUseCase;
-    private readonly ResendActivationUseCase _resendActivationUseCase;
+    private readonly ICheckActiveSessionUseCase _checkActiveSessionUseCase;
+    private readonly IGetUserNamesUseCase _getUserNamesUseCase;
+    private readonly IListUsersUseCase _listUsersUseCase;
+    private readonly ICreateUserUseCase _createUserUseCase;
+    private readonly IGetUserRolesUseCase _getUserRolesUseCase;
+    private readonly IChangePasswordUseCase _changePasswordUseCase;
+    private readonly IDeactivateUserUseCase _deactivateUserUseCase;
 
     public UsersController(
-        CheckActiveSessionUseCase checkActiveSessionUseCase,
-        GetUserNamesUseCase getUserNamesUseCase,
-        ListUsersUseCase listUsersUseCase,
-        CreateUserUseCase createUserUseCase,
-        ActivateUserUseCase activateUserUseCase,
-        GetUserRolesUseCase getUserRolesUseCase,
-        ChangePasswordUseCase changePasswordUseCase,
-        DeactivateUserUseCase deactivateUserUseCase,
-        ResendActivationUseCase resendActivationUseCase)
+        ICheckActiveSessionUseCase checkActiveSessionUseCase,
+        IGetUserNamesUseCase getUserNamesUseCase,
+        IListUsersUseCase listUsersUseCase,
+        ICreateUserUseCase createUserUseCase,
+        IGetUserRolesUseCase getUserRolesUseCase,
+        IChangePasswordUseCase changePasswordUseCase,
+        IDeactivateUserUseCase deactivateUserUseCase)
     {
         _checkActiveSessionUseCase = checkActiveSessionUseCase;
         _getUserNamesUseCase = getUserNamesUseCase;
         _listUsersUseCase = listUsersUseCase;
         _createUserUseCase = createUserUseCase;
-        _activateUserUseCase = activateUserUseCase;
         _getUserRolesUseCase = getUserRolesUseCase;
         _changePasswordUseCase = changePasswordUseCase;
         _deactivateUserUseCase = deactivateUserUseCase;
-        _resendActivationUseCase = resendActivationUseCase;
     }
 
     [HttpGet]
@@ -82,44 +77,71 @@ public sealed class UsersController : ControllerBase
         return Ok(isActive);
     }
 
+    // Contrato de auditoria: GET api/usuarios/nombres?ids=<publicId>,<publicId>.
+    // Conserva compatibilidad con los consumidores que aun envian UsuarioId (int).
     [HttpGet("nombres")]
-    [ProducesResponseType(
-    typeof(IReadOnlyDictionary<int, string>),
-    StatusCodes.Status200OK)]
-    [ProducesResponseType(
-    typeof(ProblemDetails),
-    StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IReadOnlyDictionary<int, string>>>
-    GetNamesAsync([FromQuery(Name = "ids")] string[] ids)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetNamesAsync(
+        [FromQuery(Name = "ids")] string[] ids)
     {
-        var parsedIds = new List<int>();
+        var parts = ids
+            .SelectMany(value => value.Split(',',
+                StringSplitOptions.RemoveEmptyEntries |
+                StringSplitOptions.TrimEntries))
+            .ToArray();
+
+        if (parts.Length == 0)
+        {
+            return Ok(new Dictionary<Guid, string>());
+        }
+
+        if (parts.All(part => Guid.TryParse(part, out var id) && id != Guid.Empty))
+        {
+            var publicIds = parts.Select(part => Guid.Parse(part)).ToArray();
+            return Ok(await _getUserNamesUseCase.ExecuteAsync(publicIds));
+        }
+
+        if (parts.All(part => int.TryParse(part, out var id) && id > 0))
+        {
+            var userIds = parts.Select(part => int.Parse(part)).ToArray();
+            return Ok(await _getUserNamesUseCase.ExecuteAsync(userIds));
+        }
+
+        return Problem(
+            title: "Solicitud inválida.",
+            detail: "Los identificadores deben ser GUID válidos o números positivos, sin mezclar formatos.",
+            statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    [HttpGet("nombres-publicos")]
+    [ProducesResponseType(
+        typeof(IReadOnlyDictionary<Guid, string>),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<IReadOnlyDictionary<Guid, string>>> GetPublicNamesAsync(
+        [FromQuery(Name = "ids")] string[] ids)
+    {
+        var parsedIds = new List<Guid>();
 
         foreach (var value in ids)
         {
-            var parts = value.Split(
-                ',',
-                StringSplitOptions.RemoveEmptyEntries |
-                StringSplitOptions.TrimEntries);
-
-            foreach (var part in parts)
+            foreach (var part in value.Split(',',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
-                if (!int.TryParse(part, out var userId) ||
-                    userId <= 0)
+                if (!Guid.TryParse(part, out var publicId) || publicId == Guid.Empty)
                 {
                     return Problem(
                         title: "Solicitud inválida.",
-                        detail: "Los identificadores de usuario deben ser números positivos.",
+                        detail: "Los identificadores públicos deben ser GUID válidos.",
                         statusCode: StatusCodes.Status400BadRequest);
                 }
 
-                parsedIds.Add(userId);
+                parsedIds.Add(publicId);
             }
         }
 
-        var names =
-            await _getUserNamesUseCase.ExecuteAsync(parsedIds);
-
-        return Ok(names);
+        return Ok(await _getUserNamesUseCase.ExecuteAsync(parsedIds));
     }
 
     [HttpPost]
@@ -190,38 +212,6 @@ public sealed class UsersController : ControllerBase
         return Ok(roles);
     }
 
-
-    [HttpPost("activar")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(
-        typeof(ProblemDetails),
-        StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> ActivateUserAsync(
-        [FromBody] ActivateUserRequest request)
-    {
-        try
-        {
-            await _activateUserUseCase.ExecuteAsync(request);
-
-            return NoContent();
-        }
-        catch (ArgumentException exception)
-        {
-            return Problem(
-                title: "No fue posible activar la cuenta.",
-                detail: exception.Message,
-                statusCode:
-                    StatusCodes.Status400BadRequest);
-        }
-        catch (InvalidOperationException exception)
-        {
-            return Problem(
-                title: "No fue posible activar la cuenta.",
-                detail: exception.Message,
-                statusCode:
-                    StatusCodes.Status400BadRequest);
-        }
-    }
 
     [HttpPut("contrasena")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -314,41 +304,5 @@ public sealed class UsersController : ControllerBase
             _ => throw new InvalidOperationException(
                 "Resultado de baja de usuario no reconocido.")
         };
-    }
-
-    [HttpPost("{publicId:guid}/reenviar-activacion")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(
-        typeof(ProblemDetails),
-        StatusCodes.Status404NotFound)]
-    [ProducesResponseType(
-        typeof(ProblemDetails),
-        StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> ResendActivationAsync(
-        Guid publicId)
-    {
-        try
-        {
-            var sent = await _resendActivationUseCase.ExecuteAsync(publicId);
-
-            return sent
-                ? NoContent()
-                : StatusCode(StatusCodes.Status403Forbidden);
-        }
-        catch (KeyNotFoundException exception)
-        {
-            return Problem(
-                title: "Usuario no encontrado.",
-                detail: exception.Message,
-                statusCode: StatusCodes.Status404NotFound);
-        }
-        catch (InvalidOperationException exception)
-        {
-            return Problem(
-                title: "No fue posible reenviar la activación.",
-                detail: exception.Message,
-                statusCode: StatusCodes.Status409Conflict);
-        }
     }
 }
