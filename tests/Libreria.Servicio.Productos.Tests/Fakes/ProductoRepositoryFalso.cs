@@ -175,13 +175,19 @@ public sealed class ProductoRepositoryFalso : IProductoRepository
         return Task.CompletedTask;
     }
 
-    public Task<IReadOnlyList<Producto>> ObtenerActivasFiltradasAsync(
+    public Task<IReadOnlyList<Producto>> ObtenerFiltradasAsync(
         string? busqueda,
         Guid? categoriaPublicId,
-        Guid? marcaPublicId)
+        Guid? marcaPublicId,
+        bool? estado)
     {
-        IEnumerable<Producto> consulta =
-            _productos.Where(producto => producto.Estado);
+        IEnumerable<Producto> consulta = _productos;
+
+        if (estado.HasValue)
+        {
+            consulta = consulta.Where(producto =>
+                producto.Estado == estado.Value);
+        }
 
         if (!string.IsNullOrWhiteSpace(busqueda))
         {

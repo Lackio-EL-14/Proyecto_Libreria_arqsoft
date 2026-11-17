@@ -22,8 +22,9 @@ public interface IProductoRepository : ICrudRepository<Producto>
         Guid marcaPublicId,
         string nuevoNombre);
 
-    Task<IReadOnlyList<Producto>> ObtenerActivasFiltradasAsync(
-    string? busqueda,
-    Guid? categoriaPublicId,
-    Guid? marcaPublicId);
+    Task<IReadOnlyList<Producto>> ObtenerFiltradasAsync(
+        string? busqueda,
+        Guid? categoriaPublicId,
+        Guid? marcaPublicId,
+        bool? estado);
 }

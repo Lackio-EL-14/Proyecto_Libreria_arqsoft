@@ -1,5 +1,6 @@
 using Libreria.Client.Clients.Usuarios;
 using Libreria.Client.DTOs.Common;
+using Libreria.Client.DTOs.Productos;
 
 namespace Libreria.Client.Services.Auditoria;
 
@@ -63,6 +64,60 @@ public sealed class AuditoriaService : IAuditoriaService
             fechaCreacion,
             ResolverNombre(usuarioModificacionId, nombres),
             usuarioModificacionId.HasValue ? fechaModificacion : null);
+    }
+
+    public async Task<IReadOnlyList<HistoricoCostoDto>>
+        ResolverUsuariosHistoricoAsync(
+            IReadOnlyList<HistoricoCostoDto> historial,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(historial);
+
+        var ids = historial
+            .Select(item =>
+                Guid.TryParse(
+                    item.RegistradoPor,
+                    out var usuarioId)
+                    ? usuarioId
+                    : Guid.Empty)
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToArray();
+
+        var nombres =
+            await _usuariosClient.ObtenerNombresAsync(
+                ids,
+                cancellationToken);
+
+        return historial
+            .Select(item =>
+            {
+                if (string.IsNullOrWhiteSpace(
+                        item.RegistradoPor))
+                {
+                    return item;
+                }
+
+                if (!Guid.TryParse(
+                        item.RegistradoPor,
+                        out var usuarioId))
+                {
+                    return item;
+                }
+
+                var nombre =
+                    nombres.TryGetValue(
+                        usuarioId,
+                        out var nombreUsuario)
+                        ? nombreUsuario
+                        : "Usuario no disponible";
+
+                return item with
+                {
+                    RegistradoPor = nombre
+                };
+            })
+            .ToList();
     }
 
     private static string? ResolverNombre<TId>(

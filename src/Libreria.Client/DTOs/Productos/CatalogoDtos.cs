@@ -1,8 +1,7 @@
 namespace Libreria.Client.DTOs.Productos;
 
-// DTOs propios del Front para el Servicio de Ventas. El Front NO referencia el
-// proyecto del servicio: solo conoce estos contratos JSON. Los nombres de las
-// propiedades deben coincidir con las respuestas de Libreria.Servicio.Ventas.
+// DTOs propios del Front para el MS Productos.
+// El Front no referencia el proyecto del servicio: solo conoce sus contratos JSON.
 
 public record CategoriaDto(
     Guid PublicId,
@@ -11,9 +10,9 @@ public record CategoriaDto(
     string? Descripcion,
     string Ubicacion,
     bool Estado,
-    int? UsuarioCreacionId,
+    Guid? UsuarioCreacionId,
     DateTime FechaCreacion,
-    int? UsuarioModificacionId,
+    Guid? UsuarioModificacionId,
     DateTime? FechaModificacion,
     bool TieneProductosActivos);
 
@@ -24,8 +23,10 @@ public record MarcaDto(
     string PaisOrigen,
     string? SitioWeb,
     bool Estado,
-    int? UsuarioCreacionId,
-    int? UsuarioModificacionId,
+    Guid? UsuarioCreacionId,
+    DateTime FechaCreacion,
+    Guid? UsuarioModificacionId,
+    DateTime? FechaModificacion,
     bool TieneProductosActivos);
 
 public class CategoriaInput

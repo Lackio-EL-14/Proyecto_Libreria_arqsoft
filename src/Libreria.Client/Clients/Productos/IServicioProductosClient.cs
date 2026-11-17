@@ -24,13 +24,19 @@ public interface IServicioProductosClient : IApiClient
     Task<ResultadoApi> ActualizarMarcaAsync(Guid publicId, MarcaInput input, CancellationToken ct = default);
     Task<ResultadoApi> CambiarEstadoMarcaAsync(Guid publicId, bool activa, CancellationToken ct = default);
 
-    Task<ProductoListadoDto> ObtenerProductosAsync(string? busqueda, int? categoriaId, int? marcaId, CancellationToken ct = default);
+    Task<ProductoListadoDto> ObtenerProductosAsync(
+        string? busqueda,
+        Guid? categoriaPublicId,
+        Guid? marcaPublicId,
+        bool? estado = null,
+        CancellationToken ct = default);
     Task<ProductoFormularioDto> ObtenerFormularioProductoAsync(CancellationToken ct = default);
     Task<ProductoDetalleDto?> ObtenerProductoAsync(Guid publicId, CancellationToken ct = default);
     Task<ProductoEdicionDto?> ObtenerProductoParaEdicionAsync(Guid publicId, CancellationToken ct = default);
     Task<ResultadoApi> RegistrarProductoAsync(ProductoInput input, CancellationToken ct = default);
     Task<ResultadoApi> ActualizarProductoAsync(Guid publicId, ProductoInput input, CancellationToken ct = default);
     Task<ResultadoApi> DarDeBajaProductoAsync(Guid publicId, CancellationToken ct = default);
+    Task<ResultadoApi> ReactivarProductoAsync(Guid publicId, CancellationToken ct = default);
 
     Task<HistoricoProductoDto?> ObtenerHistoricoAsync(Guid productoPublicId, CancellationToken ct = default);
 }

@@ -21,14 +21,18 @@ public class ProductoInput
     [ModelBinder(BinderType = typeof(DecimalInvariantModelBinder))]
     public decimal CostoAdquisicion { get; set; }
 
-    public int CategoriaId { get; set; }
+    public Guid CategoriaPublicId { get; set; }
 
-    public int MarcaId { get; set; }
+    public Guid MarcaPublicId { get; set; }
 }
 
-public record CategoriaOptionDto(int CategoriaId, string Nombre);
+public record CategoriaOptionDto(
+    Guid PublicId,
+    string Nombre);
 
-public record MarcaOptionDto(int MarcaId, string Nombre);
+public record MarcaOptionDto(
+    Guid PublicId,
+    string Nombre);
 
 public record ProductoListItemDto(
     Guid PublicId,
@@ -36,9 +40,12 @@ public record ProductoListItemDto(
     int Stock,
     decimal PrecioVenta,
     decimal CostoAdquisicionActual,
+    Guid CategoriaPublicId,
     string Categoria,
+    Guid MarcaPublicId,
     string Marca,
-    bool EsPerecedero);
+    bool EsPerecedero,
+    bool Estado);
 
 public record ProductoListadoDto(
     IReadOnlyList<ProductoListItemDto> Productos,
@@ -50,6 +57,7 @@ public record ProductoFormularioDto(
     IReadOnlyList<MarcaOptionDto> Marcas);
 
 public record ProductoDetalleDto(
+    Guid PublicId,
     string Nombre,
     string? DescripcionEspecifica,
     bool EsPerecedero,
@@ -57,14 +65,14 @@ public record ProductoDetalleDto(
     int Stock,
     decimal PrecioVenta,
     decimal CostoAdquisicionActual,
-    int CategoriaId,
+    Guid CategoriaPublicId,
     string Categoria,
-    int MarcaId,
+    Guid MarcaPublicId,
     string Marca,
-    int? UsuarioCreacionId = null,
-    DateTime? FechaCreacion = null,
-    int? UsuarioModificacionId = null,
-    DateTime? FechaModificacion = null);
+    Guid? UsuarioCreacionId,
+    DateTime FechaCreacion,
+    Guid? UsuarioModificacionId,
+    DateTime? FechaModificacion);
 
 public record ProductoEdicionDto(
     ProductoInput Input,

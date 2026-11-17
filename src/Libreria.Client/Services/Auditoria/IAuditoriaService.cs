@@ -1,4 +1,5 @@
 using Libreria.Client.DTOs.Common;
+using Libreria.Client.DTOs.Productos;
 
 namespace Libreria.Client.Services.Auditoria;
 
@@ -19,5 +20,9 @@ public interface IAuditoriaService
         DateTime? fechaCreacion,
         Guid? usuarioModificacionId,
         DateTime? fechaModificacion,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<HistoricoCostoDto>> ResolverUsuariosHistoricoAsync(
+        IReadOnlyList<HistoricoCostoDto> historial,
         CancellationToken cancellationToken = default);
 }

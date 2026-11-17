@@ -49,12 +49,17 @@ public sealed class ServicioProductosClient : ApiClientBase, IServicioProductosC
         EnviarPatchAsync($"api/marcas/{publicId}/estado?nuevoEstado={Booleano(activa)}", ct);
 
     public async Task<ProductoListadoDto> ObtenerProductosAsync(
-        string? busqueda, int? categoriaId, int? marcaId, CancellationToken ct = default)
+        string? busqueda,
+        Guid? categoriaPublicId,
+        Guid? marcaPublicId,
+        bool? estado = null,
+        CancellationToken ct = default)
     {
         var url = "api/productos" + Armar(
             ("busqueda", busqueda),
-            ("categoriaId", categoriaId?.ToString()),
-            ("marcaId", marcaId?.ToString()));
+            ("categoriaPublicId", categoriaPublicId?.ToString()),
+            ("marcaPublicId", marcaPublicId?.ToString()),
+            ("estado", estado.HasValue ? Booleano(estado.Value) : null));
 
         return await LeerAsync<ProductoListadoDto>(url, ct)
             ?? new ProductoListadoDto([], [], []);
@@ -78,6 +83,11 @@ public sealed class ServicioProductosClient : ApiClientBase, IServicioProductosC
 
     public Task<ResultadoApi> DarDeBajaProductoAsync(Guid publicId, CancellationToken ct = default) =>
         EnviarPatchAsync($"api/productos/{publicId}/baja", ct);
+
+    public Task<ResultadoApi> ReactivarProductoAsync(Guid publicId, CancellationToken ct = default) =>
+        EnviarPatchAsync(
+            $"api/productos/{publicId}/estado?nuevoEstado=true",
+            ct);
 
     public Task<HistoricoProductoDto?> ObtenerHistoricoAsync(Guid productoPublicId, CancellationToken ct = default) =>
         LeerOpcionalAsync<HistoricoProductoDto>($"api/historico/{productoPublicId}", ct);

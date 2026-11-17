@@ -10,4 +10,5 @@ public sealed record ProductoListItem(
     string Categoria,
     Guid MarcaPublicId,
     string Marca,
-    bool EsPerecedero);
+    bool EsPerecedero,
+    bool Estado);

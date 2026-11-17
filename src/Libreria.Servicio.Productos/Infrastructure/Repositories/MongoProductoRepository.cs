@@ -361,29 +361,35 @@ public sealed class MongoProductoRepository : IProductoRepository
                 "No existe un usuario actual para registrar la auditoría.");
     }
 
-    public async Task<IReadOnlyList<Producto>> ObtenerActivasFiltradasAsync(
+    public async Task<IReadOnlyList<Producto>> ObtenerFiltradasAsync(
         string? busqueda,
         Guid? categoriaPublicId,
-        Guid? marcaPublicId)
+        Guid? marcaPublicId,
+        bool? estado)
     {
-        var filtro = Builders<Producto>.Filter.Eq(
-            producto => producto.Estado,
-            true);
+        var filtro = Builders<Producto>.Filter.Empty;
+
+        if (estado.HasValue)
+        {
+            filtro &= Builders<Producto>.Filter.Eq(
+                producto => producto.Estado,
+                estado.Value);
+        }
 
         if (!string.IsNullOrWhiteSpace(busqueda))
         {
-            var regex = new BsonRegularExpression(
-                Regex.Escape(busqueda.Trim()),
-                "i");
+            var termino = Regex.Escape(busqueda.Trim());
+            var regex = new BsonRegularExpression(termino, "i");
 
-            filtro &=
+            var filtroBusqueda =
                 Builders<Producto>.Filter.Regex(
                     producto => producto.Nombre,
                     regex)
-                |
-                Builders<Producto>.Filter.Regex(
+                | Builders<Producto>.Filter.Regex(
                     producto => producto.DescripcionEspecifica,
                     regex);
+
+            filtro &= filtroBusqueda;
         }
 
         if (categoriaPublicId.HasValue)

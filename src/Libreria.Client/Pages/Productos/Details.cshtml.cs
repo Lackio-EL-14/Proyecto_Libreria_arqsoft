@@ -24,6 +24,7 @@ public class DetailsModel : PageModel
 
     public ProductoDetalleDto Producto { get; private set; } = null!;
     public AuditoriaRegistroDto? Auditoria { get; private set; }
+    public HistoricoProductoDto? Historico { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
@@ -40,6 +41,23 @@ public class DetailsModel : PageModel
             producto.FechaCreacion,
             producto.UsuarioModificacionId,
             producto.FechaModificacion);
+
+        var historico =
+            await _productos.ObtenerHistoricoAsync(id);
+
+        if (historico is not null)
+        {
+            var historial =
+                await _auditoriaService
+                    .ResolverUsuariosHistoricoAsync(
+                        historico.Historial);
+
+            Historico = historico with
+            {
+                Historial = historial
+            };
+        }
+
         return Page();
     }
 
