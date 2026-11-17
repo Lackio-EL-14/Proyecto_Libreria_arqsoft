@@ -29,7 +29,7 @@ public sealed class DeactivateUserUseCaseTests
 
         var currentUser = new FakeCurrentUser
         {
-            UserId = 1,
+            UserId = repository.UsersForDeactivation[0].PublicId,
             Username = "admin"
         };
 
@@ -48,7 +48,7 @@ public sealed class DeactivateUserUseCaseTests
             result);
 
         Assert.Equal(2, repository.DeactivatedUserId);
-        Assert.Equal(1, repository.DeactivatedByUserId);
+        Assert.Equal(repository.UsersForDeactivation[0].PublicId, repository.DeactivatedByUserId);
         Assert.True(transactionRunner.SerializableExecuted);
     }
 
@@ -226,7 +226,7 @@ public sealed class DeactivateUserUseCaseTests
             repository,
             new FakeCurrentUser
             {
-                UserId = currentUserId,
+                UserId = repository.UsersForDeactivation.Single(user => user.UserId == currentUserId).PublicId,
                 Username = "usuario-prueba"
             },
             new FakeTransactionRunner());

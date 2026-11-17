@@ -6,6 +6,21 @@ namespace Libreria.Servicio.Usuarios.Tests;
 public sealed class GetUserNamesUseCaseTests
 {
     [Fact]
+    public async Task ExecuteAsync_GuidPublico_DevuelveNombre()
+    {
+        var publicId = Guid.NewGuid();
+        var repository = new FakeUserRepository();
+        repository.PublicNames[publicId] = "Juan Pérez";
+        var useCase = new GetUserNamesUseCase(
+            new FakeUsuarioRepositoryFactory(repository));
+
+        var result = await useCase.ExecuteAsync(new[] { publicId });
+
+        Assert.Single(result);
+        Assert.Equal("Juan Pérez", result[publicId]);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_EliminaIdsInvalidosYDuplicados()
     {
         var repository = new FakeUserRepository();

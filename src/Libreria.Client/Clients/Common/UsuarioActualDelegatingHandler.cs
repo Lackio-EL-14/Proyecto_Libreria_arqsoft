@@ -20,19 +20,39 @@ public sealed class UsuarioActualDelegatingHandler : DelegatingHandler
 
         if (principal?.Identity?.IsAuthenticated == true)
         {
-            var usuarioId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            var ruta = request.RequestUri?.AbsolutePath;
+            var esModuloUsuarios =
+                string.Equals(ruta, "/api/usuarios", StringComparison.OrdinalIgnoreCase) ||
+                ruta?.StartsWith("/api/usuarios/", StringComparison.OrdinalIgnoreCase) == true;
+
+            // Solo Usuarios recibe PublicId (GUID); los demás servicios
+            // conservan el identificador numérico de la sesión.
+            string? usuarioId;
+            if (esModuloUsuarios)
+            {
+                var publicIdClaim = principal.FindFirstValue("PublicId");
+                usuarioId = Guid.TryParse(publicIdClaim, out var publicId) && publicId != Guid.Empty
+                    ? publicId.ToString()
+                    : null;
+            }
+            else
+            {
+                var idClaim = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+                usuarioId = int.TryParse(idClaim, out var id) && id > 0
+                    ? id.ToString()
+                    : null;
+            }
+
             var usuarioNombre = principal.FindFirstValue(ClaimTypes.Name)
                 ?? principal.Identity.Name;
 
-            if (!int.TryParse(usuarioId, out var id) ||
-                id <= 0 ||
-                string.IsNullOrWhiteSpace(usuarioNombre))
+            if (usuarioId is null || string.IsNullOrWhiteSpace(usuarioNombre))
             {
                 throw new InvalidOperationException(
                     "La sesión autenticada no contiene los claims requeridos para la auditoría.");
             }
 
-            AddHeader(request, UsuarioIdHeader, id.ToString());
+            AddHeader(request, UsuarioIdHeader, usuarioId);
             AddHeader(request, UsuarioNombreHeader, usuarioNombre);
         }
 

@@ -1,5 +1,7 @@
+using Libreria.Servicio.Usuarios.Application.Ports.Primary;
+using Libreria.Servicio.Usuarios.Application.Comun;
 using System.Net.Mail;
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Application.Facades;
 using Libreria.Servicio.Usuarios.Domain.Constants;
@@ -7,7 +9,7 @@ using Libreria.Servicio.Usuarios.Domain.Entities;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Users;
 
-public sealed class CreateUserUseCase
+public sealed class CreateUserUseCase : ICreateUserUseCase
 {
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUser _currentUser;
@@ -26,19 +28,23 @@ public sealed class CreateUserUseCase
         _transactionRunner = transactionRunner;
     }
 
-    public async Task<CreateUserResultDto?> ExecuteAsync(
+    public async Task<Result<CreateUserResultDto>?> ExecuteAsync(
         CreateUserRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (_currentUser.UserId is not int currentUserId ||
+        if (_currentUser.UserId is not Guid currentUserId ||
             !await _userRepository
                 .IsActiveAdministratorAsync(currentUserId))
         {
             return null;
         }
 
-        Validate(request);
+        var validation = Validate(request);
+        if (!validation.EsExito)
+        {
+            return Result<CreateUserResultDto>.Fallo(validation);
+        }
 
         var firstName = request.FirstName.Trim();
         var lastName = request.LastName.Trim();
@@ -47,8 +53,9 @@ public sealed class CreateUserUseCase
 
         if (await _userRepository.EmailExistsAsync(email))
         {
-            throw new InvalidOperationException(
-                "Ya existe un usuario registrado con ese correo.");
+            return Result<CreateUserResultDto>.Fallo(
+                Result.Conflicto(nameof(request.Email),
+                    "Ya existe un usuario registrado con ese correo."));
         }
 
         var roleId =
@@ -57,103 +64,88 @@ public sealed class CreateUserUseCase
 
         if (roleId is null)
         {
-            throw new ArgumentException(
-                "Debe seleccionar un rol válido.",
-                nameof(request));
+            return Result<CreateUserResultDto>.Fallo(
+                Result.Validacion(nameof(request.Role),
+                    "Debe seleccionar un rol válido."));
         }
 
-        var activation =
-            await _usuarioFacade.PrepareActivationAsync(
-                firstName,
-                lastName);
+        var username = await _usuarioFacade.GenerateUsernameAsync(
+            firstName,
+            lastName);
+        var maternalLastName = string.IsNullOrWhiteSpace(request.MaternalLastName)
+            ? null
+            : request.MaternalLastName.Trim();
 
         var user = new User
         {
             FirstName = firstName,
             LastName = lastName,
+            MaternalLastName = maternalLastName,
             Email = email,
-            Username = activation.Username,
-            FullName = $"{firstName} {lastName}",
+            Username = username,
+            FullName = string.Join(" ", new[] { firstName, lastName, maternalLastName }
+                .Where(part => !string.IsNullOrWhiteSpace(part))),
             PasswordHash = string.Empty,
+            TemporaryPasswordExpiresAt = null,
             RoleId = roleId.Value,
             Status = UserStatuses.Pending,
-            ActivationTokenHash = activation.TokenHash,
-            ActivationTokenExpiresAt = activation.ExpiresAt,
-            ActivationTokenUsedAt = null,
             CreatedByUserId = currentUserId
         };
 
-        try
-        {
-            return await _transactionRunner.ExecuteAsync(
-                async () =>
-                {
-                    var publicId =
-                        await _userRepository
-                            .CreatePendingAsync(user);
+        var created = await _transactionRunner.ExecuteAsync(
+            async () =>
+            {
+                var publicId = await _userRepository.CreatePendingAsync(user);
+                return new CreateUserResultDto(publicId, username);
+            });
 
-                    await _usuarioFacade
-                        .SendActivationEmailAsync(
-                            email,
-                            firstName,
-                            activation);
-
-                    return new CreateUserResultDto(
-                        publicId,
-                        activation.Username);
-                });
-        }
-        catch (Exception exception)
-        {
-            throw new InvalidOperationException(
-                "No fue posible completar el alta del usuario.",
-                exception);
-        }
+        return Result<CreateUserResultDto>.Exito(created);
     }
 
-    private static void Validate(
+    private static Result Validate(
         CreateUserRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.FirstName))
         {
-            throw new ArgumentException(
-                "El nombre es obligatorio.",
-                nameof(request));
+            return Result.Validacion(nameof(request.FirstName),
+                "El nombre es obligatorio.");
         }
 
         if (string.IsNullOrWhiteSpace(request.LastName))
         {
-            throw new ArgumentException(
-                "El apellido es obligatorio.",
-                nameof(request));
+            return Result.Validacion(nameof(request.LastName),
+                "El apellido es obligatorio.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Email))
         {
-            throw new ArgumentException(
-                "El correo es obligatorio.",
-                nameof(request));
+            return Result.Validacion(nameof(request.Email),
+                "El correo es obligatorio.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Role))
         {
-            throw new ArgumentException(
-                "Debe seleccionar un rol válido.",
-                nameof(request));
+            return Result.Validacion(nameof(request.Role),
+                "Debe seleccionar un rol válido.");
         }
 
         if (!request.FirstName.Trim().All(char.IsLetter))
         {
-            throw new ArgumentException(
-                "El nombre solo permite letras, incluyendo acentos y ñ.",
-                nameof(request));
+            return Result.Validacion(nameof(request.FirstName),
+                "El nombre solo permite letras, incluyendo acentos y ñ.");
         }
 
         if (!request.LastName.Trim().All(char.IsLetter))
         {
-            throw new ArgumentException(
-                "El apellido solo permite letras, incluyendo acentos y ñ.",
-                nameof(request));
+            return Result.Validacion(nameof(request.LastName),
+                "El apellido solo permite letras, incluyendo acentos y ñ.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.MaternalLastName) &&
+            !request.MaternalLastName.Trim().All(char.IsLetter))
+        {
+            return Result.Validacion(nameof(request.MaternalLastName),
+                "El apellido materno solo permite letras, incluyendo acentos y ñ.");
         }
 
         try
@@ -171,9 +163,10 @@ public sealed class CreateUserUseCase
         }
         catch (FormatException)
         {
-            throw new ArgumentException(
-                "El correo no tiene un formato válido.",
-                nameof(request));
+            return Result.Validacion(nameof(request.Email),
+                "El correo no tiene un formato válido.");
         }
+
+        return Result.Exito();
     }
 }

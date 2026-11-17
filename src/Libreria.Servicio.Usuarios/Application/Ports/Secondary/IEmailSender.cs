@@ -1,4 +1,4 @@
-namespace Libreria.Servicio.Usuarios.Application.Abstractions;
+namespace Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 
 public interface IEmailSender
 {

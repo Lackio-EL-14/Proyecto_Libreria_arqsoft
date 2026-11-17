@@ -1,4 +1,4 @@
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Application.Factories;
 
 namespace Libreria.Servicio.Usuarios.Tests.TestDoubles;

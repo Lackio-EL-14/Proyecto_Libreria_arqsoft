@@ -9,7 +9,7 @@ Solución académica en C# y .NET 10: un Front en Razor Pages, un API Gateway y 
 | Front | `src/Libreria.Client` | 5000 | Razor Pages |
 | API Gateway | `src/Libreria.Gateway` | 5080 | YARP (ver «API Gateway») |
 | MS Ventas | `src/Libreria.Servicio.Ventas` | 5101 | Hexagonal |
-| MS Usuarios | `src/Libreria.Servicio.Usuarios` | 5102 | Hexagonal (se migra en US-124) |
+| MS Usuarios | `src/Libreria.Servicio.Usuarios` | 5102 | Hexagonal |
 | MS Clientes | `src/Libreria.Servicio.Clientes` | 5103 | Hexagonal |
 | MS Productos | `src/Libreria.Servicio.Productos` | 5104 | Clean |
 
@@ -87,7 +87,7 @@ docker exec ventas-db bash -lc '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa
 
 Para empezar desde cero (**borra todos los datos**): `docker compose down -v` y repetir los pasos. Para una actualización normal no uses `-v`.
 
-> Transición: hasta US-124, Usuarios todavía lee la cadena `LibreriaDb` del esquema anterior. Ventas ya usa exclusivamente `ConnectionStrings__VentasDb` y la base `LibreriaVentas`.
+> Usuarios utiliza exclusivamente `ConnectionStrings:UsuariosDb` y su base `LibreriaUsuarios` en `usuarios-db` (puerto del host 1434). Ventas utiliza `ConnectionStrings:VentasDb` y `LibreriaVentas`.
 
 ### Configuración obligatoria de Ventas
 
@@ -108,7 +108,7 @@ dotnet user-secrets list --project src/Libreria.Servicio.Ventas
 El Servicio de Usuarios no guarda contraseñas ni cadenas de conexión en Git. Cada integrante debe ejecutar una vez:
 
 ```powershell
-dotnet user-secrets set "ConnectionStrings:LibreriaDb" "Server=localhost,1433;Database=LibreriaDb;User Id=sa;Password=<contraseña>;TrustServerCertificate=True;" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "ConnectionStrings:UsuariosDb" "Server=localhost,1434;Database=LibreriaUsuarios;User Id=sa;Password=<contraseña>;TrustServerCertificate=True;" --project src/Libreria.Servicio.Usuarios
 ```
 
 Comprueba que quedó configurado:
@@ -119,21 +119,17 @@ dotnet user-secrets list --project src/Libreria.Servicio.Usuarios
 
 Visual Studio y `dotnet run` leen automáticamente ese secreto cuando el ambiente es `Development`. Un archivo `.env` de la raíz solo es leído automáticamente por Docker Compose; las aplicaciones .NET no lo cargan por sí solas.
 
-### Correo de activación en desarrollo
+### Alta provisional y adaptador de correo
 
-En Development no hace falta una cuenta de Gmail. S2 usa `PickupDirectory` y guarda cada correo como archivo `.eml` dentro de:
+En US-124 ya no existe la activación mediante tokens: se retiraron los endpoints `activar` y `reenviar-activacion` y la página `Usuarios/Activar`.
 
-```text
-src/Libreria.Servicio.Usuarios/bin/Development/mail
-```
+**Mientras se implementa US-130**, crear un usuario lo deja en estado `Pendiente`, sin contraseña temporal ni envío de correo. Por tanto, este usuario **todavía no puede iniciar sesión**. La generación de contraseña temporal, su expiración y el envío seguro por correo corresponden a US-130; el cambio obligatorio del primer ingreso corresponde a US-131.
 
-Abre el archivo generado y usa el enlace de activación. Esto permite demostrar el flujo sin internet ni contraseña SMTP.
+Se conserva `SmtpEmailSender` como adaptador para US-130. En Development puede utilizar `PickupDirectory` para generar archivos `.eml`; el alta provisional de US-124 todavía no lo invoca.
 
-Si el usuario continúa en estado `Pendiente`, un administrador puede usar **Reenviar activación** desde la pantalla de Usuarios. El sistema genera un token nuevo, invalida el anterior y permite otro reenvío después de un minuto.
+El cambio de contraseña de usuarios activos sigue requiriendo una sesión, la contraseña actual y la nueva contraseña dos veces.
 
-El cambio de contraseña no utiliza correo: exige una sesión iniciada, la contraseña actual y la nueva contraseña escrita dos veces.
-
-Para enviar correos reales con Gmail, configura secretos y usa una contraseña de aplicación de Google, no la contraseña normal de la cuenta:
+Para configurar el adaptador SMTP real, usa secretos y una contraseña de aplicación de Google, no la contraseña normal de la cuenta:
 
 ```powershell
 dotnet user-secrets set "EMAIL_DELIVERY_MODE" "Smtp" --project src/Libreria.Servicio.Usuarios
@@ -244,7 +240,7 @@ Cada solicitud autenticada realizada por esos clientes envía:
 - `X-Usuario-Id`
 - `X-Usuario-Nombre`
 
-El valor procede exclusivamente de los claims reales de la cookie. No existe usuario fijo de desarrollo. El login del Front llama a `POST api/auth/login` de S2 y la vigencia de la cookie se revisa mediante `GET api/usuarios/{id}/sesion-activa`, con una caché local de 20 segundos.
+El valor procede exclusivamente de los claims reales de la cookie. Para las solicitudes a `/api/usuarios` se envía el `PublicId` (GUID) en `X-Usuario-Id`; para los demás servicios se conserva el identificador numérico por compatibilidad. No existe usuario fijo de desarrollo. El login del Front llama a `POST api/auth/login` de S2. La comprobación actual de vigencia de la cookie todavía usa `GET api/usuarios/{id:int}/sesion-activa`, con una caché local de 20 segundos. US-124 incorpora también la ruta por `PublicId` (GUID); migrar el consumidor del Front a esa ruta corresponde a US-125.
 
 `AuditoriaService` vive en el Front y convierte los identificadores de auditoría en nombres mediante `GET api/usuarios/nombres`. Ventas no debe consultar directamente la tabla `Usuario`.
 

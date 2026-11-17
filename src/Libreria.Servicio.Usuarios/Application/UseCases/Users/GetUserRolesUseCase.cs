@@ -1,8 +1,9 @@
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Primary;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Users;
 
-public sealed class GetUserRolesUseCase
+public sealed class GetUserRolesUseCase : IGetUserRolesUseCase
 {
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUser _currentUser;
@@ -17,7 +18,7 @@ public sealed class GetUserRolesUseCase
 
     public async Task<IReadOnlyList<string>?> ExecuteAsync()
     {
-        if (_currentUser.UserId is not int currentUserId ||
+        if (_currentUser.UserId is not Guid currentUserId ||
             !await _userRepository
                 .IsActiveAdministratorAsync(currentUserId))
         {

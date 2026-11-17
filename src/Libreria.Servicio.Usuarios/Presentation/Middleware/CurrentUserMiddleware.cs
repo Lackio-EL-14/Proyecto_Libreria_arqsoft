@@ -1,4 +1,3 @@
-using System.Globalization;
 
 namespace Libreria.Servicio.Usuarios.Presentation.Middleware;
 
@@ -22,11 +21,7 @@ public sealed class CurrentUserMiddleware
         var usuarioId = context.Request.Headers[UsuarioIdHeader]
             .FirstOrDefault();
 
-        if (int.TryParse(
-                usuarioId,
-                NumberStyles.Integer,
-                CultureInfo.InvariantCulture,
-                out var userId))
+        if (Guid.TryParse(usuarioId, out var userId))
         {
             context.Items[UserIdItem] = userId;
         }

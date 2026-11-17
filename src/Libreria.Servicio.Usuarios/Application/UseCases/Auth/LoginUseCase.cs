@@ -1,11 +1,13 @@
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Comun;
+using Libreria.Servicio.Usuarios.Application.Ports.Primary;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Application.DTOs.Auth;
 using Libreria.Servicio.Usuarios.Application.Validation;
 using Libreria.Servicio.Usuarios.Domain.Constants;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Auth;
 
-public sealed class LoginUseCase
+public sealed class LoginUseCase : ILoginUseCase
 {
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
@@ -21,7 +23,7 @@ public sealed class LoginUseCase
         _validator = validator;
     }
 
-    public async Task<AuthenticatedUserDto?> ExecuteAsync(
+    public async Task<Result<AuthenticatedUserDto>> ExecuteAsync(
         LoginRequest request)
     {
         _validator.Normalize(request);
@@ -30,8 +32,8 @@ public sealed class LoginUseCase
 
         if (errors.Count > 0)
         {
-            throw new ArgumentException(
-                string.Join(" ", errors.Values));
+            return Result<AuthenticatedUserDto>.Fallo(
+                Result.Validacion(errors));
         }
 
         var user = await _userRepository
@@ -44,24 +46,25 @@ public sealed class LoginUseCase
                 user.PasswordHash,
                 request.Password))
         {
-            return null;
+            return Result<AuthenticatedUserDto>.Fallo(
+                Result.Validacion("Credenciales", "Usuario o contraseña incorrectos."));
         }
 
         await TryRehashPasswordAsync(
-            user.Id,
+            user.PublicId,
             user.PasswordHash,
             request.Password);
 
-        return new AuthenticatedUserDto(
+        return Result<AuthenticatedUserDto>.Exito(new AuthenticatedUserDto(
             user.Id,
             user.PublicId,
             user.Username,
             user.FullName,
-            user.Role.Name);
+            user.Role.Name));
     }
 
     private async Task TryRehashPasswordAsync(
-        int userId,
+        Guid userId,
         string currentHash,
         string password)
     {

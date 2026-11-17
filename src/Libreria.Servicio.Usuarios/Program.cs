@@ -1,15 +1,15 @@
-using Libreria.Servicio.Usuarios.Application.Abstractions;
-using Libreria.Servicio.Usuarios.Application.Facades;
+using Libreria.Servicio.Usuarios.Application.Ports.Primary;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Application.Factories;
 using Libreria.Servicio.Usuarios.Application.Services;
+using Libreria.Servicio.Usuarios.Application.Facades;
+using Libreria.Servicio.Usuarios.Infrastructure.Email;
+using Libreria.Servicio.Usuarios.Infrastructure.Configuration;
 using Libreria.Servicio.Usuarios.Application.UseCases.Auth;
 using Libreria.Servicio.Usuarios.Application.UseCases.Users;
 using Libreria.Servicio.Usuarios.Application.Validation;
-using Libreria.Servicio.Usuarios.Infrastructure.Configuration;
 using Libreria.Servicio.Usuarios.Infrastructure.Connection;
-using Libreria.Servicio.Usuarios.Infrastructure.Email;
 using Libreria.Servicio.Usuarios.Infrastructure.Factories;
-using Libreria.Servicio.Usuarios.Infrastructure.Repositories;
 using Libreria.Servicio.Usuarios.Presentation.Security;
 using Libreria.Servicio.Usuarios.Presentation.Middleware;
 using Libreria.Servicio.Usuarios.Infrastructure.Security;
@@ -26,9 +26,9 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 var connectionString =
-    builder.Configuration.GetConnectionString("LibreriaDb")
+    builder.Configuration.GetConnectionString("UsuariosDb")
     ?? throw new InvalidOperationException(
-        "Falta la cadena de conexión de LibreriaDb.");
+        "Falta la cadena de conexión de UsuariosDb.");
 
 var connectionStringSingleton =
     ConnectionStringSingleton.Instance;
@@ -38,37 +38,29 @@ connectionStringSingleton.Configure(connectionString);
 builder.Services.AddSingleton(connectionStringSingleton);
 builder.Services.AddScoped<SqlConnectionFactory>();
 
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
-
 builder.Services.AddScoped<
     UsuarioRepositoryFactory,
     SqlUsuarioRepositoryFactory>();
+builder.Services.AddScoped<IUserRepository>(provider =>
+    provider.GetRequiredService<UsuarioRepositoryFactory>().CreateRepository());
+builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
 
 builder.Services.AddScoped<LoginValidator>();
 
-builder.Services.AddScoped<LoginUseCase>();
-builder.Services.AddScoped<CheckActiveSessionUseCase>();
-builder.Services.AddScoped<GetUserNamesUseCase>();
-builder.Services.AddScoped<ListUsersUseCase>();
-builder.Services.AddScoped<CreateUserUseCase>();
-builder.Services.AddScoped<ActivateUserUseCase>();
-builder.Services.AddScoped<GetUserRolesUseCase>();
-builder.Services.AddScoped<ChangePasswordUseCase>();
+builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
+builder.Services.AddScoped<ICheckActiveSessionUseCase, CheckActiveSessionUseCase>();
+builder.Services.AddScoped<IGetUserNamesUseCase, GetUserNamesUseCase>();
+builder.Services.AddScoped<IListUsersUseCase, ListUsersUseCase>();
+builder.Services.AddScoped<ICreateUserUseCase, CreateUserUseCase>();
+builder.Services.AddScoped<IGetUserRolesUseCase, GetUserRolesUseCase>();
+builder.Services.AddScoped<IChangePasswordUseCase, ChangePasswordUseCase>();
 builder.Services.AddScoped<PasswordPolicyValidator>();
-builder.Services.AddScoped<DeactivateUserUseCase>();
-builder.Services.AddScoped<ResendActivationUseCase>();
+builder.Services.AddScoped<IDeactivateUserUseCase, DeactivateUserUseCase>();
 builder.Services.AddScoped<UsernameGenerator>();
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+builder.Services.AddScoped<IApplicationConfiguration, ApplicationConfiguration>();
 builder.Services.AddScoped<UsuarioFacade>();
 builder.Services.AddSingleton(TimeProvider.System);
-
-builder.Services.AddScoped<
-    IApplicationConfiguration,
-    ApplicationConfiguration>();
-
-builder.Services.AddScoped<
-    IEmailSender,
-    SmtpEmailSender>();
 
 var app = builder.Build();
 

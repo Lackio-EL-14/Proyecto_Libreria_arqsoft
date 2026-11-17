@@ -1,10 +1,11 @@
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Primary;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Application.Validation;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Users;
 
-public sealed class ChangePasswordUseCase
+public sealed class ChangePasswordUseCase : IChangePasswordUseCase
 {
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUser _currentUser;
@@ -29,7 +30,7 @@ public sealed class ChangePasswordUseCase
 
         var userId = _currentUser.UserId;
 
-        if (userId is not > 0)
+        if (userId is null || userId == Guid.Empty)
         {
             return false;
         }

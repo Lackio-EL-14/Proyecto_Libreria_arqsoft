@@ -1,3 +1,4 @@
+using Libreria.Servicio.Usuarios.Application.Comun;
 using Libreria.Servicio.Usuarios.Application.DTOs.Auth;
 using Libreria.Servicio.Usuarios.Application.UseCases.Auth;
 using Libreria.Servicio.Usuarios.Application.Validation;
@@ -49,15 +50,15 @@ public sealed class LoginUseCaseTests
                 Password = "Password123!"
             });
 
-        Assert.NotNull(result);
-        Assert.Equal(7, result.UserId);
-        Assert.Equal("jperez", result.Username);
-        Assert.Equal("Juan Pérez", result.FullName);
-        Assert.Equal("Administrador", result.Role);
+        Assert.True(result.EsExito);
+        Assert.Equal(7, result.Valor.UserId);
+        Assert.Equal("jperez", result.Valor.Username);
+        Assert.Equal("Juan Pérez", result.Valor.FullName);
+        Assert.Equal("Administrador", result.Valor.Role);
     }
 
     [Fact]
-    public async Task ExecuteAsync_ContrasenaIncorrecta_DevuelveNull()
+    public async Task ExecuteAsync_ContrasenaIncorrecta_DevuelveResultValidacion()
     {
         var repository = new FakeUserRepository
         {
@@ -92,6 +93,48 @@ public sealed class LoginUseCaseTests
                 Password = "incorrecta"
             });
 
-        Assert.Null(result);
+        Assert.False(result.EsExito);
+        Assert.Equal(TipoError.Validacion, result.Tipo);
+        Assert.Equal("Usuario o contraseña incorrectos.", result.Errores["Credenciales"]);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CamposVacios_DevuelveErroresSinLanzarExcepcion()
+    {
+        var useCase = new LoginUseCase(
+            new FakeUserRepository(),
+            new FakePasswordHasher(),
+            new LoginValidator());
+
+        var result = await useCase.ExecuteAsync(new LoginRequest
+        {
+            Username = "   ",
+            Password = ""
+        });
+
+        Assert.False(result.EsExito);
+        Assert.Equal(TipoError.Validacion, result.Tipo);
+        Assert.Equal("El nombre de usuario es obligatorio.", result.Errores["Username"]);
+        Assert.Equal("La contraseña es obligatoria.", result.Errores["Password"]);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CamposMuyLargos_DevuelveErroresSinLanzarExcepcion()
+    {
+        var useCase = new LoginUseCase(
+            new FakeUserRepository(),
+            new FakePasswordHasher(),
+            new LoginValidator());
+
+        var result = await useCase.ExecuteAsync(new LoginRequest
+        {
+            Username = new string('a', 51),
+            Password = new string('b', 129)
+        });
+
+        Assert.False(result.EsExito);
+        Assert.Equal(TipoError.Validacion, result.Tipo);
+        Assert.Equal("El nombre de usuario no puede superar los 50 caracteres.", result.Errores["Username"]);
+        Assert.Equal("La contraseña no puede superar los 128 caracteres.", result.Errores["Password"]);
     }
 }

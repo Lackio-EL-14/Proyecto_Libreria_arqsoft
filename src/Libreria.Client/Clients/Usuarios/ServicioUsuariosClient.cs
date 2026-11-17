@@ -29,6 +29,20 @@ public sealed class ServicioUsuariosClient : ApiClientBase, IServicioUsuariosCli
         return result;
     }
 
+    public async Task<bool> SesionActivaAsync(
+        Guid publicId,
+        CancellationToken cancellationToken = default)
+    {
+        if (publicId == Guid.Empty)
+        {
+            return false;
+        }
+
+        return await GetAsync<bool>(
+            $"api/usuarios/{publicId:D}/sesion-activa",
+            cancellationToken);
+    }
+
     public async Task<IReadOnlyDictionary<int, string>> ObtenerNombresAsync(
         IEnumerable<int> usuarioIds,
         CancellationToken cancellationToken = default)
@@ -119,14 +133,6 @@ public sealed class ServicioUsuariosClient : ApiClientBase, IServicioUsuariosCli
             request,
             cancellationToken);
 
-    public Task ActivarUsuarioAsync(
-    ActivateUserRequestDto request,
-    CancellationToken cancellationToken = default) =>
-    PostAsync(
-        "api/usuarios/activar",
-        request,
-        cancellationToken);
-
     public Task CambiarContrasenaAsync(
     ChangePasswordRequestDto request,
     CancellationToken cancellationToken = default) =>
@@ -148,23 +154,6 @@ public sealed class ServicioUsuariosClient : ApiClientBase, IServicioUsuariosCli
 
         return DeleteAsync(
             $"api/usuarios/{publicId:D}",
-            cancellationToken);
-    }
-
-    public Task ReenviarActivacionAsync(
-        Guid publicId,
-        CancellationToken cancellationToken = default)
-    {
-        if (publicId == Guid.Empty)
-        {
-            throw new ArgumentException(
-                "El identificador del usuario es obligatorio.",
-                nameof(publicId));
-        }
-
-        return PostAsync(
-            $"api/usuarios/{publicId:D}/reenviar-activacion",
-            new { },
             cancellationToken);
     }
 }

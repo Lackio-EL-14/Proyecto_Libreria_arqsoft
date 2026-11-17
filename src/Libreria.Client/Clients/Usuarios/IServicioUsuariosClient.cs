@@ -13,12 +13,15 @@ public interface IServicioUsuariosClient : IApiClient
         int usuarioId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> SesionActivaAsync(
+        Guid publicId,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyDictionary<int, string>> ObtenerNombresAsync(
         IEnumerable<int> usuarioIds,
         CancellationToken cancellationToken = default);
 
-    // Contrato 6.4: la auditoría de los MS nuevos guarda el PublicId (GUID) del usuario.
-    // Mientras Usuarios no acepte GUID (US-124/US-127) devuelve un diccionario vacío.
+    // Contrato 6.4: consulta de nombres por PublicId (GUID) para auditoría entre MS.
     Task<IReadOnlyDictionary<Guid, string>> ObtenerNombresAsync(
         IEnumerable<Guid> usuarioIds,
         CancellationToken cancellationToken = default);
@@ -34,10 +37,6 @@ public interface IServicioUsuariosClient : IApiClient
         CreateUserRequestDto request,
         CancellationToken cancellationToken = default);
 
-    Task ActivarUsuarioAsync(
-    ActivateUserRequestDto request,
-    CancellationToken cancellationToken = default);
-
     Task CambiarContrasenaAsync(
     ChangePasswordRequestDto request,
     CancellationToken cancellationToken = default);
@@ -45,8 +44,4 @@ public interface IServicioUsuariosClient : IApiClient
     Task DarDeBajaUsuarioAsync(
     Guid publicId,
     CancellationToken cancellationToken = default);
-
-    Task ReenviarActivacionAsync(
-        Guid publicId,
-        CancellationToken cancellationToken = default);
 }

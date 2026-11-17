@@ -1,27 +1,32 @@
 using Libreria.Servicio.Usuarios.Domain.Entities;
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 
-namespace Libreria.Servicio.Usuarios.Application.Abstractions;
+namespace Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 
 public interface IUserRepository
 {
     Task<User?> GetActiveByUsernameAsync(string username);
 
-    Task<string?> GetActivePasswordHashAsync(int userId);
+    Task<string?> GetActivePasswordHashAsync(Guid userId);
 
     Task<bool> UpdatePasswordAsync(
-        int userId,
+        Guid userId,
         string previousHash,
         string newHash);
 
     Task<bool> IsSessionActiveAsync(int userId);
 
+    Task<bool> IsSessionActiveAsync(Guid publicId);
+
     Task<IReadOnlyDictionary<int, string>> GetFullNamesByIdsAsync(
     IReadOnlyCollection<int> userIds);
 
+    Task<IReadOnlyDictionary<Guid, string>> GetFullNamesByPublicIdsAsync(
+        IReadOnlyCollection<Guid> publicIds);
+
     Task<bool> UsernameExistsAsync(string username);
 
-    Task<bool> IsActiveAdministratorAsync(int userId);
+    Task<bool> IsActiveAdministratorAsync(Guid userId);
 
     Task<IReadOnlyList<UserListItemDto>> GetListAsync(
         string? status = null);
@@ -34,26 +39,12 @@ public interface IUserRepository
 
     Task<Guid> CreatePendingAsync(User user);
 
-    Task<User?> GetByActivationTokenHashAsync(string tokenHash);
-
     Task<User?> GetByPublicIdAsync(Guid publicId);
-
-    Task<bool> UpdateActivationTokenAsync(
-        int userId,
-        string tokenHash,
-        DateTime expiresAt,
-        int modifiedByUserId,
-        DateTime modifiedAt);
-
-    Task<bool> ActivateAsync(
-        int userId,
-        string passwordHash,
-        DateTime activatedAt);
 
     Task<IReadOnlyList<UserDeactivationData>>
     GetUsersForDeactivationAsync();
 
     Task<bool> DeactivateAsync(
         int userId,
-        int modifiedByUserId);
+        Guid modifiedByUserId);
 }

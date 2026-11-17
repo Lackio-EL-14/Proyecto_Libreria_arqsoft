@@ -1,10 +1,11 @@
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Primary;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Domain.Constants;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Users;
 
-public sealed class DeactivateUserUseCase
+public sealed class DeactivateUserUseCase : IDeactivateUserUseCase
 {
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUser _currentUser;
@@ -25,7 +26,7 @@ public sealed class DeactivateUserUseCase
     {
         var actorId = _currentUser.UserId;
 
-        if (actorId is not > 0)
+        if (actorId is null || actorId == Guid.Empty)
         {
             return DeactivateUserResult.ActorNotAuthorized;
         }
@@ -43,7 +44,7 @@ public sealed class DeactivateUserUseCase
 
                 var actor =
                     users.SingleOrDefault(
-                        user => user.UserId == actorId.Value);
+                        user => user.PublicId == actorId.Value);
 
                 if (actor is null ||
                     !IsActiveAdministrator(actor))
@@ -72,7 +73,7 @@ public sealed class DeactivateUserUseCase
                     return DeactivateUserResult.LastActiveAdministrator;
                 }
 
-                if (user.UserId == actorId.Value)
+                if (user.PublicId == actorId.Value)
                 {
                     return DeactivateUserResult.SelfDeactivation;
                 }
