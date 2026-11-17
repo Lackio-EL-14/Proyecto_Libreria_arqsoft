@@ -1,0 +1,161 @@
+@page
+@model Libreria.Client.Pages.Proveedores.IndexModel
+@using Libreria.Client.DTOs.Proveedores
+@using Libreria.Client.Pages.Shared.Models
+@{
+    ViewData["Title"] = "Proveedores";
+
+    var rutaActual = new Dictionary<string, string?>
+    {
+        ["busqueda"] = Model.Busqueda,
+        ["estado"] = Model.Estado.ToString(),
+        ["orden"] = Model.Orden.ToString(),
+        ["descendente"] = Model.Descendente.ToString().ToLowerInvariant()
+    };
+
+    var columnas = new[]
+    {
+        (OrdenProveedores.Nit, "NIT"),
+        (OrdenProveedores.RazonSocial, "Razón social"),
+        (OrdenProveedores.Correo, "Correo"),
+        (OrdenProveedores.FechaCreacion, "Fecha de registro")
+    };
+}
+
+<div class="page-header">
+    <div>
+        <h1>Proveedores</h1>
+        <p>Gestión del catálogo relacional de proveedores.</p>
+    </div>
+    <a asp-page="./Create" class="btn btn--primary">+ Registrar proveedor</a>
+</div>
+
+@if (TempData["MensajeExito"] is string mensajeExito)
+{
+    <div class="mensaje mensaje--exito" role="status">@mensajeExito</div>
+}
+@if (TempData["MensajeError"] is string mensajeError)
+{
+    <div class="mensaje mensaje--error" role="alert">@mensajeError</div>
+}
+
+<form method="get" class="filtro-barra">
+    <input type="hidden" name="orden" value="@Model.Orden" />
+    <input type="hidden" name="descendente" value="@Model.Descendente.ToString().ToLowerInvariant()" />
+
+    <div class="form-group filtro-barra__campo">
+        <label for="busqueda">Buscar proveedor o contacto:</label>
+        <input id="busqueda" name="busqueda" value="@Model.Busqueda" class="form-control" maxlength="200" />
+    </div>
+    <div class="form-group filtro-barra__estado">
+        <label for="estado">Estado:</label>
+        <select id="estado" name="estado" class="form-control">
+            <option value="Activos" selected="@(Model.Estado == EstadoFiltroProveedores.Activos ? "selected" : null)">Activos</option>
+            <option value="Inactivos" selected="@(Model.Estado == EstadoFiltroProveedores.Inactivos ? "selected" : null)">Inactivos</option>
+            <option value="Todos" selected="@(Model.Estado == EstadoFiltroProveedores.Todos ? "selected" : null)">Todos</option>
+        </select>
+    </div>
+    <div class="filtro-barra__acciones">
+        <button class="btn btn--secondary">Buscar</button>
+        <a asp-page="./Index" asp-all-route-data="rutaActual" class="btn btn--secondary">Actualizar</a>
+        @if (Model.HayFiltros)
+        {
+            <a asp-page="./Index" class="btn btn--secondary">Limpiar</a>
+        }
+    </div>
+</form>
+
+@if (Model.Proveedores.Count == 0)
+{
+    <div class="estado-vacio"><p>No hay proveedores para mostrar.</p></div>
+}
+else
+{
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    @foreach (var columna in columnas)
+                    {
+                        <th aria-sort="@Model.AriaSort(columna.Item1)">
+                            <a asp-page="./Index" asp-all-route-data="Model.RutaOrden(columna.Item1)" class="tabla-orden">
+                                @columna.Item2 <span>@Model.IndicadorOrden(columna.Item1)</span>
+                            </a>
+                        </th>
+                    }
+                    <th>Contacto</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var proveedor in Model.Proveedores)
+                {
+                    <tr>
+                        <td>@proveedor.Nit</td>
+                        <td style="font-weight: 600">@proveedor.RazonSocial</td>
+                        <td>@(proveedor.Correo ?? "—")</td>
+                        <td>@proveedor.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>
+                            @proveedor.NombreContacto<br />
+                            <small>@(proveedor.TelefonoContacto ?? proveedor.CorreoContacto)</small>
+                        </td>
+                        <td>
+                            <span class="badge @(proveedor.Estado ? "badge--accent" : "")">
+                                @(proveedor.Estado ? "Activo" : "Inactivo")
+                            </span>
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                @if (proveedor.Estado)
+                                {
+                                    <a asp-page="./Edit" asp-route-id="@proveedor.PublicId" class="btn-table">Editar</a>
+                                    <button
+                                        type="button"
+                                        class="btn-table btn-table--danger"
+                                        data-confirm-trigger
+                                        data-modal-target="proveedor-baja-modal"
+                                        data-entity-id="@proveedor.PublicId"
+                                        data-entity-name="@proveedor.RazonSocial">
+                                        Dar de baja
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button
+                                        type="button"
+                                        class="btn-table"
+                                        data-confirm-trigger
+                                        data-modal-target="proveedor-reactivar-modal"
+                                        data-entity-id="@proveedor.PublicId"
+                                        data-entity-name="@proveedor.RazonSocial">
+                                        Reactivar
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@await Html.PartialAsync("_ConfirmModal", new ConfirmModalModel
+{
+    Id = "proveedor-baja-modal",
+    Titulo = "Confirmar baja de proveedor",
+    MensajePrincipal = "¿Desea dar de baja al proveedor",
+    Handler = "DarDeBaja",
+    TextoBotonConfirmar = "Confirmar baja"
+})
+
+@await Html.PartialAsync("_ConfirmModal", new ConfirmModalModel
+{
+    Id = "proveedor-reactivar-modal",
+    Titulo = "Confirmar reactivación",
+    MensajePrincipal = "¿Desea reactivar al proveedor",
+    Handler = "Reactivar",
+    TextoBotonConfirmar = "Reactivar",
+    ClaseBotonConfirmar = "btn--primary"
+})

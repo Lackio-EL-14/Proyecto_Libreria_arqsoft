@@ -2,8 +2,8 @@ using System.Net.Http.Headers;
 using Libreria.Client.Clients.Clientes;
 using Libreria.Client.Clients.Common;
 using Libreria.Client.Clients.Productos;
+using Libreria.Client.Clients.Proveedores;
 using Libreria.Client.Clients.Usuarios;
-using Libreria.Client.Clients.Ventas;
 
 namespace Libreria.Client.Clients.DependencyInjection;
 
@@ -29,9 +29,9 @@ public static class ServicioClientsExtensions
     public static IServiceCollection AddModuloClientes(this IServiceCollection services, IConfiguration configuration) =>
         services.AddClienteDelGateway<IServicioClientesClient, ServicioClientesClient>(configuration);
 
-    // Dueño: Cesar (Ventas).
-    public static IServiceCollection AddModuloVentas(this IServiceCollection services, IConfiguration configuration) =>
-        services.AddClienteDelGateway<IServicioVentasClient, ServicioVentasClient>(configuration);
+    // Microservicio relacional de Proveedores.
+    public static IServiceCollection AddModuloProveedores(this IServiceCollection services, IConfiguration configuration) =>
+        services.AddClienteDelGateway<IServicioProveedoresClient, ServicioProveedoresClient>(configuration);
 
     // Dueño: Josue (Productos, categorías, marcas e histórico).
     public static IServiceCollection AddModuloProductos(this IServiceCollection services, IConfiguration configuration) =>

@@ -47,10 +47,6 @@ public sealed class ClienteRepositoryFalso : IClienteRepository
     public Task<IReadOnlyList<Cliente>> ObtenerActivasAsync(string? busqueda = null) =>
         ListarAsync(new FiltroClientes { Busqueda = busqueda, Estado = true });
 
-    public Task<IReadOnlyList<Cliente>> BuscarActivosPorCiNitAsync(string ciNit) =>
-        Task.FromResult<IReadOnlyList<Cliente>>(
-            _clientes.Where(c => c.Estado && c.CiNit.StartsWith(ciNit)).ToList());
-
     public Task<Cliente?> ObtenerPorPublicIdAsync(Guid publicId) =>
         Task.FromResult(Copia(_clientes.SingleOrDefault(c => c.PublicId == publicId)));
 

@@ -4,9 +4,9 @@
 @inject IAuthorizationService AuthorizationService
 @{
     var esAdministrador = (await AuthorizationService.AuthorizeAsync(User, PoliticasAcceso.SoloAdministrador)).Succeeded;
-    var puedeVender = (await AuthorizationService.AuthorizeAsync(User, PoliticasAcceso.Ventas)).Succeeded;
+    var puedeGestionarClientes = (await AuthorizationService.AuthorizeAsync(User, PoliticasAcceso.GestionClientes)).Succeeded;
     var currentPage = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
-    var menuModel = new MenuModuleViewModel(currentPage, esAdministrador, puedeVender);
+    var menuModel = new MenuModuleViewModel(currentPage, esAdministrador, puedeGestionarClientes);
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -84,8 +84,8 @@
                     </a>
                 </div>
 
-                <partial name="_MenuVentas" model="menuModel" />
                 <partial name="_MenuClientes" model="menuModel" />
+                <partial name="_MenuProveedores" model="menuModel" />
                 <partial name="_MenuInventario" model="menuModel" />
                 <partial name="_MenuUsuarios" model="menuModel" />
             </nav>

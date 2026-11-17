@@ -56,23 +56,6 @@ public class ClienteRepository : IClienteRepository
     public Task<IReadOnlyList<Cliente>> ObtenerActivasAsync(string? busqueda = null) =>
         ListarAsync(new FiltroClientes { Busqueda = busqueda, Estado = true });
 
-    public async Task<IReadOnlyList<Cliente>> BuscarActivosPorCiNitAsync(string ciNit)
-    {
-        await using var connection = _connectionFactory.CreateConnection();
-        await using var command = connection.CreateCommand();
-
-        command.CommandText = $@"
-            SELECT {ColumnasCliente}
-            FROM Cliente
-            WHERE Estado = 1
-              AND CiNit LIKE CONCAT(@CiNit, '%')
-            ORDER BY RazonSocial, ClienteId";
-
-        AgregarParametro(command, "@CiNit", EscaparLike(ciNit.Trim()));
-
-        return await LeerClientesAsync(command);
-    }
-
     public async Task<Cliente?> ObtenerPorPublicIdAsync(Guid publicId)
     {
         await using var connection = _connectionFactory.CreateConnection();
@@ -182,7 +165,7 @@ public class ClienteRepository : IClienteRepository
         return Convert.ToInt64(await command.ExecuteScalarAsync()) > 0;
     }
 
-    /// <summary>En la BD de Clientes nada apunta a un cliente (Ventas guarda su PublicId sin FK).</summary>
+    /// <summary>El agregado Cliente no tiene relaciones dependientes en su propia base.</summary>
     public Task<bool> TieneRelacionesAsync(Guid publicId) => Task.FromResult(false);
 
     private static async Task<T> EjecutarAsync<T>(Func<Task<T>> escritura)

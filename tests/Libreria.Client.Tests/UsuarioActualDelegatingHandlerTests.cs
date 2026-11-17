@@ -24,7 +24,7 @@ public sealed class UsuarioActualDelegatingHandlerTests
 
     [Theory]
     [InlineData("/api/clientes")]
-    [InlineData("/api/ventas")]
+    [InlineData("/api/proveedores")]
     [InlineData("/api/productos")]
     [InlineData("/api/auth/login")]
     public async Task OtrosServicios_ConservanElIdentificadorNumerico(string ruta)

@@ -1,7 +1,7 @@
 namespace Libreria.Servicio.Clientes.Infrastructure.Connection;
 
 /// <summary>
-/// Singleton (copia del de Ventas): guarda la cadena de conexión de la BD de Clientes.
+/// Singleton: guarda la cadena de conexión de la BD de Clientes.
 /// Se configura una sola vez al arrancar; un segundo valor distinto es un error.
 /// </summary>
 public sealed class ConnectionStringSingleton

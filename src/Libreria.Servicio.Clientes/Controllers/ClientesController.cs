@@ -38,23 +38,16 @@ public sealed class ClientesController : ControllerBase
     public async Task<IActionResult> Obtener(Guid publicId) =>
         (await _clientes.ObtenerAsync(publicId)).AActionResult(cliente => Ok(cliente));
 
-    /// <summary>Clientes <b>activos</b> cuyo CI/NIT empieza con el texto dado (para la venta).</summary>
-    [HttpGet("buscar")]
-    [ProducesResponseType<IReadOnlyList<ClienteVentaItem>>(StatusCodes.Status200OK)]
-    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> BuscarParaVenta([FromQuery] string? ciNit) =>
-        (await _clientes.BuscarParaVentaAsync(ciNit)).AActionResult(clientes => Ok(clientes));
-
-    /// <summary>Alta (también la alta rápida de la venta). Responde con la forma de <see cref="ClienteRegistroResult"/>.</summary>
+    /// <summary>Registra un cliente en la base propia del microservicio.</summary>
     [HttpPost]
-    [ProducesResponseType<ClienteRegistroResult>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ClienteDetalle>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Registrar([FromBody] ClienteInput input) =>
         (await _clientes.RegistrarAsync(input)).AActionResult(cliente => CreatedAtAction(
             nameof(Obtener),
             new { publicId = cliente.PublicId },
-            ClienteRegistroResult.Correcto(cliente)));
+            cliente));
 
     /// <summary>Edición de CI/NIT, razón social y correo de un cliente activo.</summary>
     [HttpPut("{publicId:guid}")]

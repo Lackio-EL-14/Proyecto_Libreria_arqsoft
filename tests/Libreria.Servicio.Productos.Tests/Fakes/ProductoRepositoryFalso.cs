@@ -106,47 +106,6 @@ public sealed class ProductoRepositoryFalso : IProductoRepository
         return Task.FromResult(false);
     }
 
-    public Task<Producto?> ObtenerParaVentaAsync(Guid publicId)
-    {
-        return ObtenerPorPublicIdAsync(publicId, true);
-    }
-
-    public Task<bool> DescontarStockAsync(
-        Guid publicId,
-        int cantidad)
-    {
-        var producto = _productos.FirstOrDefault(item =>
-            item.PublicId == publicId
-            && item.Estado);
-
-        if (producto is null
-            || cantidad <= 0
-            || producto.Stock < cantidad)
-        {
-            return Task.FromResult(false);
-        }
-
-        producto.Stock -= cantidad;
-
-        return Task.FromResult(true);
-    }
-
-    public Task<bool> RestaurarStockAsync(
-        Guid publicId,
-        int cantidad)
-    {
-        var producto = _productos.FirstOrDefault(item =>
-            item.PublicId == publicId
-            && item.Estado);
-
-        if (producto is null || cantidad <= 0)
-            return Task.FromResult(false);
-
-        producto.Stock += cantidad;
-
-        return Task.FromResult(true);
-    }
-
     public Task ActualizarCategoriaEmbebidaAsync(
         Guid categoriaPublicId,
         string nuevoNombre)

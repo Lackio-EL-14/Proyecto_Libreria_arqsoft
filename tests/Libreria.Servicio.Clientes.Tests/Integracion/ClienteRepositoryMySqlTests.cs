@@ -77,13 +77,10 @@ public sealed class ClienteRepositoryMySqlTests : IAsyncLifetime
         Assert.True((await _servicio.CambiarEstadoAsync(publicId, activo: false)).EsExito);
         var inactivo = await _servicio.ObtenerAsync(publicId);
         Assert.False(inactivo.Valor.Estado);
-        Assert.Empty((await _servicio.BuscarParaVentaAsync(Prefijo)).Valor);
-
         // Reactivar dos veces: la segunda no cambia filas, pero el cliente existe.
         Assert.True((await _servicio.CambiarEstadoAsync(publicId, activo: true)).EsExito);
         Assert.True((await _servicio.CambiarEstadoAsync(publicId, activo: true)).EsExito);
-        var encontrado = Assert.Single((await _servicio.BuscarParaVentaAsync(Prefijo)).Valor);
-        Assert.Equal(publicId, encontrado.PublicId);
+        Assert.True((await _servicio.ObtenerAsync(publicId)).Valor.Estado);
     }
 
     [MySqlFact]
@@ -106,16 +103,6 @@ public sealed class ClienteRepositoryMySqlTests : IAsyncLifetime
         Assert.Equal("CiNit", error.Campo);
         var mysql = Assert.IsType<MySqlException>(error.InnerException);
         Assert.Equal(MySqlErrorCode.DuplicateKeyEntry, mysql.ErrorCode);
-    }
-
-    [MySqlFact]
-    public async Task Buscar_para_venta_excluye_al_cliente_semilla_inactivo()
-    {
-        var resultado = await _servicio.BuscarParaVentaAsync("1234567");
-
-        Assert.True(resultado.EsExito);
-        Assert.Empty(resultado.Valor);
-        Assert.Single((await _servicio.BuscarParaVentaAsync("9999999")).Valor);
     }
 
     [MySqlFact]

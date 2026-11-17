@@ -11,12 +11,8 @@ GET {{gateway}}/salud
 GET {{gateway}}/api/clientes
 Authorization: Bearer {{token}}
 
-### Ventas (5101)
-GET {{gateway}}/api/ventas/ping
-Authorization: Bearer {{token}}
-
-### Ventas: listado
-GET {{gateway}}/api/ventas
+### Proveedores (5101)
+GET {{gateway}}/api/proveedores
 Authorization: Bearer {{token}}
 
 ### Productos (5104)

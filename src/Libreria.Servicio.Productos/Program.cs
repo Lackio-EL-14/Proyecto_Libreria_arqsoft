@@ -69,10 +69,6 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<ObtenerListadoProductosUseCase>();
 builder.Services.AddScoped<ObtenerDetalleProductoUseCase>();
 
-builder.Services.AddScoped<BuscarProductosUseCase>();
-builder.Services.AddScoped<DescontarStockUseCase>();
-builder.Services.AddScoped<RestaurarStockUseCase>();
-
 builder.Services.AddScoped<
     ICrudRepository<Categoria>,
     MongoCategoriaRepository>();

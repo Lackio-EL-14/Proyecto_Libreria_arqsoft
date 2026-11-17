@@ -1,7 +1,6 @@
 using Libreria.Servicio.Productos.Application.Models.Productos;
 using Libreria.Servicio.Productos.Application.UseCases.Productos;
 using Libreria.Servicio.Productos.Presentation.Comun;
-using Libreria.Servicio.Productos.Presentation.Dtos;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Libreria.Servicio.Productos.Presentation.Controllers;
@@ -18,10 +17,6 @@ public sealed class ProductosController : ControllerBase
     private readonly ActualizarProductoUseCase _actualizar;
     private readonly CambiarEstadoProductoUseCase _cambiarEstado;
 
-    private readonly BuscarProductosUseCase _buscar;
-    private readonly DescontarStockUseCase _descontarStock;
-    private readonly RestaurarStockUseCase _restaurarStock;
-
     public ProductosController(
         ObtenerListadoProductosUseCase listar,
         ObtenerFormularioProductoUseCase formulario,
@@ -29,10 +24,7 @@ public sealed class ProductosController : ControllerBase
         ObtenerProductoEdicionUseCase obtenerEdicion,
         CrearProductoUseCase crear,
         ActualizarProductoUseCase actualizar,
-        CambiarEstadoProductoUseCase cambiarEstado,
-        BuscarProductosUseCase buscar,
-        DescontarStockUseCase descontarStock,
-        RestaurarStockUseCase restaurarStock)
+        CambiarEstadoProductoUseCase cambiarEstado)
     {
         _listar = listar;
         _formulario = formulario;
@@ -41,10 +33,6 @@ public sealed class ProductosController : ControllerBase
         _crear = crear;
         _actualizar = actualizar;
         _cambiarEstado = cambiarEstado;
-
-        _buscar = buscar;
-        _descontarStock = descontarStock;
-        _restaurarStock = restaurarStock;
     }
 
     // Front Productos: listado + filtros.
@@ -71,7 +59,6 @@ public sealed class ProductosController : ControllerBase
         return Ok(resultado);
     }
 
-    // También es el contrato que consume Ventas.
     [HttpGet("{publicId:guid}")]
     public async Task<IActionResult> Obtener(Guid publicId)
     {
@@ -143,50 +130,4 @@ public sealed class ProductosController : ControllerBase
         return resultado.AActionResult();
     }
 
-    // Integración Ventas -> Productos.
-    [HttpGet("buscar")]
-    public async Task<IActionResult> Buscar(
-        [FromQuery] string? termino)
-    {
-        var resultado =
-            await _buscar.EjecutarAsync(termino);
-
-        return resultado.AActionResult(Ok);
-    }
-
-    [HttpPost("{publicId:guid}/stock/descontar")]
-    public async Task<IActionResult> DescontarStock(
-        Guid publicId,
-        [FromBody] StockRequest request)
-    {
-        var resultado =
-            await _descontarStock.EjecutarAsync(
-                publicId,
-                request.Cantidad,
-                request.VentaPublicId);
-
-        return resultado.AActionResult(() =>
-            Ok(new
-            {
-                mensaje = "Stock descontado correctamente."
-            }));
-    }
-
-    [HttpPost("{publicId:guid}/stock/restaurar")]
-    public async Task<IActionResult> RestaurarStock(
-        Guid publicId,
-        [FromBody] StockRequest request)
-    {
-        var resultado =
-            await _restaurarStock.EjecutarAsync(
-                publicId,
-                request.Cantidad,
-                request.VentaPublicId);
-
-        return resultado.AActionResult(() =>
-            Ok(new
-            {
-                mensaje = "Stock restaurado correctamente."
-            }));
-    }
 }

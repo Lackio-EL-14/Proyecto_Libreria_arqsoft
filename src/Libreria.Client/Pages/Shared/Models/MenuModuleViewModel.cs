@@ -3,7 +3,7 @@ namespace Libreria.Client.Pages.Shared.Models;
 public sealed record MenuModuleViewModel(
     string CurrentPage,
     bool EsAdministrador,
-    bool PuedeVender)
+    bool PuedeGestionarClientes)
 {
     public string ActiveClass(string path)
     {

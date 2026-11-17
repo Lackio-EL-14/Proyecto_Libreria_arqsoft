@@ -8,7 +8,6 @@ namespace Libreria.Client.Clients.Clientes;
 /// Puerto del Front hacia el MS Clientes detrás del gateway (ruta <c>api/clientes</c>).
 /// Las lecturas lanzan <see cref="ServicioNoDisponibleException"/> si el MS no responde;
 /// las escrituras devuelven <see cref="ResultadoApi"/> y nunca lanzan.
-/// Conserva <see cref="IApiClient"/> porque el alta rápida de la venta lo usa en su forma genérica.
 /// </summary>
 public interface IServicioClientesClient : IApiClient
 {

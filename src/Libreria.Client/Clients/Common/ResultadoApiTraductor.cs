@@ -78,7 +78,7 @@ internal static class ResultadoApiTraductor
     }
 
     // Acepta los dos formatos de 400: el diccionario plano { "Input.Nombre": "mensaje" }
-    // que usa hoy Ventas y el ValidationProblemDetails de la sección 6.5 ({ "errors": { "Nombre": ["mensaje"] } }).
+    // que usan los servicios y el ValidationProblemDetails ({ "errors": { "Nombre": ["mensaje"] } }).
     private static async Task<IReadOnlyDictionary<string, string>> LeerErroresAsync(
         HttpResponseMessage respuesta, CancellationToken ct)
     {

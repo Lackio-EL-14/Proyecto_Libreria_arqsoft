@@ -2,17 +2,17 @@
 # Las contraseñas se leen de .env (copiar .env.example); no tienen valor por defecto.
 
 services:
-  ventas-db:
+  proveedores-db:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: ventas-db
+    container_name: proveedores-db
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=${VENTAS_DB_SA_PASSWORD:?Defina VENTAS_DB_SA_PASSWORD en .env}
+      - MSSQL_SA_PASSWORD=${PROVEEDORES_DB_SA_PASSWORD:?Defina PROVEEDORES_DB_SA_PASSWORD en .env}
     ports:
       - "1433:1433"
     volumes:
-      - ventas_data:/var/opt/mssql
-      - ./db/ventas:/scripts:ro
+      - proveedores_data:/var/opt/mssql
+      - ./db/proveedores:/scripts:ro
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\" || exit 1"]
       interval: 10s
@@ -75,7 +75,7 @@ services:
       retries: 10
 
 volumes:
-  ventas_data:
+  proveedores_data:
   usuarios_data:
   clientes_data:
   productos_data:
