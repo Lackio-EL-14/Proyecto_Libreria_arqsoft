@@ -52,6 +52,22 @@
             <input asp-for="Filtro.FechaDesde" type="date" class="form-control" style="width: 100%;" />
         </div>
 
+        <div style="flex: 1; min-width: 140px;">
+            <label asp-for="Filtro.Orden" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem;">Ordenar por</label>
+            <select asp-for="Filtro.Orden" class="form-control" style="width: 100%;">
+                <option value="Fecha">Fecha</option>
+                <option value="Total">Total</option>
+            </select>
+        </div>
+
+        <div style="flex: 1; min-width: 140px;">
+            <label asp-for="Filtro.Descendente" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem;">Dirección</label>
+            <select asp-for="Filtro.Descendente" class="form-control" style="width: 100%;">
+                <option value="true">Descendente</option>
+                <option value="false">Ascendente</option>
+            </select>
+        </div>
+
         <div style="flex: 1; min-width: 160px;">
             <label asp-for="Filtro.FechaHasta" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem;">Fecha Hasta</label>
             <input asp-for="Filtro.FechaHasta" type="date" class="form-control" style="width: 100%;" />
@@ -91,6 +107,10 @@ else
                     <th>Cliente</th>
                     <th>CI / NIT</th>
                     <th style="text-align: right;">Total</th>
+                    @if (Model.EsAdministrador)
+                    {
+                        <th style="text-align: right;">Ganancia</th>
+                    }
                     <th style="text-align: center;">Estado</th>
                     <th style="text-align: center;">Acciones</th>
                 </tr>
@@ -108,6 +128,12 @@ else
                         <td style="text-align: right; font-weight: 700; white-space: nowrap; color: var(--color-primary);">
                             Bs. @venta.Total.ToString("N2")
                         </td>
+                        @if (Model.EsAdministrador)
+                        {
+                            <td style="text-align: right; font-weight: 600; white-space: nowrap; color: var(--color-accent);">
+                                @(venta.GananciaTotal.HasValue ? $"Bs. {venta.GananciaTotal.Value:N2}" : "-")
+                            </td>
+                        }
                         <td style="text-align: center;">
                             @if (venta.Estado == "Activa")
                             {
@@ -137,6 +163,17 @@ else
                                title="Ver comprobante de venta">
                                 Comprobante
                             </a>
+
+                            @if (venta.Estado == "Activa")
+                            {
+                                <button type="button"
+                                        class="btn btn--secondary"
+                                        style="padding: 0.35rem 0.65rem; font-size: 0.82rem; margin-left: 0.25rem;"
+                                        onclick="abrirModalCorregir('@venta.PublicId')"
+                                        title="Corregir cliente u observación">
+                                    Corregir
+                                </button>
+                            }
 
                             @if (Model.EsAdministrador && venta.Estado == "Activa")
                             {
@@ -200,6 +237,15 @@ else
                         <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">Registrado por</strong>
                         <span id="detalleCreadoPor" style="color: var(--color-text);"></span>
                     </div>
+                    <div>
+                        <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">Observación</strong>
+                        <span id="detalleObservacion" style="color: var(--color-text);"></span>
+                    </div>
+                    <div id="detalleModificacionContainer" style="display: none;">
+                        <strong style="color: var(--color-secondary); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">Última corrección</strong>
+                        <span id="detalleModificadoPor" style="color: var(--color-text);"></span>
+                        <span id="detalleFechaModificacion" style="font-size: 0.78rem; color: var(--color-secondary); display: block;"></span>
+                    </div>
                     <div id="detalleAnulacionContainer" style="display: none;">
                         <strong style="color: var(--color-danger); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.2rem;">Anulado por</strong>
                         <span id="detalleAnuladoPor" style="color: var(--color-danger); font-weight: 500;"></span>
@@ -257,6 +303,58 @@ else
             <button type="button" class="btn btn--secondary" onclick="cerrarModalDetalle()">Cerrar</button>
         </footer>
     </div>
+</dialog>
+
+<dialog id="modalCorregirVenta" class="confirmation-modal" aria-labelledby="modalCorregirTitulo" aria-modal="true">
+    <form method="post" asp-page-handler="Corregir" class="confirmation-modal__content">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="publicId" id="corregirVentaPublicId" />
+
+        <header class="confirmation-modal__header">
+            <h2 id="modalCorregirTitulo">Corregir datos de la venta</h2>
+            <button type="button" class="confirmation-modal__close" onclick="cerrarModalCorregir()" aria-label="Cerrar modal">&times;</button>
+        </header>
+
+        <div class="confirmation-modal__body">
+            <div id="corregirLoader" style="display: none; color: var(--color-secondary); margin-bottom: 1rem;">
+                Cargando datos actuales...
+            </div>
+            <div id="corregirError" class="alert alert--danger" style="display: none; margin-bottom: 1rem;"></div>
+
+            <div class="form-group">
+                <label for="corregirCiNitCliente">CI/NIT del cliente activo</label>
+                <input id="corregirCiNitCliente"
+                       name="ciNitCliente"
+                       class="form-control"
+                       maxlength="30"
+                       required
+                       autocomplete="off" />
+                <small style="color: var(--color-secondary);">El servicio de Clientes comprobará que exista y esté activo.</small>
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+                <label for="corregirObservacion">Observación</label>
+                <textarea id="corregirObservacion"
+                          name="observacion"
+                          class="form-control"
+                          rows="4"
+                          maxlength="250"
+                          placeholder="Observación opcional de la venta"></textarea>
+                <div style="display: flex; justify-content: flex-end; margin-top: 0.35rem;">
+                    <span id="contadorObservacion" style="font-size: 0.78rem; color: var(--color-secondary); font-family: monospace;">0/250</span>
+                </div>
+            </div>
+
+            <div class="confirmation-modal__warning" style="margin-top: 1rem;">
+                Se actualizará la copia del cliente guardada en Ventas y se registrarán el usuario y la fecha de modificación.
+            </div>
+        </div>
+
+        <footer class="confirmation-modal__actions">
+            <button type="button" class="btn btn--secondary" onclick="cerrarModalCorregir()">Cancelar</button>
+            <button type="submit" id="btnConfirmarCorreccion" class="btn btn--primary">Guardar corrección</button>
+        </footer>
+    </form>
 </dialog>
 
 @if (Model.EsAdministrador)
@@ -325,6 +423,7 @@ else
     <script>
         const esAdministrador = @(Model.EsAdministrador ? "true" : "false");
         const modalDetalle = document.getElementById('modalDetalleVenta');
+        const modalCorregir = document.getElementById('modalCorregirVenta');
         const modalAnular = document.getElementById('modalAnularVenta');
         let temporizadorRefresco = null;
 
@@ -451,6 +550,16 @@ else
             document.getElementById('detalleClienteCiNit').textContent = data.clienteCiNit || '-';
             document.getElementById('detalleFechaCreacion').textContent = formatearFecha(data.fechaCreacion);
             document.getElementById('detalleCreadoPor').textContent = data.creadoPor || '-';
+            document.getElementById('detalleObservacion').textContent = data.observacion || 'Sin observación';
+
+            const contModificacion = document.getElementById('detalleModificacionContainer');
+            if (data.fechaModificacion) {
+                contModificacion.style.display = 'block';
+                document.getElementById('detalleModificadoPor').textContent = data.modificadoPor || 'Usuario';
+                document.getElementById('detalleFechaModificacion').textContent = formatearFecha(data.fechaModificacion);
+            } else {
+                contModificacion.style.display = 'none';
+            }
 
             const badgeContainer = document.getElementById('detalleEstadoBadge');
             if (data.estado === 'Activa') {
@@ -507,6 +616,62 @@ else
             if (modalDetalle) modalDetalle.close();
         }
 
+        const corregirObservacion = document.getElementById('corregirObservacion');
+        const contadorObservacion = document.getElementById('contadorObservacion');
+
+        function actualizarContadorObservacion() {
+            if (!corregirObservacion || !contadorObservacion) return;
+            contadorObservacion.textContent = `${corregirObservacion.value.length}/250`;
+        }
+
+        if (corregirObservacion) {
+            corregirObservacion.addEventListener('input', actualizarContadorObservacion);
+        }
+
+        async function abrirModalCorregir(publicId) {
+            if (!modalCorregir) return;
+
+            const loader = document.getElementById('corregirLoader');
+            const error = document.getElementById('corregirError');
+            const boton = document.getElementById('btnConfirmarCorreccion');
+            document.getElementById('corregirVentaPublicId').value = publicId;
+            document.getElementById('corregirCiNitCliente').value = '';
+            corregirObservacion.value = '';
+            loader.style.display = 'block';
+            error.style.display = 'none';
+            boton.disabled = true;
+            actualizarContadorObservacion();
+            modalCorregir.showModal();
+
+            try {
+                const respuesta = await fetch(`?handler=Detalle&publicId=${encodeURIComponent(publicId)}`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (!respuesta.ok) {
+                    throw new Error('No se pudieron cargar los datos actuales de la venta.');
+                }
+
+                const data = await respuesta.json();
+                if (data.estado !== 'Activa') {
+                    throw new Error('Una venta anulada no puede ser modificada.');
+                }
+
+                document.getElementById('corregirCiNitCliente').value = data.clienteCiNit || '';
+                corregirObservacion.value = data.observacion || '';
+                actualizarContadorObservacion();
+                boton.disabled = false;
+            } catch (e) {
+                error.textContent = e.message;
+                error.style.display = 'block';
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        function cerrarModalCorregir() {
+            if (modalCorregir) modalCorregir.close();
+        }
+
         const textareaMotivo = document.getElementById('motivoAnulacion');
         const contadorMotivo = document.getElementById('contadorCaracteresMotivo');
 
@@ -541,7 +706,7 @@ else
             if (modalAnular) modalAnular.close();
         }
 
-        [modalDetalle, modalAnular].forEach(dialog => {
+        [modalDetalle, modalCorregir, modalAnular].forEach(dialog => {
             if (!dialog) return;
             dialog.addEventListener('click', (e) => {
                 const rect = dialog.getBoundingClientRect();
@@ -563,6 +728,7 @@ else
         function ejecutarRefresco() {
             if (document.hidden) return;
             if (modalDetalle && modalDetalle.open) return;
+            if (modalCorregir && modalCorregir.open) return;
             if (modalAnular && modalAnular.open) return;
 
             window.location.reload();
