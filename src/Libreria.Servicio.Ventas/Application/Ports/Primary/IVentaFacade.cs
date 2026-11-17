@@ -16,10 +16,13 @@ public interface IVentaFacade
         string motivoAnulacion,
         CancellationToken cancellationToken = default);
 
+    Task<Result> CorregirDatosAsync(
+        Guid publicId,
+        CorregirVentaInput input,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<VentaListItemModel>> ObtenerListadoAsync(
         FiltroVentasInput filtro);
 
-    Task<VentaDetalleCompletoModel?> ObtenerDetalleCompletoAsync(
-        Guid publicId,
-        bool esAdministrador);
+    Task<VentaDetalleCompletoModel?> ObtenerDetalleCompletoAsync(Guid publicId);
 }

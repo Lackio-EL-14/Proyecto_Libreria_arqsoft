@@ -24,6 +24,14 @@ public interface IVentaRepository
         IDbConnection connection,
         IDbTransaction transaction);
 
+    Task<bool> ActualizarDatosAsync(
+        int ventaId,
+        ClienteVentaSnapshot cliente,
+        string? observacion,
+        Guid usuarioModificacionId,
+        IDbConnection connection,
+        IDbTransaction transaction);
+
     Task<IReadOnlyList<Venta>> ObtenerActivasAsync();
 
     Task<IReadOnlyList<Venta>> ObtenerTodasAsync();
@@ -44,7 +52,8 @@ public interface IVentaRepository
         IDbTransaction transaction);
 
     Task<IReadOnlyList<VentaListItemModel>> ObtenerListadoAsync(
-        FiltroVentasInput filtro);
+        FiltroVentasInput filtro,
+        bool esAdministrador);
 
     Task<VentaDetalleCompletoModel?> ObtenerDetalleCompletoAsync(
         Guid publicId,

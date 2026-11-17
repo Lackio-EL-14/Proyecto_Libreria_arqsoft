@@ -212,16 +212,107 @@ public sealed class VentaFacade : IVentaFacade
         }
     }
 
+    public async Task<Result> CorregirDatosAsync(
+        Guid publicId,
+        CorregirVentaInput input,
+        CancellationToken cancellationToken = default)
+    {
+        var validacion = ValidarCorreccion(publicId, input);
+        if (!validacion.EsExito)
+        {
+            return validacion;
+        }
+
+        var usuario = ValidarUsuarioActual();
+        if (!usuario.EsExito)
+        {
+            return usuario;
+        }
+
+        var existente = await _ventas.ObtenerPorPublicIdAsync(publicId);
+        if (existente is null)
+        {
+            return Result.NoEncontrado("La venta especificada no existe.");
+        }
+
+        if (!existente.Estado.Equals("Activa", StringComparison.OrdinalIgnoreCase))
+        {
+            return Result.Conflicto("Venta", "Una venta anulada no puede ser modificada.");
+        }
+
+        var cliente = await _clientes.ObtenerPorCiNitAsync(
+            input.CiNitCliente,
+            cancellationToken);
+        if (!cliente.EsExito)
+        {
+            return cliente;
+        }
+
+        await using var connection = _connectionFactory.CreateConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var bloqueada = await _ventas.ObtenerPorPublicIdAsync(
+                publicId,
+                connection,
+                transaction);
+
+            if (bloqueada is null)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                return Result.NoEncontrado("La venta especificada no existe.");
+            }
+
+            if (!bloqueada.Estado.Equals("Activa", StringComparison.OrdinalIgnoreCase))
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                return Result.Conflicto("Venta", "Una venta anulada no puede ser modificada.");
+            }
+
+            var observacion = string.IsNullOrWhiteSpace(input.Observacion)
+                ? null
+                : input.Observacion.Trim();
+            var actualizada = await _ventas.ActualizarDatosAsync(
+                bloqueada.VentaId,
+                cliente.Valor,
+                observacion,
+                _usuarioActual.UsuarioId!.Value,
+                connection,
+                transaction);
+
+            if (!actualizada)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                return Result.Conflicto(
+                    "Venta",
+                    "La venta cambió mientras se intentaba corregir.");
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+            return Result.Exito();
+        }
+        catch
+        {
+            await IntentarRollbackAsync(transaction);
+            throw;
+        }
+    }
+
     public Task<IReadOnlyList<VentaListItemModel>> ObtenerListadoAsync(
         FiltroVentasInput filtro) =>
-        _ventas.ObtenerListadoAsync(filtro ?? new FiltroVentasInput());
+        _ventas.ObtenerListadoAsync(
+            filtro ?? new FiltroVentasInput(),
+            _usuarioActual.EsAdministrador);
 
-    public Task<VentaDetalleCompletoModel?> ObtenerDetalleCompletoAsync(
-        Guid publicId,
-        bool esAdministrador) =>
+    public Task<VentaDetalleCompletoModel?> ObtenerDetalleCompletoAsync(Guid publicId) =>
         publicId == Guid.Empty
             ? Task.FromResult<VentaDetalleCompletoModel?>(null)
-            : _ventas.ObtenerDetalleCompletoAsync(publicId, esAdministrador);
+            : _ventas.ObtenerDetalleCompletoAsync(publicId, _usuarioActual.EsAdministrador);
 
     private async Task<VentaRegistradaResult> GuardarVentaLocalAsync(
         RegistrarVentaInput input,
@@ -424,6 +515,28 @@ public sealed class VentaFacade : IVentaFacade
         var motivo = motivoAnulacion?.Trim();
         return motivo is null || motivo.Length is < 10 or > 250
             ? Result.Validacion("Motivo", "El motivo de la anulación debe tener entre 10 y 250 caracteres.")
+            : Result.Exito();
+    }
+
+    private static Result ValidarCorreccion(Guid publicId, CorregirVentaInput? input)
+    {
+        if (publicId == Guid.Empty)
+        {
+            return Result.Validacion("PublicId", "El identificador de la venta es inválido.");
+        }
+
+        if (input is null)
+        {
+            return Result.Validacion("Venta", "Debe proporcionar los datos a corregir.");
+        }
+
+        if (string.IsNullOrWhiteSpace(input.CiNitCliente))
+        {
+            return Result.Validacion("CiNitCliente", "Debe indicar el CI/NIT del cliente.");
+        }
+
+        return input.Observacion?.Trim().Length > 250
+            ? Result.Validacion("Observacion", "La observación no puede superar los 250 caracteres.")
             : Result.Exito();
     }
 

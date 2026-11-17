@@ -6,11 +6,14 @@ public class VentaDetalleCompletoModel
     public DateTime FechaCreacion { get; set; }
     public DateTime? FechaAnulacion { get; set; }
     public string? MotivoAnulacion { get; set; }
+    public string? Observacion { get; set; }
     public string Estado { get; set; } = string.Empty;
     public string ClienteNombre { get; set; } = string.Empty;
     public string ClienteCiNit { get; set; } = string.Empty;
     public string CreadoPor { get; set; } = string.Empty;
     public string? AnuladoPor { get; set; }
+    public string? ModificadoPor { get; set; }
+    public DateTime? FechaModificacion { get; set; }
     public decimal Total { get; set; }
     public decimal? GananciaTotal { get; set; }
     public List<VentaLineaDetalleModel> Lineas { get; set; } = new();
