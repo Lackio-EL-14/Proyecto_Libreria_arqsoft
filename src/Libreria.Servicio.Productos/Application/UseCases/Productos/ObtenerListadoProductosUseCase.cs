@@ -19,13 +19,15 @@ public sealed class ObtenerListadoProductosUseCase
     public async Task<ProductoListado> EjecutarAsync(
         string? busqueda = null,
         Guid? categoriaPublicId = null,
-        Guid? marcaPublicId = null)
+        Guid? marcaPublicId = null,
+        bool? estado = null)
     {
         var productos =
-            await _productos.ObtenerActivasFiltradasAsync(
+            await _productos.ObtenerFiltradasAsync(
                 busqueda,
                 categoriaPublicId,
-                marcaPublicId);
+                marcaPublicId,
+                estado);
 
         var categorias =
             await _catalogos.ObtenerCategoriasActivasAsync();
@@ -44,7 +46,8 @@ public sealed class ObtenerListadoProductosUseCase
                 producto.Categoria.Nombre,
                 producto.Marca.PublicId,
                 producto.Marca.Nombre,
-                producto.EsPerecedero))
+                producto.EsPerecedero,
+                producto.Estado))
             .ToList();
 
         return new ProductoListado(

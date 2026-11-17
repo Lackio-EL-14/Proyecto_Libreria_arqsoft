@@ -145,4 +145,119 @@ public sealed class ServicioProductosClientTests
         Assert.False(resultado.Exitoso);
         Assert.Contains("servicio de Productos", resultado.Errores[string.Empty]);
     }
+
+
+    [Fact]
+    public async Task Listado_productos_usa_publicIds_guid_en_los_filtros()
+    {
+        var categoriaPublicId =
+            Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
+        var marcaPublicId =
+            Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+
+        const string cuerpo = """
+            {
+              "productos": [],
+              "categorias": [],
+              "marcas": []
+            }
+            """;
+
+        var manejador =
+            new ManejadorHttpFalso(
+                HttpStatusCode.OK,
+                cuerpo);
+
+        var cliente =
+            new ServicioProductosClient(
+                ManejadorHttpFalso.CrearHttp(manejador));
+
+        var resultado =
+            await cliente.ObtenerProductosAsync(
+                "  cuaderno  ",
+                categoriaPublicId,
+                marcaPublicId);
+
+        Assert.Empty(resultado.Productos);
+
+        Assert.Equal(
+            HttpMethod.Get,
+            manejador.UltimaPeticion!.Method);
+
+        Assert.Equal(
+            "http://localhost:5080/api/productos"
+            + "?busqueda=cuaderno"
+            + $"&categoriaPublicId={categoriaPublicId}"
+            + $"&marcaPublicId={marcaPublicId}",
+            manejador.UltimaPeticion.RequestUri!.AbsoluteUri);
+    }
+
+
+    [Fact]
+    public async Task Listado_productos_envia_filtro_de_estado()
+    {
+        const string cuerpo = """
+            {
+              "productos": [],
+              "categorias": [],
+              "marcas": []
+            }
+            """;
+
+        var manejador =
+            new ManejadorHttpFalso(
+                HttpStatusCode.OK,
+                cuerpo);
+
+        var cliente =
+            new ServicioProductosClient(
+                ManejadorHttpFalso.CrearHttp(manejador));
+
+        var resultado =
+            await cliente.ObtenerProductosAsync(
+                null,
+                null,
+                null,
+                false);
+
+        Assert.Empty(resultado.Productos);
+
+        Assert.Equal(
+            HttpMethod.Get,
+            manejador.UltimaPeticion!.Method);
+
+        Assert.Equal(
+            "?estado=false",
+            manejador.UltimaPeticion.RequestUri!.Query);
+    }
+
+    [Fact]
+    public async Task Reactivar_producto_usa_patch_de_estado_true()
+    {
+        var manejador =
+            new ManejadorHttpFalso(
+                HttpStatusCode.NoContent);
+
+        var cliente =
+            new ServicioProductosClient(
+                ManejadorHttpFalso.CrearHttp(manejador));
+
+        var resultado =
+            await cliente.ReactivarProductoAsync(PublicId);
+
+        Assert.True(resultado.Exitoso);
+
+        Assert.Equal(
+            HttpMethod.Patch,
+            manejador.UltimaPeticion!.Method);
+
+        Assert.Equal(
+            $"/api/productos/{PublicId}/estado",
+            manejador.UltimaPeticion.RequestUri!.AbsolutePath);
+
+        Assert.Equal(
+            "?nuevoEstado=true",
+            manejador.UltimaPeticion.RequestUri.Query);
+    }
 }

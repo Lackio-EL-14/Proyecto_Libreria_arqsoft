@@ -50,9 +50,9 @@ public class EditModel : PageModel
 
         Auditoria = await _auditoriaService.ObtenerAsync(
             marca.UsuarioCreacionId,
-            null,
+            marca.FechaCreacion,
             marca.UsuarioModificacionId,
-            null);
+            marca.FechaModificacion);
 
         await CargarPaisesAsync();
         return Page();

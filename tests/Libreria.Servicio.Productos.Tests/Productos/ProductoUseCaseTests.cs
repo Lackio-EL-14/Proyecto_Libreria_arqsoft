@@ -28,7 +28,8 @@ public sealed class ProductoUseCaseTests
                 repository,
                 catalogos);
 
-        var resultado = await useCase.EjecutarAsync();
+        var resultado =
+            await useCase.EjecutarAsync(estado: true);
 
         var producto = Assert.Single(resultado.Productos);
         Assert.Equal("Cuaderno", producto.Nombre);
@@ -92,6 +93,42 @@ public sealed class ProductoUseCaseTests
 
         Assert.False(resultado.EsExito);
         Assert.Equal(TipoError.NoEncontrado, resultado.Tipo);
+    }
+
+
+    [Fact]
+    public async Task Listado_puede_filtrar_productos_inactivos()
+    {
+        var repository = new ProductoRepositoryFalso();
+
+        repository.Agregar(CrearProducto(
+            "Producto activo",
+            estado: true));
+
+        repository.Agregar(CrearProducto(
+            "Producto inactivo",
+            estado: false));
+
+        var catalogos =
+            new CatalogoProductoRepositoryFalso();
+
+        var useCase =
+            new ObtenerListadoProductosUseCase(
+                repository,
+                catalogos);
+
+        var resultado =
+            await useCase.EjecutarAsync(
+                estado: false);
+
+        var producto =
+            Assert.Single(resultado.Productos);
+
+        Assert.Equal(
+            "Producto inactivo",
+            producto.Nombre);
+
+        Assert.False(producto.Estado);
     }
 
     private static Producto CrearProducto(

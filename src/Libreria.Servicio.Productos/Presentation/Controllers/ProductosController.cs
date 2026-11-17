@@ -52,12 +52,14 @@ public sealed class ProductosController : ControllerBase
     public async Task<IActionResult> Listar(
         [FromQuery] string? busqueda,
         [FromQuery] Guid? categoriaPublicId,
-        [FromQuery] Guid? marcaPublicId)
+        [FromQuery] Guid? marcaPublicId,
+        [FromQuery] bool? estado)
     {
         var resultado = await _listar.EjecutarAsync(
             busqueda,
             categoriaPublicId,
-            marcaPublicId);
+            marcaPublicId,
+            estado);
 
         return Ok(resultado);
     }
