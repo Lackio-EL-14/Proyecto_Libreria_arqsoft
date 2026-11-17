@@ -18,7 +18,8 @@ public class UsuarioActualHttpContextTests
             {
                 ["UsuarioDesarrollo:PublicId"] = publicId.ToString(),
                 ["UsuarioDesarrollo:Nombre"] = "admin",
-                ["UsuarioDesarrollo:Iniciales"] = "A.S."
+                ["UsuarioDesarrollo:Iniciales"] = "A.S.",
+                ["UsuarioDesarrollo:Rol"] = "Administrador"
             })
             .Build();
         var usuario = new UsuarioActualHttpContext(
@@ -29,6 +30,7 @@ public class UsuarioActualHttpContextTests
         Assert.Equal(publicId, usuario.UsuarioId);
         Assert.Equal("admin", usuario.NombreUsuario);
         Assert.Equal("A.S.", usuario.Iniciales);
+        Assert.True(usuario.EsAdministrador);
     }
 
     [Fact]
@@ -41,7 +43,8 @@ public class UsuarioActualHttpContextTests
             [
                 new Claim("sub", publicId.ToString()),
                 new Claim("name", "cesar"),
-                new Claim("iniciales", "C.C.")
+                new Claim("iniciales", "C.C."),
+                new Claim("role", "Vendedor")
             ],
             "Bearer"))
         };
@@ -61,6 +64,7 @@ public class UsuarioActualHttpContextTests
         Assert.Equal(publicId, usuario.UsuarioId);
         Assert.Equal("cesar", usuario.NombreUsuario);
         Assert.Equal("C.C.", usuario.Iniciales);
+        Assert.False(usuario.EsAdministrador);
     }
 
     private sealed class EntornoFake(string nombre) : IWebHostEnvironment

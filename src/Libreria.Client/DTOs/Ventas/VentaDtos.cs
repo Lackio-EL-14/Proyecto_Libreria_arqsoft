@@ -6,6 +6,7 @@ public record VentaListItemDto(
     string ClienteNombre,
     string ClienteCiNit,
     decimal Total,
+    decimal? GananciaTotal,
     string Estado,
     string CreadoPor,
     string? AnuladoPor,
@@ -16,11 +17,14 @@ public record VentaDetalleDto(
     DateTime FechaCreacion,
     DateTime? FechaAnulacion,
     string? MotivoAnulacion,
+    string? Observacion,
     string Estado,
     string ClienteNombre,
     string ClienteCiNit,
     string CreadoPor,
     string? AnuladoPor,
+    string? ModificadoPor,
+    DateTime? FechaModificacion,
     decimal Total,
     decimal? GananciaTotal,
     IReadOnlyList<VentaLineaDto> Lineas);
@@ -55,4 +59,14 @@ public class FiltroVentasModel
     public string? Estado { get; set; }
     public DateOnly? FechaDesde { get; set; }
     public DateOnly? FechaHasta { get; set; }
+    public OrdenVentasDto Orden { get; set; } = OrdenVentasDto.Fecha;
+    public bool Descendente { get; set; } = true;
 }
+
+public enum OrdenVentasDto
+{
+    Fecha,
+    Total
+}
+
+public sealed record CorregirVentaDto(string CiNitCliente, string? Observacion);

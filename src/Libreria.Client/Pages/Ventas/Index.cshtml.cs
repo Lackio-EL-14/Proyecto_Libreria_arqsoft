@@ -43,7 +43,9 @@ public class IndexModel : PageModel
         Ventas = await _ventasApiClient.ObtenerVentasAsync(
             Filtro.Estado,
             Filtro.FechaDesde,
-            Filtro.FechaHasta);
+            Filtro.FechaHasta,
+            Filtro.Orden,
+            Filtro.Descendente);
     }
 
     public async Task<IActionResult> OnGetDetalleAsync(Guid publicId)
@@ -53,7 +55,7 @@ public class IndexModel : PageModel
             return BadRequest(new { mensaje = "Identificador de venta inválido." });
         }
 
-        var detalle = await _ventasApiClient.ObtenerDetalleVentaAsync(publicId, EsAdministrador);
+        var detalle = await _ventasApiClient.ObtenerDetalleVentaAsync(publicId);
 
         if (detalle is null)
         {
@@ -61,6 +63,50 @@ public class IndexModel : PageModel
         }
 
         return new JsonResult(detalle);
+    }
+
+    public async Task<IActionResult> OnPostCorregirAsync(
+        Guid publicId,
+        string ciNitCliente,
+        string? observacion)
+    {
+        if (publicId == Guid.Empty)
+        {
+            MensajeError = "El identificador de la venta es inválido.";
+            return RedirectToPage(ObtenerValoresRutaFiltro());
+        }
+
+        if (string.IsNullOrWhiteSpace(ciNitCliente))
+        {
+            MensajeError = "Debe indicar el CI/NIT del cliente.";
+            return RedirectToPage(ObtenerValoresRutaFiltro());
+        }
+
+        if (observacion?.Trim().Length > 250)
+        {
+            MensajeError = "La observación no puede superar los 250 caracteres.";
+            return RedirectToPage(ObtenerValoresRutaFiltro());
+        }
+
+        var resultado = await _ventasApiClient.CorregirVentaAsync(
+            publicId,
+            new CorregirVentaDto(ciNitCliente.Trim(), observacion?.Trim()));
+
+        if (resultado.Exitoso)
+        {
+            MensajeExito = "Los datos de la venta fueron corregidos exitosamente.";
+        }
+        else if (resultado.NoEncontrado)
+        {
+            MensajeError = "La venta o el cliente especificado no existe o está inactivo.";
+        }
+        else
+        {
+            MensajeError = resultado.Errores.Values.FirstOrDefault()
+                ?? "No se pudieron corregir los datos de la venta.";
+        }
+
+        return RedirectToPage(ObtenerValoresRutaFiltro());
     }
 
     public async Task<IActionResult> OnPostAnularAsync(Guid publicId, string motivoAnulacion)
@@ -109,7 +155,9 @@ public class IndexModel : PageModel
         {
             Estado = Filtro.Estado,
             FechaDesde = Filtro.FechaDesde?.ToString("yyyy-MM-dd"),
-            FechaHasta = Filtro.FechaHasta?.ToString("yyyy-MM-dd")
+            FechaHasta = Filtro.FechaHasta?.ToString("yyyy-MM-dd"),
+            Orden = Filtro.Orden.ToString(),
+            Descendente = Filtro.Descendente
         };
     }
 }
