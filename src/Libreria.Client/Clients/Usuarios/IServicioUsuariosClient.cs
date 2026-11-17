@@ -13,6 +13,10 @@ public interface IServicioUsuariosClient : IApiClient
         int usuarioId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> SesionActivaAsync(
+        Guid publicId,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyDictionary<int, string>> ObtenerNombresAsync(
         IEnumerable<int> usuarioIds,
         CancellationToken cancellationToken = default);

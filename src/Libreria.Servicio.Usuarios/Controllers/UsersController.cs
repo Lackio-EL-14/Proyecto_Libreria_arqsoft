@@ -1,4 +1,5 @@
 using Libreria.Servicio.Usuarios.Application.Ports.Primary;
+using Libreria.Servicio.Usuarios.Presentation.Comun;
 using Libreria.Servicio.Usuarios.Application.UseCases.Users;
 using Microsoft.AspNetCore.Mvc;
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
@@ -74,6 +75,16 @@ public sealed class UsersController : ControllerBase
         var isActive =
             await _checkActiveSessionUseCase.ExecuteAsync(id);
 
+        return Ok(isActive);
+    }
+
+    // PublicId es el contrato entre servicios; se conserva la variante numérica
+    // únicamente por compatibilidad con consumidores todavía no migrados.
+    [HttpGet("{publicId:guid}/sesion-activa")]
+    [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+    public async Task<ActionResult<bool>> IsSessionActiveByPublicIdAsync(Guid publicId)
+    {
+        var isActive = await _checkActiveSessionUseCase.ExecuteAsync(publicId);
         return Ok(isActive);
     }
 
@@ -155,41 +166,18 @@ public sealed class UsersController : ControllerBase
         typeof(ProblemDetails),
         StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<CreateUserResultDto>>
-        CreateUserAsync(
-            [FromBody] CreateUserRequest request)
+    public async Task<IActionResult> CreateUserAsync(
+        [FromBody] CreateUserRequest request)
     {
-        try
-        {
-            var result =
-                await _createUserUseCase.ExecuteAsync(request);
+        var result = await _createUserUseCase.ExecuteAsync(request);
 
-            if (result is null)
-            {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden);
-            }
+        if (result is null)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
 
-            return StatusCode(
-                StatusCodes.Status201Created,
-                result);
-        }
-        catch (ArgumentException exception)
-        {
-            return Problem(
-                title: "Solicitud inválida.",
-                detail: exception.Message,
-                statusCode:
-                    StatusCodes.Status400BadRequest);
-        }
-        catch (InvalidOperationException exception)
-        {
-            return Problem(
-                title: "No fue posible registrar el usuario.",
-                detail: exception.Message,
-                statusCode:
-                    StatusCodes.Status409Conflict);
-        }
+        return result.AActionResult(
+            created => StatusCode(StatusCodes.Status201Created, created));
     }
 
     [HttpGet("roles")]

@@ -194,6 +194,32 @@ public sealed class UserRepository : IUserRepository
             await command.ExecuteScalarAsync()) == 1;
     }
 
+    public async Task<bool> IsSessionActiveAsync(Guid publicId)
+    {
+        await using var connection = _connectionFactory.CreateConnection();
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = """
+            SELECT COUNT(1)
+            FROM dbo.Usuario u
+            INNER JOIN dbo.Rol r
+                ON r.RolId = u.RolId
+            WHERE u.PublicId = @PublicId
+              AND u.Estado = @ActiveStatus
+              AND r.Estado = 1;
+            """;
+
+        AddParameter(command, "@PublicId", publicId, DbType.Guid);
+        AddParameter(
+            command,
+            "@ActiveStatus",
+            UserStatuses.Active,
+            DbType.String,
+            20);
+
+        return Convert.ToInt32(await command.ExecuteScalarAsync()) == 1;
+    }
+
     public async Task<IReadOnlyDictionary<int, string>> GetFullNamesByIdsAsync(
     IReadOnlyCollection<int> userIds)
     {

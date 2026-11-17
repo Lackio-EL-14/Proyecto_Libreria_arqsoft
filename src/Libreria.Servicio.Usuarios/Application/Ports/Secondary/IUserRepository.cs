@@ -16,6 +16,8 @@ public interface IUserRepository
 
     Task<bool> IsSessionActiveAsync(int userId);
 
+    Task<bool> IsSessionActiveAsync(Guid publicId);
+
     Task<IReadOnlyDictionary<int, string>> GetFullNamesByIdsAsync(
     IReadOnlyCollection<int> userIds);
 

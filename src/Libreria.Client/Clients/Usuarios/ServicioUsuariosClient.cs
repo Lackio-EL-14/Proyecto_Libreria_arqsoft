@@ -29,6 +29,20 @@ public sealed class ServicioUsuariosClient : ApiClientBase, IServicioUsuariosCli
         return result;
     }
 
+    public async Task<bool> SesionActivaAsync(
+        Guid publicId,
+        CancellationToken cancellationToken = default)
+    {
+        if (publicId == Guid.Empty)
+        {
+            return false;
+        }
+
+        return await GetAsync<bool>(
+            $"api/usuarios/{publicId:D}/sesion-activa",
+            cancellationToken);
+    }
+
     public async Task<IReadOnlyDictionary<int, string>> ObtenerNombresAsync(
         IEnumerable<int> usuarioIds,
         CancellationToken cancellationToken = default)

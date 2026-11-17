@@ -1,4 +1,5 @@
 using Libreria.Servicio.Usuarios.Application.Facades;
+using Libreria.Servicio.Usuarios.Application.Comun;
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Application.Services;
 using Libreria.Servicio.Usuarios.Application.UseCases.Users;
@@ -26,8 +27,9 @@ public sealed class CreateUserUseCaseTests
             new CreateUserRequest("José", "Pérez", "jose@example.com", "Vendedor", "García"));
 
         Assert.NotNull(result);
-        Assert.Equal("jperez", result.Username);
-        Assert.NotEqual(Guid.Empty, result.PublicId);
+        Assert.True(result.EsExito);
+        Assert.Equal("jperez", result.Valor.Username);
+        Assert.NotEqual(Guid.Empty, result.Valor.PublicId);
         Assert.NotNull(repository.CreatedUser);
         Assert.Equal(UserStatuses.Pending, repository.CreatedUser.Status);
         Assert.Equal("jose@example.com", repository.CreatedUser.Email);
@@ -51,14 +53,17 @@ public sealed class CreateUserUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_CorreoDuplicado_LanzaError()
+    public async Task ExecuteAsync_CorreoDuplicado_DevuelveConflicto()
     {
         var repository = new FakeUserRepository { IsActiveAdministrator = true, EmailExists = true };
         repository.ActiveRoles["Vendedor"] = 2;
         var useCase = CreateUseCase(repository);
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => useCase.ExecuteAsync(new CreateUserRequest("Juan", "Pérez", "juan@example.com", "Vendedor")));
-        Assert.Contains("Ya existe un usuario", exception.Message);
+        var result = await useCase.ExecuteAsync(
+            new CreateUserRequest("Juan", "Pérez", "juan@example.com", "Vendedor"));
+        Assert.NotNull(result);
+        Assert.False(result.EsExito);
+        Assert.Equal(TipoError.Conflicto, result.Tipo);
+        Assert.Contains("Ya existe un usuario", result.Errores[nameof(CreateUserRequest.Email)]);
         Assert.Null(repository.CreatedUser);
     }
 
@@ -71,16 +76,52 @@ public sealed class CreateUserUseCaseTests
         var result = await CreateUseCase(repository).ExecuteAsync(
             new CreateUserRequest("Juan", "Pérez", "juan@example.com", "Vendedor"));
         Assert.NotNull(result);
-        Assert.Equal("jperez2", result.Username);
+        Assert.True(result.EsExito);
+        Assert.Equal("jperez2", result.Valor.Username);
     }
 
     [Fact]
-    public async Task ExecuteAsync_RolInvalido_LanzaError()
+    public async Task ExecuteAsync_RolInvalido_DevuelveValidacion()
     {
         var repository = new FakeUserRepository { IsActiveAdministrator = true };
-        await Assert.ThrowsAsync<ArgumentException>(
-            () => CreateUseCase(repository).ExecuteAsync(
-                new CreateUserRequest("Juan", "Pérez", "juan@example.com", "RolInventado")));
+        var result = await CreateUseCase(repository).ExecuteAsync(
+            new CreateUserRequest("Juan", "Pérez", "juan@example.com", "RolInventado"));
+        Assert.NotNull(result);
+        Assert.False(result.EsExito);
+        Assert.Equal(TipoError.Validacion, result.Tipo);
+        Assert.Equal("Debe seleccionar un rol válido.", result.Errores[nameof(CreateUserRequest.Role)]);
+        Assert.Null(repository.CreatedUser);
+    }
+
+    [Theory]
+    [InlineData("", "El nombre es obligatorio.")]
+    [InlineData("Juan1", "El nombre solo permite letras, incluyendo acentos y ñ.")]
+    public async Task ExecuteAsync_NombreInvalido_DevuelveValidacion(
+        string nombre, string mensaje)
+    {
+        var repository = new FakeUserRepository { IsActiveAdministrator = true };
+        var result = await CreateUseCase(repository).ExecuteAsync(
+            new CreateUserRequest(nombre, "Pérez", "juan@example.com", "Vendedor"));
+
+        Assert.NotNull(result);
+        Assert.False(result.EsExito);
+        Assert.Equal(TipoError.Validacion, result.Tipo);
+        Assert.Equal(mensaje, result.Errores[nameof(CreateUserRequest.FirstName)]);
+        Assert.Null(repository.CreatedUser);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CorreoInvalido_DevuelveValidacion()
+    {
+        var repository = new FakeUserRepository { IsActiveAdministrator = true };
+        var result = await CreateUseCase(repository).ExecuteAsync(
+            new CreateUserRequest("Juan", "Pérez", "correo inválido", "Vendedor"));
+
+        Assert.NotNull(result);
+        Assert.False(result.EsExito);
+        Assert.Equal(TipoError.Validacion, result.Tipo);
+        Assert.Equal("El correo no tiene un formato válido.",
+            result.Errores[nameof(CreateUserRequest.Email)]);
         Assert.Null(repository.CreatedUser);
     }
 

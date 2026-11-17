@@ -99,9 +99,37 @@ public class CreateModel : PageModel
         }
         catch (ApiClientException error)
         {
-            ModelState.AddModelError(
-                string.Empty,
-                error.Message);
+            var seMostroError = false;
+
+            if (error.Errors is not null)
+            {
+                foreach (var (campo, mensajes) in error.Errors)
+                {
+                    // La API usa nombres en inglés y la página, propiedades en español.
+                    var campoVista = campo switch
+                    {
+                        "FirstName" => nameof(Nombre),
+                        "LastName" => nameof(Apellido),
+                        "MaternalLastName" => nameof(ApellidoMaterno),
+                        "Email" => nameof(Correo),
+                        "Role" => nameof(Rol),
+                        _ => string.Empty
+                    };
+
+                    foreach (var mensaje in mensajes)
+                    {
+                        if (string.IsNullOrWhiteSpace(mensaje)) continue;
+
+                        ModelState.AddModelError(campoVista, mensaje);
+                        seMostroError = true;
+                    }
+                }
+            }
+
+            if (!seMostroError)
+            {
+                ModelState.AddModelError(string.Empty, error.Message);
+            }
 
             return Page();
         }

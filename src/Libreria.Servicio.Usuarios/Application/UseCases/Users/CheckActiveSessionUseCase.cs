@@ -22,4 +22,14 @@ public sealed class CheckActiveSessionUseCase : ICheckActiveSessionUseCase
 
         return _userRepository.IsSessionActiveAsync(userId);
     }
+
+    public Task<bool> ExecuteAsync(Guid publicId)
+    {
+        if (publicId == Guid.Empty)
+        {
+            return Task.FromResult(false);
+        }
+
+        return _userRepository.IsSessionActiveAsync(publicId);
+    }
 }

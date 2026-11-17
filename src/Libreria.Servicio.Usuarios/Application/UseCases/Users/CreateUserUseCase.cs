@@ -1,4 +1,5 @@
 using Libreria.Servicio.Usuarios.Application.Ports.Primary;
+using Libreria.Servicio.Usuarios.Application.Comun;
 using System.Net.Mail;
 using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
@@ -27,7 +28,7 @@ public sealed class CreateUserUseCase : ICreateUserUseCase
         _transactionRunner = transactionRunner;
     }
 
-    public async Task<CreateUserResultDto?> ExecuteAsync(
+    public async Task<Result<CreateUserResultDto>?> ExecuteAsync(
         CreateUserRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -39,7 +40,11 @@ public sealed class CreateUserUseCase : ICreateUserUseCase
             return null;
         }
 
-        Validate(request);
+        var validation = Validate(request);
+        if (!validation.EsExito)
+        {
+            return Result<CreateUserResultDto>.Fallo(validation);
+        }
 
         var firstName = request.FirstName.Trim();
         var lastName = request.LastName.Trim();
@@ -48,8 +53,9 @@ public sealed class CreateUserUseCase : ICreateUserUseCase
 
         if (await _userRepository.EmailExistsAsync(email))
         {
-            throw new InvalidOperationException(
-                "Ya existe un usuario registrado con ese correo.");
+            return Result<CreateUserResultDto>.Fallo(
+                Result.Conflicto(nameof(request.Email),
+                    "Ya existe un usuario registrado con ese correo."));
         }
 
         var roleId =
@@ -58,9 +64,9 @@ public sealed class CreateUserUseCase : ICreateUserUseCase
 
         if (roleId is null)
         {
-            throw new ArgumentException(
-                "Debe seleccionar un rol válido.",
-                nameof(request));
+            return Result<CreateUserResultDto>.Fallo(
+                Result.Validacion(nameof(request.Role),
+                    "Debe seleccionar un rol válido."));
         }
 
         var username = await _usuarioFacade.GenerateUsernameAsync(
@@ -86,79 +92,60 @@ public sealed class CreateUserUseCase : ICreateUserUseCase
             CreatedByUserId = currentUserId
         };
 
-        try
-        {
-            return await _transactionRunner.ExecuteAsync(
-                async () =>
-                {
-                    var publicId =
-                        await _userRepository
-                            .CreatePendingAsync(user);
+        var created = await _transactionRunner.ExecuteAsync(
+            async () =>
+            {
+                var publicId = await _userRepository.CreatePendingAsync(user);
+                return new CreateUserResultDto(publicId, username);
+            });
 
-                    return new CreateUserResultDto(
-                        publicId,
-                        username);
-                });
-        }
-        catch (Exception exception)
-        {
-            throw new InvalidOperationException(
-                "No fue posible completar el alta del usuario.",
-                exception);
-        }
+        return Result<CreateUserResultDto>.Exito(created);
     }
 
-    private static void Validate(
+    private static Result Validate(
         CreateUserRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.FirstName))
         {
-            throw new ArgumentException(
-                "El nombre es obligatorio.",
-                nameof(request));
+            return Result.Validacion(nameof(request.FirstName),
+                "El nombre es obligatorio.");
         }
 
         if (string.IsNullOrWhiteSpace(request.LastName))
         {
-            throw new ArgumentException(
-                "El apellido es obligatorio.",
-                nameof(request));
+            return Result.Validacion(nameof(request.LastName),
+                "El apellido es obligatorio.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Email))
         {
-            throw new ArgumentException(
-                "El correo es obligatorio.",
-                nameof(request));
+            return Result.Validacion(nameof(request.Email),
+                "El correo es obligatorio.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Role))
         {
-            throw new ArgumentException(
-                "Debe seleccionar un rol válido.",
-                nameof(request));
+            return Result.Validacion(nameof(request.Role),
+                "Debe seleccionar un rol válido.");
         }
 
         if (!request.FirstName.Trim().All(char.IsLetter))
         {
-            throw new ArgumentException(
-                "El nombre solo permite letras, incluyendo acentos y ñ.",
-                nameof(request));
+            return Result.Validacion(nameof(request.FirstName),
+                "El nombre solo permite letras, incluyendo acentos y ñ.");
         }
 
         if (!request.LastName.Trim().All(char.IsLetter))
         {
-            throw new ArgumentException(
-                "El apellido solo permite letras, incluyendo acentos y ñ.",
-                nameof(request));
+            return Result.Validacion(nameof(request.LastName),
+                "El apellido solo permite letras, incluyendo acentos y ñ.");
         }
 
         if (!string.IsNullOrWhiteSpace(request.MaternalLastName) &&
             !request.MaternalLastName.Trim().All(char.IsLetter))
         {
-            throw new ArgumentException(
-                "El apellido materno solo permite letras, incluyendo acentos y ñ.",
-                nameof(request));
+            return Result.Validacion(nameof(request.MaternalLastName),
+                "El apellido materno solo permite letras, incluyendo acentos y ñ.");
         }
 
         try
@@ -176,9 +163,10 @@ public sealed class CreateUserUseCase : ICreateUserUseCase
         }
         catch (FormatException)
         {
-            throw new ArgumentException(
-                "El correo no tiene un formato válido.",
-                nameof(request));
+            return Result.Validacion(nameof(request.Email),
+                "El correo no tiene un formato válido.");
         }
+
+        return Result.Exito();
     }
 }

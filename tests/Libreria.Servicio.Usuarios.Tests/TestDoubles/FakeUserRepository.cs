@@ -78,6 +78,14 @@ public sealed class FakeUserRepository : IUserRepository
         return Task.FromResult(SessionActive);
     }
 
+    public Guid? LastSessionPublicId { get; private set; }
+
+    public Task<bool> IsSessionActiveAsync(Guid publicId)
+    {
+        LastSessionPublicId = publicId;
+        return Task.FromResult(SessionActive);
+    }
+
     public Task<IReadOnlyDictionary<int, string>> GetFullNamesByIdsAsync(
         IReadOnlyCollection<int> userIds)
     {

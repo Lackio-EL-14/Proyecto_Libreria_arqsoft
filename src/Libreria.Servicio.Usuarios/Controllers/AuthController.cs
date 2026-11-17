@@ -9,9 +9,6 @@ namespace Libreria.Servicio.Usuarios.Controllers;
 [Route("api/auth")]
 public sealed class AuthController : ControllerBase
 {
-    private const string InvalidCredentialsMessage =
-        "Usuario o contraseña incorrectos.";
-
     private readonly ILoginUseCase _loginUseCase;
 
     public AuthController(ILoginUseCase loginUseCase)
@@ -25,26 +22,18 @@ public sealed class AuthController : ControllerBase
     public async Task<IActionResult> LoginAsync(
         [FromBody] LoginRequest request)
     {
-        try
-        {
-            var user = await _loginUseCase.ExecuteAsync(request);
+        var result = await _loginUseCase.ExecuteAsync(request);
 
-            if (user is null)
-            {
-                return Problem(
-                    title: "No fue posible iniciar sesión.",
-                    detail: InvalidCredentialsMessage,
-                    statusCode: StatusCodes.Status400BadRequest);
-            }
-
-            return Ok(user);
-        }
-        catch (ArgumentException exception)
+        if (result.EsExito)
         {
-            return Problem(
-                title: "Solicitud inválida.",
-                detail: exception.Message,
-                statusCode: StatusCodes.Status400BadRequest);
+            return Ok(result.Valor);
         }
+
+        // Conserva el contrato de error actual del Front (ProblemDetails y HTTP 400).
+        var invalidCredentials = result.Errores.TryGetValue("Credenciales", out var message);
+        return Problem(
+            title: invalidCredentials ? "No fue posible iniciar sesión." : "Solicitud inválida.",
+            detail: invalidCredentials ? message : string.Join(" ", result.Errores.Values),
+            statusCode: StatusCodes.Status400BadRequest);
     }
 }
