@@ -52,7 +52,7 @@ public class VentasControllerListadoDetalleTests
         var fakeFacade = new FakeVentaFacade();
         var controller = new VentasController(fakeFacade);
 
-        var result = await controller.ObtenerDetalle(Guid.Empty, true);
+        var result = await controller.ObtenerDetalle(Guid.Empty);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -62,12 +62,12 @@ public class VentasControllerListadoDetalleTests
     {
         var fakeFacade = new FakeVentaFacade
         {
-            OnObtenerDetalle = (id, esAdmin) => Task.FromResult<VentaDetalleCompletoModel?>(null)
+            OnObtenerDetalle = id => Task.FromResult<VentaDetalleCompletoModel?>(null)
         };
 
         var controller = new VentasController(fakeFacade);
 
-        var result = await controller.ObtenerDetalle(Guid.NewGuid(), true);
+        var result = await controller.ObtenerDetalle(Guid.NewGuid());
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -99,12 +99,12 @@ public class VentasControllerListadoDetalleTests
 
         var fakeFacade = new FakeVentaFacade
         {
-            OnObtenerDetalle = (id, esAdmin) => Task.FromResult<VentaDetalleCompletoModel?>(detalleModel)
+            OnObtenerDetalle = id => Task.FromResult<VentaDetalleCompletoModel?>(detalleModel)
         };
 
         var controller = new VentasController(fakeFacade);
 
-        var result = await controller.ObtenerDetalle(publicId, esAdministrador: true);
+        var result = await controller.ObtenerDetalle(publicId);
 
         var okResult = Assert.IsType<OkObjectResult>(result);
         var detalle = Assert.IsType<VentaDetalleResponse>(okResult.Value);
@@ -139,12 +139,12 @@ public class VentasControllerListadoDetalleTests
 
         var fakeFacade = new FakeVentaFacade
         {
-            OnObtenerDetalle = (id, esAdmin) => Task.FromResult<VentaDetalleCompletoModel?>(detalleModel)
+            OnObtenerDetalle = id => Task.FromResult<VentaDetalleCompletoModel?>(detalleModel)
         };
 
         var controller = new VentasController(fakeFacade);
 
-        var result = await controller.ObtenerDetalle(publicId, esAdministrador: false);
+        var result = await controller.ObtenerDetalle(publicId);
 
         var okResult = Assert.IsType<OkObjectResult>(result);
         var detalle = Assert.IsType<VentaDetalleResponse>(okResult.Value);
@@ -152,10 +152,29 @@ public class VentasControllerListadoDetalleTests
         Assert.Null(detalle.Lineas[0].Ganancia);
     }
 
+    [Fact]
+    public async Task CorregirDatos_CuandoVentaAnulada_Retorna409()
+    {
+        var fakeFacade = new FakeVentaFacade
+        {
+            OnCorregir = (id, input) => Task.FromResult(
+                Result.Conflicto("Venta", "Una venta anulada no puede ser modificada."))
+        };
+        var controller = new VentasController(fakeFacade);
+
+        var respuesta = await controller.CorregirDatos(
+            Guid.NewGuid(),
+            new CorregirVentaInput { CiNitCliente = "1234567" });
+
+        var conflicto = Assert.IsType<ObjectResult>(respuesta);
+        Assert.Equal(409, conflicto.StatusCode);
+    }
+
     private class FakeVentaFacade : IVentaFacade
     {
         public Func<FiltroVentasInput, Task<IReadOnlyList<VentaListItemModel>>>? OnObtenerListado { get; set; }
-        public Func<Guid, bool, Task<VentaDetalleCompletoModel?>>? OnObtenerDetalle { get; set; }
+        public Func<Guid, Task<VentaDetalleCompletoModel?>>? OnObtenerDetalle { get; set; }
+        public Func<Guid, CorregirVentaInput, Task<Result>>? OnCorregir { get; set; }
 
         public Task<IReadOnlyList<VentaListItemModel>> ObtenerListadoAsync(FiltroVentasInput filtro)
         {
@@ -166,11 +185,11 @@ public class VentasControllerListadoDetalleTests
             return Task.FromResult<IReadOnlyList<VentaListItemModel>>(new List<VentaListItemModel>());
         }
 
-        public Task<VentaDetalleCompletoModel?> ObtenerDetalleCompletoAsync(Guid publicId, bool esAdministrador)
+        public Task<VentaDetalleCompletoModel?> ObtenerDetalleCompletoAsync(Guid publicId)
         {
             if (OnObtenerDetalle != null)
             {
-                return OnObtenerDetalle(publicId, esAdministrador);
+                return OnObtenerDetalle(publicId);
             }
             return Task.FromResult<VentaDetalleCompletoModel?>(null);
         }
@@ -180,6 +199,12 @@ public class VentasControllerListadoDetalleTests
             string motivoAnulacion,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(Result.Exito());
+
+        public Task<Result> CorregirDatosAsync(
+            Guid publicId,
+            CorregirVentaInput input,
+            CancellationToken cancellationToken = default) =>
+            OnCorregir?.Invoke(publicId, input) ?? Task.FromResult(Result.Exito());
 
         public Task<Result<VentaRegistradaResult>> RegistrarVentaAsync(
             RegistrarVentaInput input,

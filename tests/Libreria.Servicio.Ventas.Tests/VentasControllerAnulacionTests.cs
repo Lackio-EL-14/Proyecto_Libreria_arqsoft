@@ -155,10 +155,16 @@ public class VentasControllerAnulacionTests
             CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
+        public Task<Result> CorregirDatosAsync(
+            Guid publicId,
+            CorregirVentaInput input,
+            CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
         public Task<IReadOnlyList<VentaListItemModel>> ObtenerListadoAsync(FiltroVentasInput filtro) =>
             throw new NotImplementedException();
 
-        public Task<VentaDetalleCompletoModel?> ObtenerDetalleCompletoAsync(Guid publicId, bool esAdministrador) =>
+        public Task<VentaDetalleCompletoModel?> ObtenerDetalleCompletoAsync(Guid publicId) =>
             throw new NotImplementedException();
     }
 }
