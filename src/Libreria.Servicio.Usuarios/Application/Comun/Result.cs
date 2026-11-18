@@ -29,6 +29,25 @@ public class Result
 
     public bool EsExito => Tipo == TipoError.Ninguno;
 
+    /// <summary>Forma del contrato 6.5 (US-139). Igual a <see cref="EsExito"/>.</summary>
+    public bool IsSuccess => EsExito;
+
+    /// <summary>La operación falló. Siempre es lo contrario de <see cref="IsSuccess"/>.</summary>
+    public bool IsError => !IsSuccess;
+
+    /// <summary>Devuelve el arreglo de mensajes de error acumulados (vacío si tuvo éxito).</summary>
+    public string[] Errors() => Errores.Values.ToArray();
+
+    /// <summary>Crea un resultado correcto.</summary>
+    public static Result Success() => Exito();
+
+    /// <summary>Crea un error de validación con su mensaje (se traduce a 400).</summary>
+    public static Result Error(string mensaje)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(mensaje);
+        return Validacion(string.Empty, mensaje);
+    }
+
     public TipoError Tipo { get; }
 
     /// <summary>Campo → mensaje. Vacío cuando la operación tuvo éxito.</summary>
@@ -82,6 +101,12 @@ public sealed class Result<T> : Result
         : throw new InvalidOperationException("Un resultado fallido no tiene valor.");
 
     public static Result<T> Exito(T valor) => new(valor);
+
+    /// <summary>Crea un resultado correcto con su valor.</summary>
+    public static Result<T> Success(T valor) => Exito(valor);
+
+    /// <summary>Crea un error de validación con su mensaje y devuelve un <see cref="Result{T}"/>.</summary>
+    public static new Result<T> Error(string mensaje) => Fallo(Result.Error(mensaje));
 
     /// <summary>Convierte un fallo sin valor (validación, no encontrado o conflicto) en un Result&lt;T&gt;.</summary>
     public static Result<T> Fallo(Result fallo)
