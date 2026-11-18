@@ -10,7 +10,7 @@ namespace Libreria.Gateway.Tests.Infraestructura;
 /// </summary>
 public sealed class ServiciosFalsos : IAsyncLifetime
 {
-    public static readonly IReadOnlyList<string> Clusters = ["clientes", "ventas", "productos", "usuarios"];
+    public static readonly IReadOnlyList<string> Clusters = ["clientes", "proveedores", "productos", "usuarios"];
 
     private readonly List<WebApplication> _servidores = [];
     private readonly Dictionary<string, string> _direcciones = [];

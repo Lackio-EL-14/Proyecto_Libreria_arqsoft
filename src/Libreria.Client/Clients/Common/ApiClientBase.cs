@@ -18,7 +18,7 @@ public abstract class ApiClientBase : IApiClient
     }
 
     // Operaciones tipadas que devuelven ResultadoApi (estilo que usan las páginas de
-    // inventario y de ventas). Las escrituras nunca lanzan; las lecturas lanzan
+    // inventario y proveedores). Las escrituras nunca lanzan; las lecturas lanzan
     // ServicioNoDisponibleException si el MS o el gateway no responden (502/503/504 o red)
     // y HttpRequestException ante cualquier otro error.
 

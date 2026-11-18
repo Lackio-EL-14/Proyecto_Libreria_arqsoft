@@ -160,29 +160,6 @@ public class ClienteServiceTests
     }
 
     [Fact]
-    public async Task Buscar_para_venta_no_devuelve_inactivos_y_expone_el_public_id()
-    {
-        var activo = _repositorio.Agregar("1234", "Ana");
-        _repositorio.Agregar("12345", "Luis", estado: false);
-
-        var resultado = await _servicio.BuscarParaVentaAsync(" 123 ");
-
-        Assert.True(resultado.EsExito);
-        var encontrado = Assert.Single(resultado.Valor);
-        Assert.Equal(new ClienteVentaItem(activo.PublicId, "1234", "Ana"), encontrado);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("  ")]
-    public async Task Buscar_para_venta_sin_ci_nit_es_validacion(string? ciNit)
-    {
-        var resultado = await _servicio.BuscarParaVentaAsync(ciNit);
-
-        Assert.Equal(TipoError.Validacion, resultado.Tipo);
-    }
-
-    [Fact]
     public async Task Obtener_inexistente_es_no_encontrado()
     {
         var resultado = await _servicio.ObtenerAsync(Guid.NewGuid());

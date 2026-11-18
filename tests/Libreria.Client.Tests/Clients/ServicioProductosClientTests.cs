@@ -7,7 +7,7 @@ namespace Libreria.Client.Tests.Clients;
 
 /// <summary>
 /// US-113: el cliente de Productos conserva las rutas y la traducción a ResultadoApi
-/// que tenía el antiguo VentasApiClient; solo cambia el servicio que responde (vía gateway).
+/// que consume el Front; solo cambia el servicio que responde detrás del gateway.
 /// </summary>
 public sealed class ServicioProductosClientTests
 {

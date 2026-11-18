@@ -1,0 +1,50 @@
+@model Libreria.Client.DTOs.Proveedores.ProveedorInput
+@{
+    var campos = new[]
+    {
+        (Nombre: "Nit", Etiqueta: "NIT", Valor: Model.Nit, Tipo: "text", Maximo: 30, Requerido: true),
+        (Nombre: "RazonSocial", Etiqueta: "Razón social", Valor: Model.RazonSocial, Tipo: "text", Maximo: 200, Requerido: true),
+        (Nombre: "Telefono", Etiqueta: "Teléfono", Valor: Model.Telefono, Tipo: "text", Maximo: 30, Requerido: false),
+        (Nombre: "Correo", Etiqueta: "Correo", Valor: Model.Correo, Tipo: "email", Maximo: 254, Requerido: false),
+        (Nombre: "NombreContacto", Etiqueta: "Contacto principal", Valor: Model.NombreContacto, Tipo: "text", Maximo: 150, Requerido: true),
+        (Nombre: "CargoContacto", Etiqueta: "Cargo del contacto", Valor: Model.CargoContacto, Tipo: "text", Maximo: 100, Requerido: false),
+        (Nombre: "TelefonoContacto", Etiqueta: "Teléfono del contacto", Valor: Model.TelefonoContacto, Tipo: "text", Maximo: 30, Requerido: false),
+        (Nombre: "CorreoContacto", Etiqueta: "Correo del contacto", Valor: Model.CorreoContacto, Tipo: "email", Maximo: 254, Requerido: false)
+    };
+}
+
+@foreach (var campo in campos)
+{
+    var clave = "Input." + campo.Nombre;
+    <div class="form-group">
+        <label for="Input_@campo.Nombre">
+            @campo.Etiqueta
+            @if (campo.Requerido)
+            {
+                <span class="text-danger">*</span>
+            }
+        </label>
+        <input
+            id="Input_@campo.Nombre"
+            name="@clave"
+            value="@campo.Valor"
+            class="form-control"
+            type="@campo.Tipo"
+            maxlength="@campo.Maximo"
+            required="@(campo.Requerido ? "required" : null)"
+            aria-describedby="Input_@campo.Nombre-error" />
+        <span id="Input_@campo.Nombre-error" class="text-danger">@ErrorDe(clave)</span>
+    </div>
+}
+
+<p class="form-help">
+    El contacto principal debe tener al menos teléfono o correo. Sus datos se guardan
+    en una tabla dependiente normalizada.
+</p>
+
+@functions {
+    private string? ErrorDe(string campo) =>
+        ViewData.ModelState.TryGetValue(campo, out var entrada)
+            ? entrada.Errors.FirstOrDefault()?.ErrorMessage
+            : null;
+}

@@ -9,11 +9,11 @@ GO
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Rol WHERE Nombre = N'Administrador')
     INSERT INTO dbo.Rol (Nombre, Descripcion)
-    VALUES (N'Administrador', N'Acceso total: catálogos, clientes, ventas, anulaciones y usuarios');
+    VALUES (N'Administrador', N'Acceso total a catálogos, clientes, proveedores y usuarios');
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Rol WHERE Nombre = N'Vendedor')
     INSERT INTO dbo.Rol (Nombre, Descripcion)
-    VALUES (N'Vendedor', N'Registro de ventas y consulta de catálogo');
+    VALUES (N'Vendedor', N'Consulta de catálogo y gestión de clientes');
 GO
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Usuario

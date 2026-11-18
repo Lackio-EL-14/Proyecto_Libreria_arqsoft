@@ -23,7 +23,7 @@ public sealed class ConfiguracionDeRutasTests
         Assert.Equal(new Dictionary<string, (string?, string?)>
         {
             ["g1-clientes"] = ("clientes", "/api/clientes/{**resto}"),
-            ["g1-ventas"] = ("ventas", "/api/ventas/{**resto}"),
+            ["g1-proveedores"] = ("proveedores", "/api/proveedores/{**resto}"),
             ["g1-productos"] = ("productos", "/api/productos/{**resto}"),
             ["g1-categorias"] = ("productos", "/api/categorias/{**resto}"),
             ["g1-marcas"] = ("productos", "/api/marcas/{**resto}"),
@@ -33,7 +33,7 @@ public sealed class ConfiguracionDeRutasTests
         }, rutas);
 
         Assert.Equal("http://localhost:5103", configuracion[GatewayFactory.ClaveDestino("clientes")]);
-        Assert.Equal("http://localhost:5101", configuracion[GatewayFactory.ClaveDestino("ventas")]);
+        Assert.Equal("http://localhost:5101", configuracion[GatewayFactory.ClaveDestino("proveedores")]);
         Assert.Equal("http://localhost:5104", configuracion[GatewayFactory.ClaveDestino("productos")]);
         Assert.Equal("http://localhost:5102", configuracion[GatewayFactory.ClaveDestino("usuarios")]);
     }
@@ -62,18 +62,16 @@ public sealed class ConfiguracionDeRutasTests
     }
 
     [Fact]
-    public void En_Development_solo_productos_sigue_en_Ventas_durante_la_transicion()
+    public void En_Development_cada_ruta_conserva_el_destino_del_contrato()
     {
         var configuracion = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AgregarRutasYarp([], "Development")
             .Build();
 
-        // appsettings.Development.json gana sobre yarp.g1.json solo en el clúster en transición (US-122).
-        // Clientes ya lo atiende su MS (US-115).
         Assert.Equal("http://localhost:5103", configuracion[GatewayFactory.ClaveDestino("clientes")]);
-        Assert.Equal("http://localhost:5101", configuracion[GatewayFactory.ClaveDestino("productos")]);
-        Assert.Equal("http://localhost:5101", configuracion[GatewayFactory.ClaveDestino("ventas")]);
+        Assert.Equal("http://localhost:5104", configuracion[GatewayFactory.ClaveDestino("productos")]);
+        Assert.Equal("http://localhost:5101", configuracion[GatewayFactory.ClaveDestino("proveedores")]);
         Assert.Equal("http://localhost:5102", configuracion[GatewayFactory.ClaveDestino("usuarios")]);
     }
 
@@ -120,7 +118,7 @@ public sealed class ConfiguracionDeRutasTests
 
         Assert.Equal(8, estado.GetRoutes().Count());
         Assert.Equal(
-            ["clientes", "productos", "usuarios", "ventas"],
+            ["clientes", "productos", "proveedores", "usuarios"],
             estado.GetClusters().Select(c => c.ClusterId).Order());
     }
 }

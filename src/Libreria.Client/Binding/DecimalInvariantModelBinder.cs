@@ -5,7 +5,7 @@ namespace Libreria.Client.Binding;
 
 // Enlace de datos de formularios HTML: el navegador envía los decimales con
 // punto. Es una preocupación de la interfaz, por eso vive en el Front y no en
-// el núcleo de Ventas.
+// los formularios numéricos del sistema.
 public class DecimalInvariantModelBinder : IModelBinder
 {
     public Task BindModelAsync(ModelBindingContext bindingContext)

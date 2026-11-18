@@ -18,8 +18,8 @@ builder.Services
         options.Conventions.AuthorizeFolder("/Productos", PoliticasAcceso.SoloAdministrador);
         options.Conventions.AuthorizeFolder("/Historico", PoliticasAcceso.SoloAdministrador);
 
-        options.Conventions.AuthorizeFolder("/Ventas", PoliticasAcceso.Ventas);
-        options.Conventions.AuthorizeFolder("/Clientes", PoliticasAcceso.Ventas);
+        options.Conventions.AuthorizeFolder("/Clientes", PoliticasAcceso.GestionClientes);
+        options.Conventions.AuthorizeFolder("/Proveedores", PoliticasAcceso.SoloAdministrador);
     })
     .AddMvcOptions(options =>
     {
@@ -32,7 +32,7 @@ builder.Services
 builder.Services
     .AddContextoUsuarioServicios()
     .AddModuloClientes(builder.Configuration)
-    .AddModuloVentas(builder.Configuration)
+    .AddModuloProveedores(builder.Configuration)
     .AddModuloProductos(builder.Configuration)
     .AddModuloUsuarios(builder.Configuration);
 
@@ -74,7 +74,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PoliticasAcceso.SoloAdministrador, politica =>
         politica.RequireRole(RolesSistema.Administrador));
 
-    options.AddPolicy(PoliticasAcceso.Ventas, politica =>
+    options.AddPolicy(PoliticasAcceso.GestionClientes, politica =>
         politica.RequireRole(RolesSistema.Administrador, RolesSistema.Vendedor));
 });
 

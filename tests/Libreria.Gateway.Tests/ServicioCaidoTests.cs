@@ -45,7 +45,7 @@ public sealed class ServicioCaidoTests : IClassFixture<ServiciosFalsos>
         await using var gateway = new GatewayFactory(destinos);
         using var cliente = gateway.CreateClient();
 
-        using var respuesta = await cliente.GetAsync("/api/ventas");
+        using var respuesta = await cliente.GetAsync("/api/proveedores");
 
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
     }

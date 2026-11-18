@@ -10,9 +10,6 @@ public interface IClienteService
 
     Task<Result<ClienteDetalle>> ObtenerAsync(Guid publicId);
 
-    /// <summary>Clientes activos para la venta, por prefijo de CI/NIT.</summary>
-    Task<Result<IReadOnlyList<ClienteVentaItem>>> BuscarParaVentaAsync(string? ciNit);
-
     Task<Result<ClienteDetalle>> RegistrarAsync(ClienteInput input);
 
     Task<Result<ClienteDetalle>> ActualizarAsync(Guid publicId, ClienteInput input);

@@ -26,7 +26,7 @@ $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
 $proyectos = @(
-    @{ Nombre = 'Ventas';    Proyecto = 'src/Libreria.Servicio.Ventas';    Url = 'http://localhost:5101/salud' }
+    @{ Nombre = 'Proveedores'; Proyecto = 'src/Libreria.Servicio.Proveedores'; Url = 'http://localhost:5101/salud' }
     @{ Nombre = 'Usuarios';  Proyecto = 'src/Libreria.Servicio.Usuarios';  Url = 'http://localhost:5102/salud' }
     @{ Nombre = 'Clientes';  Proyecto = 'src/Libreria.Servicio.Clientes';  Url = 'http://localhost:5103/salud' }
     @{ Nombre = 'Productos'; Proyecto = 'src/Libreria.Servicio.Productos'; Url = 'http://localhost:5104/salud' }

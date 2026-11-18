@@ -1,8 +1,8 @@
 using Libreria.Client.Clients.Clientes;
 using Libreria.Client.Clients.DependencyInjection;
 using Libreria.Client.Clients.Productos;
+using Libreria.Client.Clients.Proveedores;
 using Libreria.Client.Clients.Usuarios;
-using Libreria.Client.Clients.Ventas;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,14 +20,14 @@ public sealed class ServicioClientsExtensionsTests
             new object[]
             {
                 proveedor.GetRequiredService<IServicioClientesClient>(),
-                proveedor.GetRequiredService<IServicioVentasClient>(),
+                proveedor.GetRequiredService<IServicioProveedoresClient>(),
                 proveedor.GetRequiredService<IServicioProductosClient>(),
                 proveedor.GetRequiredService<IServicioUsuariosClient>()
             },
             Assert.NotNull);
 
         var fabrica = proveedor.GetRequiredService<IHttpClientFactory>();
-        foreach (var nombre in new[] { nameof(IServicioClientesClient), nameof(IServicioVentasClient), nameof(IServicioProductosClient), nameof(IServicioUsuariosClient) })
+        foreach (var nombre in new[] { nameof(IServicioClientesClient), nameof(IServicioProveedoresClient), nameof(IServicioProductosClient), nameof(IServicioUsuariosClient) })
         {
             Assert.Equal(new Uri("http://localhost:5080/"), fabrica.CreateClient(nombre).BaseAddress);
         }
@@ -53,7 +53,7 @@ public sealed class ServicioClientsExtensionsTests
         return new ServiceCollection()
             .AddContextoUsuarioServicios()
             .AddModuloClientes(configuracion)
-            .AddModuloVentas(configuracion)
+            .AddModuloProveedores(configuracion)
             .AddModuloProductos(configuracion)
             .AddModuloUsuarios(configuracion)
             .BuildServiceProvider();
