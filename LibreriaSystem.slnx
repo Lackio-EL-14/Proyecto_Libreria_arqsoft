@@ -12,6 +12,7 @@
     <Project Path="tests/Libreria.Gateway.Tests/Libreria.Gateway.Tests.csproj" />
     <Project Path="tests/Libreria.Servicio.Clientes.Tests/Libreria.Servicio.Clientes.Tests.csproj" />
     <Project Path="tests/Libreria.Servicio.Productos.Tests/Libreria.Servicio.Productos.Tests.csproj" />
+    <Project Path="tests/Libreria.Servicio.Proveedores.Tests/Libreria.Servicio.Proveedores.Tests.csproj" />
     <Project Path="tests/Libreria.Servicio.Usuarios.Tests/Libreria.Servicio.Usuarios.Tests.csproj" />
   </Folder>
 </Solution>

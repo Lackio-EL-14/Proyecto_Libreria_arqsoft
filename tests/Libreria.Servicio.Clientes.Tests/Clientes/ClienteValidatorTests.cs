@@ -1,4 +1,4 @@
-using Libreria.Servicio.Clientes.Application.Comun;
+using Libreria.Servicio.Clientes.Domain;
 using Libreria.Servicio.Clientes.Application.Models;
 using Libreria.Servicio.Clientes.Application.Validators;
 using Libreria.Servicio.Clientes.Tests.Fakes;

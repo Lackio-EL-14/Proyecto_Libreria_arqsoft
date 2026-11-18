@@ -1,4 +1,4 @@
-using Libreria.Servicio.Clientes.Application.Comun;
+using Libreria.Servicio.Clientes.Domain;
 using Libreria.Servicio.Clientes.Application.Models;
 
 namespace Libreria.Servicio.Clientes.Application.Ports.Primary;

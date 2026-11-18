@@ -1,4 +1,4 @@
-namespace Libreria.Servicio.Clientes.Application.Comun;
+namespace Libreria.Servicio.Proveedores.Domain;
 
 /// <summary>
 /// Motivo por el que una operación de negocio no se completó.
@@ -13,9 +13,15 @@ public enum TipoError
 }
 
 /// <summary>
-/// Patrón Result: las validaciones de negocio se devuelven como valor,
-/// sin lanzar excepciones. Las excepciones quedan para lo inesperado.
+/// Patrón Result (US-139, contrato 6.5): las validaciones de negocio se devuelven como valor,
+/// sin lanzar excepciones. Las excepciones quedan para lo inesperado (BD caída, red, configuración).
 /// </summary>
+/// <remarks>
+/// Forma pedida por el docente: <see cref="IsSuccess"/>, <see cref="IsError"/>, <see cref="Success()"/>,
+/// <see cref="Error(string)"/> y <see cref="Errors"/>. Se conservan <see cref="Tipo"/> y las fábricas
+/// <see cref="Validacion(string, string)"/>, <see cref="NoEncontrado"/> y <see cref="Conflicto"/>
+/// para distinguir 404 y 409, como permite el contrato.
+/// </remarks>
 public class Result
 {
     private static readonly IReadOnlyDictionary<string, string> SinErrores =
@@ -27,12 +33,28 @@ public class Result
         Errores = errores;
     }
 
-    public bool EsExito => Tipo == TipoError.Ninguno;
+    /// <summary>La operación salió bien.</summary>
+    public bool IsSuccess => Tipo == TipoError.Ninguno;
+
+    /// <summary>La operación falló. Siempre es lo contrario de <see cref="IsSuccess"/>.</summary>
+    public bool IsError => !IsSuccess;
+
+    /// <summary>Equivale a <see cref="IsSuccess"/>.</summary>
+    public bool EsExito => IsSuccess;
 
     public TipoError Tipo { get; }
 
     /// <summary>Campo → mensaje. Vacío cuando la operación tuvo éxito.</summary>
     public IReadOnlyDictionary<string, string> Errores { get; }
+
+    /// <summary>Devuelve el arreglo de mensajes de error acumulados (vacío si tuvo éxito).</summary>
+    public string[] Errors() => Errores.Values.ToArray();
+
+    /// <summary>Crea un resultado correcto.</summary>
+    public static Result Success() => Exito();
+
+    /// <summary>Crea un error de validación con su mensaje (se traduce a 400).</summary>
+    public static Result Error(string mensaje) => Validacion(string.Empty, ValidarMensaje(mensaje));
 
     public static Result Exito() => new(TipoError.Ninguno, SinErrores);
 
@@ -58,6 +80,12 @@ public class Result
 
         return errores;
     }
+
+    protected static string ValidarMensaje(string mensaje)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(mensaje);
+        return mensaje;
+    }
 }
 
 /// <summary>Result que, en caso de éxito, transporta un valor.</summary>
@@ -76,17 +104,23 @@ public sealed class Result<T> : Result
     {
     }
 
-    /// <summary>Valor de la operación. Solo existe si <see cref="Result.EsExito"/> es verdadero.</summary>
-    public T Valor => EsExito
+    /// <summary>Valor de la operación. Solo existe si <see cref="Result.IsSuccess"/> es verdadero.</summary>
+    public T Valor => IsSuccess
         ? _valor!
         : throw new InvalidOperationException("Un resultado fallido no tiene valor.");
+
+    /// <summary>Crea un resultado correcto con su valor.</summary>
+    public static Result<T> Success(T valor) => Exito(valor);
+
+    /// <summary>Crea un error de validación con su mensaje y devuelve un <see cref="Result{T}"/>.</summary>
+    public static new Result<T> Error(string mensaje) => Fallo(Result.Error(mensaje));
 
     public static Result<T> Exito(T valor) => new(valor);
 
     /// <summary>Convierte un fallo sin valor (validación, no encontrado o conflicto) en un Result&lt;T&gt;.</summary>
     public static Result<T> Fallo(Result fallo)
     {
-        if (fallo.EsExito)
+        if (fallo.IsSuccess)
         {
             throw new ArgumentException("Se esperaba un resultado fallido.", nameof(fallo));
         }
