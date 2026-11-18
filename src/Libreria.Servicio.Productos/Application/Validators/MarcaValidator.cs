@@ -1,5 +1,4 @@
 using Libreria.Servicio.Productos.Application.Abstractions;
-using Libreria.Servicio.Productos.Application.Comun;
 using Libreria.Servicio.Productos.Application.Models.Marcas;
 using Libreria.Servicio.Productos.Domain;
 

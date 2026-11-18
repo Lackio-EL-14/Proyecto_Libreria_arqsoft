@@ -1,5 +1,5 @@
 using Libreria.Servicio.Productos.Application.Abstractions;
-using Libreria.Servicio.Productos.Application.Comun;
+using Libreria.Servicio.Productos.Domain;
 using Libreria.Servicio.Productos.Application.Models.Productos;
 
 namespace Libreria.Servicio.Productos.Application.Validators;

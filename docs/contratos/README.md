@@ -9,6 +9,7 @@ Estos archivos describen el alcance actual. No incluyen el proceso principal res
 | `front.md` | Clientes HTTP, DTO y registro de módulos del Front |
 | `datos-semilla.md` | Identificadores fijos usados por los scripts |
 | `rest-errores-result.md` | Convenciones de errores y `Result` |
+| `result.md` | Patrón Result: forma, cuándo usarlo y migración (US-139) |
 | `jwt.md` | Contrato de autenticación |
 | `usuario-actual.md` | Auditoría y usuario actual |
 

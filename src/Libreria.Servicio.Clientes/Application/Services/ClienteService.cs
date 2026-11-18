@@ -1,4 +1,3 @@
-using Libreria.Servicio.Clientes.Application.Comun;
 using Libreria.Servicio.Clientes.Application.Factories;
 using Libreria.Servicio.Clientes.Application.Models;
 using Libreria.Servicio.Clientes.Application.Ports.Primary;

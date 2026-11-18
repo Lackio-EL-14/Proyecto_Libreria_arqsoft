@@ -1,5 +1,5 @@
 using Libreria.Servicio.Productos.Application.Abstractions;
-using Libreria.Servicio.Productos.Application.Comun;
+using Libreria.Servicio.Productos.Domain;
 
 namespace Libreria.Servicio.Productos.Application.UseCases.Productos;
 
