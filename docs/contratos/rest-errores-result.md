@@ -8,14 +8,7 @@
 
 ## `Result` / `Result<T>`
 
-Cada MS tiene su copia en `Comun/Result.cs`, dentro de la capa más interna que lo use (no hay bibliotecas compartidas).
-
-| Miembro | Significado |
-|---|---|
-| `EsExito` | `true` si la operación se completó |
-| `Valor` | Resultado (solo en `Result<T>`) |
-| `Errores` | Diccionario campo → mensaje |
-| `Tipo` | `Validacion`, `NoEncontrado` o `Conflicto` |
+Cada MS tiene su copia en `Domain/Result.cs`, con la forma del contrato 6.5 (`IsSuccess`, `IsError`, `Success`, `Error(mensaje)`, `Errors()`), más `Validacion`, `NoEncontrado` y `Conflicto` para distinguir 400, 404 y 409. La guía de uso, con un ejemplo antes y después, está en [result.md](result.md).
 
 Las validaciones de negocio devuelven `Result`; las excepciones quedan solo para errores inesperados.
 
@@ -23,7 +16,7 @@ Las validaciones de negocio devuelven `Result`; las excepciones quedan solo para
 
 | Situación | HTTP | Cuerpo |
 |---|---|---|
-| `Validacion` | **400** | `ValidationProblemDetails` |
+| `Validacion` / `Error(mensaje)` | **400** | `ValidationProblemDetails` |
 | `NoEncontrado` | **404** | `ProblemDetails` |
 | `Conflicto` | **409** | `ProblemDetails` |
 | Servicio dependiente caído | **503** | `ProblemDetails` |
