@@ -11,6 +11,7 @@ using Libreria.Servicio.Productos.Application.Validators;
 using Libreria.Servicio.Productos.Application.UseCases.Categorias;
 using Libreria.Servicio.Productos.Application.UseCases.Marcas;
 using Libreria.Servicio.Productos.Application.UseCases.Historico;
+using Libreria.Servicio.Productos.Presentation.Comun;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -96,6 +97,10 @@ builder.Services.AddScoped<ObtenerProductoEdicionUseCase>();
 builder.Services.AddScoped<ActualizarProductoUseCase>();
 builder.Services.AddScoped<CambiarEstadoProductoUseCase>();
 builder.Services.AddScoped<ObtenerHistoricoProductoUseCase>();
+// Errores que no son de negocio → ProblemDetails: BD caída 503, inesperado 500 (US-139, contrato 6.5).
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ManejadorExcepciones>();
+
 // 1. API REST + Swagger
 builder.Services.AddControllers(opciones =>
     opciones.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
@@ -110,6 +115,8 @@ if (builder.Environment.IsDevelopment())
 }
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
