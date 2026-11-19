@@ -37,7 +37,6 @@ public sealed class EnrutamientoTests : IClassFixture<ServiciosFalsos>, IAsyncLi
     [InlineData("/api/categorias/ubicaciones", "productos")]
     [InlineData("/api/marcas/paises", "productos")]
     [InlineData("/api/historico/8f6c1a52-0000-4000-8000-000000000002", "productos")]
-    [InlineData("/api/auth/login", "usuarios")]
     [InlineData("/api/usuarios", "usuarios")]
     [InlineData("/api/usuarios/nombres?ids=8f6c1a52-0000-4000-8000-000000000003", "usuarios")]
     public async Task La_ruta_llega_a_su_microservicio_con_ruta_y_query_intactas(string url, string servicioEsperado)
@@ -71,6 +70,7 @@ public sealed class EnrutamientoTests : IClassFixture<ServiciosFalsos>, IAsyncLi
 
     [Theory]
     [InlineData("/api/reportes")]
+    [InlineData("/api/auth/login")]
     [InlineData("/api/clientesx")]
     [InlineData("/otra/cosa")]
     public async Task Una_ruta_fuera_del_contrato_devuelve_404(string url)

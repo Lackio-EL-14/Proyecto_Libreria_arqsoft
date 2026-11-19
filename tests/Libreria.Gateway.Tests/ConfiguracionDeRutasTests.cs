@@ -28,7 +28,6 @@ public sealed class ConfiguracionDeRutasTests
             ["g1-categorias"] = ("productos", "/api/categorias/{**resto}"),
             ["g1-marcas"] = ("productos", "/api/marcas/{**resto}"),
             ["g1-historico"] = ("productos", "/api/historico/{**resto}"),
-            ["g2-auth"] = ("usuarios", "/api/auth/{**resto}"),
             ["g2-usuarios"] = ("usuarios", "/api/usuarios/{**resto}")
         }, rutas);
 
@@ -109,14 +108,14 @@ public sealed class ConfiguracionDeRutasTests
     }
 
     [Fact]
-    public void YARP_acepta_la_configuracion_y_carga_las_8_rutas_y_4_clusters()
+    public void YARP_acepta_la_configuracion_y_carga_las_7_rutas_y_4_clusters()
     {
         using var gateway = new GatewayFactory(new Dictionary<string, string>());
         _ = gateway.Server; // arranca el host y valida la configuración de YARP
 
         var estado = gateway.Services.GetRequiredService<IProxyStateLookup>();
 
-        Assert.Equal(8, estado.GetRoutes().Count());
+        Assert.Equal(7, estado.GetRoutes().Count());
         Assert.Equal(
             ["clientes", "productos", "proveedores", "usuarios"],
             estado.GetClusters().Select(c => c.ClusterId).Order());
