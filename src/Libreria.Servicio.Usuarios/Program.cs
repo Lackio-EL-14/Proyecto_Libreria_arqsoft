@@ -5,7 +5,6 @@ using Libreria.Servicio.Usuarios.Application.Services;
 using Libreria.Servicio.Usuarios.Application.Facades;
 using Libreria.Servicio.Usuarios.Infrastructure.Email;
 using Libreria.Servicio.Usuarios.Infrastructure.Configuration;
-using Libreria.Servicio.Usuarios.Application.UseCases.Auth;
 using Libreria.Servicio.Usuarios.Application.UseCases.Users;
 using Libreria.Servicio.Usuarios.Application.Validation;
 using Libreria.Servicio.Usuarios.Infrastructure.Connection;
@@ -13,7 +12,6 @@ using Libreria.Servicio.Usuarios.Infrastructure.Factories;
 using Libreria.Servicio.Usuarios.Infrastructure.Identidad;
 using Libreria.Servicio.Usuarios.Presentation.Security;
 using Libreria.Servicio.Usuarios.Presentation.Middleware;
-using Libreria.Servicio.Usuarios.Infrastructure.Security;
 using Libreria.Servicio.Usuarios.Infrastructure.Transactions;
 
 
@@ -44,13 +42,6 @@ builder.Services.AddScoped<
     SqlUsuarioRepositoryFactory>();
 builder.Services.AddScoped<IUserRepository>(provider =>
     provider.GetRequiredService<UsuarioRepositoryFactory>().CreateRepository());
-// TRANSITORIO (US-124 por etapas): login propio con Argon2 hasta que US-125 active OIDC en el Front.
-// Se retira con la lista de docs/contratos/keycloak.md, sección «Retiro del login transitorio».
-builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
-
-builder.Services.AddScoped<LoginValidator>();
-
-builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
 builder.Services.AddScoped<ICheckActiveSessionUseCase, CheckActiveSessionUseCase>();
 builder.Services.AddScoped<IGetUserNamesUseCase, GetUserNamesUseCase>();
 builder.Services.AddScoped<IListUsersUseCase, ListUsersUseCase>();

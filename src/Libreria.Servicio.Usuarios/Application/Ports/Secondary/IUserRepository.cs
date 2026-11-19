@@ -5,18 +5,10 @@ namespace Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 
 public interface IUserRepository
 {
-    Task<User?> GetActiveByUsernameAsync(string username);
-
-    Task<string?> GetActivePasswordHashAsync(Guid userId);
-
-    Task<bool> UpdatePasswordAsync(
-        Guid userId,
-        string previousHash,
-        string newHash);
-
     Task<bool> IsSessionActiveAsync(int userId);
 
-    Task<bool> IsSessionActiveAsync(Guid publicId);
+    /// <summary>Usuario no dado de baja (Activo o Pendiente) y con rol activo, buscado por <c>KeycloakId</c> (el <c>sub</c> del token).</summary>
+    Task<bool> IsSessionActiveAsync(Guid keycloakId);
 
     Task<IReadOnlyDictionary<int, string>> GetFullNamesByIdsAsync(
     IReadOnlyCollection<int> userIds);
@@ -26,7 +18,8 @@ public interface IUserRepository
 
     Task<bool> UsernameExistsAsync(string username);
 
-    Task<bool> IsActiveAdministratorAsync(Guid userId);
+    /// <summary>Administrador activo, buscado por <c>KeycloakId</c> (el <c>sub</c> del usuario actual).</summary>
+    Task<bool> IsActiveAdministratorAsync(Guid keycloakId);
 
     Task<IReadOnlyList<UserListItemDto>> GetListAsync(
         string? status = null);

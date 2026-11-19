@@ -7,5 +7,8 @@ public enum DeactivateUserResult
     ActorNotAuthorized,
     AlreadyInactive,
     LastActiveAdministrator,
-    SelfDeactivation
+    SelfDeactivation,
+
+    /// <summary>Keycloak no respondió; la baja se revirtió (503).</summary>
+    IdentityProviderUnavailable
 }

@@ -1,9 +1,8 @@
 -- =========================================================
 -- MS Usuarios · SQL Server · LibreriaUsuarios (US-111)
 -- Esquema inicial de la sección 5 del planning. Idempotente.
--- US-124: las credenciales viven en Keycloak. KeycloakId guarda el
--- sub del token. PasswordHash y ContrasenaTemporalExpiracion son
--- TRANSITORIAS: solo las usa el login propio hasta US-125.
+-- US-124/125: las credenciales viven solo en Keycloak. KeycloakId
+-- guarda el sub del token; no hay columnas de contraseña.
 -- =========================================================
 
 -- UX_Usuario_KeycloakId es un índice filtrado: crearlo y escribir en
@@ -43,8 +42,6 @@ GO
 -- ---------------------------------------------------------
 -- Usuario
 -- KeycloakId: id del usuario en Keycloak (el sub del token), sin FK.
--- PasswordHash (TRANSITORIA, se elimina en US-125): hash Argon2id
--- del login propio; nunca la contraseña.
 -- La auditoría guarda el PublicId (sub del JWT) sin FK, igual
 -- que en las otras tres BD.
 -- ---------------------------------------------------------
@@ -61,8 +58,6 @@ BEGIN
         ApellidoMaterno              NVARCHAR(100) NULL,
         NombreCompleto               NVARCHAR(150) NOT NULL,
         Correo                       NVARCHAR(254) NOT NULL,
-        PasswordHash                 NVARCHAR(500) NULL,
-        ContrasenaTemporalExpiracion DATETIME2 NULL,
         RolId                        INT NOT NULL,
         Estado                       NVARCHAR(20) NOT NULL
             CONSTRAINT DF_Usuario_Estado DEFAULT (N'Pendiente'),
@@ -106,5 +101,21 @@ BEGIN
     CREATE UNIQUE INDEX UX_Usuario_KeycloakId
         ON dbo.Usuario (KeycloakId)
         WHERE KeycloakId IS NOT NULL;
+END
+GO
+
+-- ---------------------------------------------------------
+-- US-125: se eliminan las columnas del login propio en bases
+-- creadas antes (las credenciales viven solo en Keycloak).
+-- ---------------------------------------------------------
+IF COL_LENGTH('dbo.Usuario', 'PasswordHash') IS NOT NULL
+BEGIN
+    ALTER TABLE dbo.Usuario DROP COLUMN PasswordHash;
+END
+GO
+
+IF COL_LENGTH('dbo.Usuario', 'ContrasenaTemporalExpiracion') IS NOT NULL
+BEGIN
+    ALTER TABLE dbo.Usuario DROP COLUMN ContrasenaTemporalExpiracion;
 END
 GO

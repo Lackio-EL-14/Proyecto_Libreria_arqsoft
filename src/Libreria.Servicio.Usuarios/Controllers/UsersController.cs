@@ -209,37 +209,31 @@ public sealed class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(
         typeof(ProblemDetails),
-        StatusCodes.Status409Conflict)]
+        StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ChangePasswordAsync(
         [FromBody] ChangePasswordRequest request)
     {
-        try
+        var resultado =
+            await _changePasswordUseCase.ExecuteAsync(request);
+
+        if (resultado is null)
         {
-            var changed =
-                await _changePasswordUseCase.ExecuteAsync(request);
+            return StatusCode(
+                StatusCodes.Status403Forbidden);
+        }
 
-            if (!changed)
-            {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden);
-            }
-
+        if (resultado.IsSuccess)
+        {
             return NoContent();
         }
-        catch (ArgumentException exception)
-        {
-            return Problem(
-                title: "No fue posible cambiar la contraseña.",
-                detail: exception.Message,
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-        catch (InvalidOperationException exception)
-        {
-            return Problem(
-                title: "No fue posible cambiar la contraseña.",
-                detail: exception.Message,
-                statusCode: StatusCodes.Status409Conflict);
-        }
+
+        // El Front muestra Detail; se conserva el contrato previo (400 con el mensaje).
+        return Problem(
+            title: "No fue posible cambiar la contraseña.",
+            detail: string.Join(" ", resultado.Errors()),
+            statusCode: resultado.Tipo == Domain.TipoError.NoEncontrado
+                ? StatusCodes.Status404NotFound
+                : StatusCodes.Status400BadRequest);
     }
 
     [HttpDelete("{publicId:guid}")]
@@ -288,6 +282,12 @@ public sealed class UsersController : ControllerBase
                     title: "No fue posible dar de baja al usuario.",
                     detail: "No puede darse de baja a sí mismo.",
                     statusCode: StatusCodes.Status409Conflict),
+
+            DeactivateUserResult.IdentityProviderUnavailable =>
+                Problem(
+                    title: "No fue posible dar de baja al usuario.",
+                    detail: "El proveedor de identidad no respondió; no se realizó ningún cambio.",
+                    statusCode: StatusCodes.Status503ServiceUnavailable),
 
             _ => throw new InvalidOperationException(
                 "Resultado de baja de usuario no reconocido.")
