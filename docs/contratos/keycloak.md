@@ -88,46 +88,37 @@ Encabezado: `{"alg": "RS256", "typ": "JWT", "kid": "<id de la clave del realm>"}
 
 En los dos casos, `MapInboundClaims = false` conserva los nombres originales (`sub`, `roles`, `preferred_username`) en lugar de traducirlos a las URI de `ClaimTypes`.
 
-### Front: `AddOpenIdConnect` (US-125)
+### Front: `AddOpenIdConnect` (US-125, implementado)
+
+Vive en `src/Libreria.Client/Seguridad/AutenticacionKeycloakExtensions.cs` y se registra con una línea en `Program.cs`:
 
 ```csharp
-builder.Services
-    .AddAuthentication(options =>
-    {
-        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
-    })
-    .AddCookie(options =>
-    {
-        options.Cookie.Name = "Libreria.Sesion";
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(60);   // igual que el token
-        options.SlidingExpiration = false;
-        options.AccessDeniedPath = "/Cuenta/AccesoDenegado";
-    })
-    .AddOpenIdConnect(options =>
-    {
-        var keycloak = builder.Configuration.GetSection("Keycloak");
-        options.Authority = keycloak["Authority"];            // http://localhost:8080/realms/libreria
-        options.ClientId = "libreria-front";
-        options.ClientSecret = keycloak["ClientSecret"];      // Keycloak__ClientSecret (entorno)
-        options.ResponseType = OpenIdConnectResponseType.Code;
-        options.UsePkce = true;                               // S256
-        options.SaveTokens = true;                            // access_token para el handler Bearer
-        options.GetClaimsFromUserInfoEndpoint = true;
-        options.MapInboundClaims = false;
-        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-        options.Scope.Clear();
-        options.Scope.Add("openid");
-        options.Scope.Add("profile");
-        options.Scope.Add("email");
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            NameClaimType = "preferred_username",
-            RoleClaimType = "roles"
-        };
-        // CallbackPath y SignedOutCallbackPath por defecto: /signin-oidc y /signout-callback-oidc
-    });
+builder.Services.AddAutenticacionKeycloak(builder.Configuration, builder.Environment);
 ```
+
+Opciones clave (no cambiarlas sin avisar):
+
+| Opción | Valor | Por qué |
+|---|---|---|
+| `DefaultScheme` / `DefaultChallengeScheme` | Cookie / OpenID Connect | La cookie cifrada `Libreria.Sesion` es la sesión local; sin sesión se va directo a Keycloak |
+| `ClientId` / `ClientSecret` | `Keycloak:ClientId` = `libreria-front` / `Keycloak__ClientSecret` (user-secrets o entorno) | Si falta el secreto, el Front no arranca y el error lo nombra |
+| `ResponseType` + `UsePkce` | `code` + PKCE S256 | Flujo de código. .NET 10 usa además PAR (`request_uri`), porque Keycloak lo anuncia |
+| `ResponseMode` + `CorrelationCookie`/`NonceCookie.SameSite` | `query` + `Lax` | Funciona en `http://localhost` sin cookies `SameSite=None` |
+| `SaveTokens` | `true` | `BearerTokenDelegatingHandler` toma el `access_token` de la sesión |
+| `UseTokenLifetime` + cookie de 60 min sin renovación | — | La sesión vence con el token |
+| `GetClaimsFromUserInfoEndpoint` | `false` | El `id_token` ya trae `name`, `email` y `roles` |
+| `MapInboundClaims` | `false` | Conserva `sub`, `preferred_username`, `roles` |
+| `NameClaimType` / `RoleClaimType` | `preferred_username` / `roles` | `User.Identity.Name`, `IsInRole` y las políticas por rol |
+| `ValidAlgorithms` | `RS256` | Solo la firma del realm |
+| `SignedOutRedirectUri` | `/Cuenta/Login?motivo=cerrada` | Después del `end_session` de Keycloak |
+
+Piezas del Front (`Seguridad/` y `Clients/Common/`):
+
+- **`BearerTokenDelegatingHandler`:** agrega `Authorization: Bearer` a las llamadas de los 4 adaptadores. Si el token venció o un servicio responde **401**, lanza `SesionExpiradaException`; `SesionExpiradaFilter` cierra la sesión y lleva a `/Cuenta/Login?motivo=vencida`. *Transitorio hasta US-126/127:* solo hacia `/api/usuarios` envía también `X-Usuario-Id` (= `sub`) y `X-Usuario-Nombre` (= `preferred_username`); descarta cualquier `X-Usuario-*` que venga de antes.
+- **`ValidarEstadoUsuarioCookieEvents`:** en cada petición comprueba el vencimiento del token y, con una caché de `Sesion:ValidacionEstadoSegundos` (20 s), si el `sub` sigue sin baja en el MS Usuarios. Una baja corta la sesión con el mensaje «Su cuenta está inactiva…».
+- **`/Cuenta/Login`:** sin motivo, redirige a Keycloak. Con un motivo (`vencida`, `cerrada`, `inactiva`, `no-disponible`, `error`; textos en `MotivosSesion`), muestra el mensaje y el botón «Iniciar sesión» (con `prompt=login`). Así un rechazo nunca entra en bucle con la sesión SSO de Keycloak.
+- **`/Cuenta/Logout`:** solo por POST con antiforgery. Cierra la cookie **y** la sesión de Keycloak.
+- **`ClaimsKeycloak`:** `User.ObtenerSub()`, `User.NombreVisible()` y `User.RolesVisibles()` para las páginas y el layout.
 
 ### Gateway y los 4 MS: `AddJwtBearer` (US-126)
 
@@ -212,16 +203,18 @@ Adaptadores (`Infrastructure/Identidad/`), según `ProveedorIdentidad:Modo`:
 
 Pruebas: `tests/Libreria.Servicio.Usuarios.Tests/Identidad/`. La de integración contra Keycloak real se activa con `KEYCLOAK_PRUEBAS_INTEGRACION=1` y los dos secretos en el entorno.
 
-## 7. Retiro del login transitorio (al cerrar US-125)
+## 7. Retiro del login transitorio (hecho en US-125)
 
-US-124 se integró por etapas, así que el login propio sigue funcionando hasta que el Front inicie sesión con OIDC. En el PR de US-125 se retira, con su comentario `TRANSITORIO`:
+El login propio salió por completo en US-125:
 
-- [ ] Ruta `g2-auth` (`/api/auth/{**resto}`) de `src/Libreria.Gateway/yarp.g2.json` y sus pruebas en `tests/Libreria.Gateway.Tests`.
-- [ ] `Controllers/AuthController.cs`, `ILoginUseCase`, `LoginUseCase`, `LoginValidator`, `DTOs/Auth/*` y `TestDoubles/LoginUseCaseTests.cs`.
-- [ ] `IPasswordHasher`, `Argon2PasswordHasher`, el paquete `Konscious.Security.Cryptography.Argon2` y `FakePasswordHasher`.
-- [ ] `ChangePasswordUseCase`, que pasa a usar `IProveedorIdentidad` (US-129).
-- [ ] `User.PasswordHash` y `User.TemporaryPasswordExpiresAt`, las columnas `PasswordHash` y `ContrasenaTemporalExpiracion` (con un `ALTER TABLE … DROP COLUMN` idempotente) y los hashes de `50_datos_semilla.sql`.
-- [ ] `CurrentUserMiddleware` y `X-Usuario-*` en el MS y en el Front (`UsuarioActualDelegatingHandler`), reemplazados por el token (US-125, US-126 y US-127).
-- [ ] `api/auth/login` en `ServicioUsuariosClient` y la página `Cuenta/Login` del Front.
+- [x] Ruta `g2-auth` (`/api/auth/{**resto}`) de `yarp.g2.json` y sus pruebas: el gateway queda con 7 rutas y `/api/auth` responde 404.
+- [x] `AuthController`, `ILoginUseCase`, `LoginUseCase`, `LoginValidator`, `DTOs/Auth/*` y sus pruebas.
+- [x] `IPasswordHasher`, `Argon2PasswordHasher`, el paquete Konscious y `FakePasswordHasher`.
+- [x] `ChangePasswordUseCase` usa `IProveedorIdentidad`: verifica la contraseña actual y fija la nueva en Keycloak. Devuelve `Result` (US-129, backend).
+- [x] `DeactivateUserUseCase` también deshabilita al usuario en Keycloak, lo que cierra sus sesiones. Si Keycloak no responde, se revierte y devuelve 503 (US-128, backend).
+- [x] `User.PasswordHash` y `TemporaryPasswordExpiresAt`, y las columnas `PasswordHash` y `ContrasenaTemporalExpiracion` (eliminadas con `DROP COLUMN` idempotente). La semilla ya no tiene hashes.
+- [x] En el Front: `api/auth/login`, sus DTO, el formulario de login y `UsuarioActualDelegatingHandler`.
 
-Mientras tanto, el login transitorio usa las credenciales de desarrollo anteriores, que el equipo ya conoce, y Keycloak usa las de `.env`. Son **independientes**.
+**Identidad del usuario actual = `sub`.** En el MS Usuarios, `IsActiveAdministratorAsync`, `IsSessionActiveAsync(Guid)` y el actor de la baja buscan por `KeycloakId`, no por `PublicId`. `GET api/usuarios/{keycloakId}/sesion-activa` es verdadero si el usuario **no está Inactivo** (Activo o Pendiente) y su rol está activo. «Pendiente» no bloquea la sesión porque Keycloak no emite el token hasta que se cambia la contraseña temporal.
+
+**Sigue transitorio hasta US-126/127:** `CurrentUserMiddleware` del MS Usuarios lee `X-Usuario-Id`/`X-Usuario-Nombre` sin validar el JWT. No exponer el puerto 5102 fuera de `localhost`.

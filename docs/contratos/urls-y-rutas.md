@@ -20,7 +20,8 @@ El Front envía todo a `http://localhost:5080`. YARP enruta:
 | `/api/categorias/{**resto}` | `productos` |
 | `/api/marcas/{**resto}` | `productos` |
 | `/api/historico/{**resto}` | `productos` |
-| `/api/auth/{**resto}` | `usuarios` (**transitoria**: se retira en US-125; el login lo hace Keycloak) |
 | `/api/usuarios/{**resto}` | `usuarios` |
+
+No hay ruta de login: el Front inicia sesión directamente con Keycloak (`keycloak.md`); `/api/auth` responde 404.
 
 Cada servicio usa exclusivamente su cadena `ConnectionStrings__<Servicio>Db`. No existen conexiones directas entre sus bases.

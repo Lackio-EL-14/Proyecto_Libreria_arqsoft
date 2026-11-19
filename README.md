@@ -71,7 +71,13 @@ $env:KEYCLOAK_PRUEBAS_INTEGRACION = "1"   # y $env:Keycloak__ClientSecret / $env
 dotnet test tests/Libreria.Servicio.Usuarios.Tests --filter "FullyQualifiedName~KeycloakIntegracion"
 ```
 
-Mientras no se cierre US-125, el Front todavía inicia sesión con el login propio (`/api/auth`); ver `keycloak.md`, sección 7.
+El Front inicia sesión con OpenID Connect contra Keycloak (US-125). Necesita el secreto de `libreria-front`:
+
+```powershell
+dotnet user-secrets set "Keycloak:ClientSecret" "<KEYCLOAK_FRONT_CLIENT_SECRET>" --project src/Libreria.Client
+```
+
+Usuarios de desarrollo: `admin` y `vendedor`, con las contraseñas de `KEYCLOAK_*_SEMILLA_PASSWORD` de su `.env`.
 
 ## Variables para ejecutar .NET localmente
 
