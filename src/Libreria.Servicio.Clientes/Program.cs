@@ -17,7 +17,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers(opciones =>
     opciones.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(opciones => opciones.AgregarBearerDeKeycloak());
+
+// US-126: todo exige el JWT de Keycloak (firma RS256, emisor, audiencia libreria-api, vencimiento)
+// y los roles se aplican con [Authorize(Policy = ...)]. Ver Infrastructure/Seguridad/SeguridadJwtExtensions.cs.
+builder.Services.AddSeguridadJwt(builder.Configuration, builder.Environment);
 
 // Errores que no son de negocio → ProblemDetails: BD caída 503, inesperado 500 (contrato 6.5).
 builder.Services.AddProblemDetails();
@@ -69,8 +73,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
-app.MapGet("/salud", () => Results.Ok(new { servicio = "Clientes", estado = "ok" }));
+app.MapGet("/salud", () => Results.Ok(new { servicio = "Clientes", estado = "ok" }))
+    .AllowAnonymous();
 
 app.Run();
 
