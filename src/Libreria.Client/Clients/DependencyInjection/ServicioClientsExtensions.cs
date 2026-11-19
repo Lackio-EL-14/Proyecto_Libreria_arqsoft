@@ -4,6 +4,7 @@ using Libreria.Client.Clients.Common;
 using Libreria.Client.Clients.Productos;
 using Libreria.Client.Clients.Proveedores;
 using Libreria.Client.Clients.Usuarios;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Libreria.Client.Clients.DependencyInjection;
 
@@ -18,10 +19,12 @@ public static class ServicioClientsExtensions
     public const string TimeoutClave = "Servicios:TimeoutSeconds";
     private const int TimeoutPorDefectoSegundos = 30;
 
+    /// <summary>Registra el handler que agrega el token de Keycloak (Bearer) a cada llamada (US-125).</summary>
     public static IServiceCollection AddContextoUsuarioServicios(this IServiceCollection services)
     {
         services.AddHttpContextAccessor();
-        services.AddTransient<UsuarioActualDelegatingHandler>();
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddTransient<BearerTokenDelegatingHandler>();
         return services;
     }
 
@@ -57,7 +60,7 @@ public static class ServicioClientsExtensions
                 client.Timeout = timeout;
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             })
-            .AddHttpMessageHandler<UsuarioActualDelegatingHandler>();
+            .AddHttpMessageHandler<BearerTokenDelegatingHandler>();
 
         return services;
     }

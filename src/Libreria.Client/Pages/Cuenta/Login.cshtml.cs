@@ -1,107 +1,56 @@
-using System.Security.Claims;
-using System.Net;
-using Libreria.Client.Clients.Common;
-using Libreria.Client.Clients.Usuarios;
-using Libreria.Client.DTOs.Usuarios;
+using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace Libreria.Client.Pages.Cuenta;
 
+/// <summary>
+/// Entrada al login de Keycloak (US-125). Sin motivo, redirige directo a Keycloak; con un
+/// motivo (sesión vencida, cerrada, cuenta inactiva…), muestra el mensaje y espera a que el
+/// usuario pulse «Iniciar sesión», para no entrar en un bucle de redirecciones.
+/// </summary>
 [AllowAnonymous]
 public class LoginModel : PageModel
 {
-    private const string MensajeCredencialesInvalidas =
-        "Usuario o contraseña incorrectos.";
-
-    private readonly IServicioUsuariosClient _usuariosClient;
-
-    public LoginModel(IServicioUsuariosClient usuariosClient)
-    {
-        _usuariosClient = usuariosClient;
-    }
-
-    [BindProperty]
-    public LoginInputModel Input { get; set; } = new();
-
     [BindProperty(SupportsGet = true)]
     public string? ReturnUrl { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? Motivo { get; set; }
+
+    public string? Mensaje { get; private set; }
+
+    public bool EsAviso => Motivo is not (MotivosSesion.Cerrada or null);
 
     public IActionResult OnGet()
     {
         if (User.Identity?.IsAuthenticated == true)
         {
-            return RedirectToPage("/Index");
+            return LocalRedirect(DestinoSeguro());
         }
 
-        return Page();
+        Mensaje = MotivosSesion.Mensaje(Motivo);
+        return Mensaje is null ? IniciarSesion(forzarCredenciales: false) : Page();
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public IActionResult OnPost() => IniciarSesion(forzarCredenciales: true);
+
+    private IActionResult IniciarSesion(bool forzarCredenciales)
     {
-        if (!ModelState.IsValid)
+        var propiedades = new AuthenticationProperties { RedirectUri = DestinoSeguro() };
+        if (forzarCredenciales)
         {
-            Input.Contrasena = string.Empty;
-            return Page();
+            // Tras un rechazo, Keycloak vuelve a pedir usuario y contraseña aunque su sesión SSO siga viva.
+            propiedades.SetParameter(OpenIdConnectParameterNames.Prompt, "login");
         }
 
-        AuthenticatedUserDto? usuario;
-
-        try
-        {
-            usuario = await _usuariosClient.IniciarSesionAsync(
-                new LoginRequestDto(
-                    Input.NombreUsuario,
-                    Input.Contrasena),
-                HttpContext.RequestAborted);
-        }
-        catch (ApiClientException exception)
-            when (exception.StatusCode == HttpStatusCode.BadRequest)
-        {
-            ModelState.AddModelError(string.Empty, MensajeCredencialesInvalidas);
-            Input.Contrasena = string.Empty;
-            return Page();
-        }
-
-        if (usuario is null)
-        {
-            ModelState.AddModelError(string.Empty, MensajeCredencialesInvalidas);
-            Input.Contrasena = string.Empty;
-            return Page();
-        }
-
-        await HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme,
-            CrearPrincipal(usuario));
-
-        Input.Contrasena = string.Empty;
-
-        if (!string.IsNullOrEmpty(ReturnUrl) && Url.IsLocalUrl(ReturnUrl))
-        {
-            return LocalRedirect(ReturnUrl);
-        }
-
-        return RedirectToPage("/Index");
+        return Challenge(propiedades, OpenIdConnectDefaults.AuthenticationScheme);
     }
 
-    private static ClaimsPrincipal CrearPrincipal(AuthenticatedUserDto usuario)
-    {
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, usuario.UserId.ToString()),
-            new(ClaimTypes.Name, usuario.Username),
-            new(ClaimTypes.GivenName, usuario.FullName),
-            new(ClaimTypes.Role, usuario.Role),
-            new("PublicId", usuario.PublicId.ToString())
-        };
-
-        var identidad = new ClaimsIdentity(
-            claims,
-            CookieAuthenticationDefaults.AuthenticationScheme);
-
-        return new ClaimsPrincipal(identidad);
-    }
+    private string DestinoSeguro() =>
+        !string.IsNullOrEmpty(ReturnUrl) && Url.IsLocalUrl(ReturnUrl) ? ReturnUrl : "/";
 }
