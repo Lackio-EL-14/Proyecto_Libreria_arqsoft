@@ -1,6 +1,6 @@
 @gateway = http://localhost:5080
 # Token de Keycloak: obténgalo con libreria-pruebas (docs/contratos/keycloak.md §5) y péguelo
-# aquí SOLO en local; no lo suba. Hasta US-126 el gateway no lo valida, solo lo reenvía al MS.
+# aquí SOLO en local; no lo suba. El gateway lo valida (US-126): sin él, todo /api/* responde 401.
 @token = <pegue-aquí-el-token>
 
 ### Salud del gateway

@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Sockets;
 using Microsoft.AspNetCore.Hosting;
+using Libreria.Gateway.Tests.Seguridad;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 
 namespace Libreria.Gateway.Tests.Infraestructura;
@@ -37,5 +39,13 @@ public sealed class GatewayFactory : WebApplicationFactory<Program>
         builder.ConfigureAppConfiguration(configuracion =>
             configuracion.AddInMemoryCollection(
                 _destinos.Select(d => new KeyValuePair<string, string?>(ClaveDestino(d.Key), d.Value))));
+        builder.ConfigureTestServices(servicios => servicios.UsarJwtDePrueba());
+    }
+
+    /// <summary>Los clientes salen con un token de Administrador; las pruebas de seguridad lo cambian o lo quitan.</summary>
+    protected override void ConfigureClient(HttpClient client)
+    {
+        base.ConfigureClient(client);
+        client.DefaultRequestHeaders.Authorization = TokensDePrueba.Bearer(TokensDePrueba.Admin());
     }
 }

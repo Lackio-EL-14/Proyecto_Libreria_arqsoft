@@ -1,5 +1,6 @@
 using Libreria.Gateway.Configuracion;
 using Libreria.Gateway.Errores;
+using Libreria.Gateway.Seguridad;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,7 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 //    appsettings.{Entorno}.json, variables de entorno o línea de comandos.
 builder.Configuration.AgregarRutasYarp(args, builder.Environment.EnvironmentName);
 
-// 2. Proxy inverso (YARP). La validación del JWT se agrega en US-126; aquí solo se enruta.
+// 2. Validación del JWT de Keycloak (US-126): sin token válido, el gateway responde 401 y no reenvía.
+//    Los roles los aplica cada microservicio, que también vuelve a validar el token.
+builder.Services.AddSeguridadJwt(builder.Configuration, builder.Environment);
+
+// 3. Proxy inverso (YARP).
 builder.Services.AddProblemDetails();
 builder.Services
     .AddReverseProxy()
@@ -15,7 +20,11 @@ builder.Services
 
 var app = builder.Build();
 
-app.MapGet("/salud", () => Results.Ok(new { servicio = "Gateway", estado = "ok" }));
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapGet("/salud", () => Results.Ok(new { servicio = "Gateway", estado = "ok" }))
+    .AllowAnonymous();
 
 app.MapReverseProxy(proxy =>
 {
@@ -26,7 +35,7 @@ app.MapReverseProxy(proxy =>
     proxy.UseSessionAffinity();
     proxy.UseLoadBalancing();
     proxy.UsePassiveHealthChecks();
-});
+}).RequireAuthorization();
 
 app.Run();
 

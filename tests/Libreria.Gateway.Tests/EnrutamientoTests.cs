@@ -1,3 +1,4 @@
+using Libreria.Gateway.Tests.Seguridad;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -55,7 +56,8 @@ public sealed class EnrutamientoTests : IClassFixture<ServiciosFalsos>, IAsyncLi
         {
             Content = JsonContent.Create(new { contrasenaActual = "a", contrasenaNueva = "b" })
         };
-        solicitud.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "token-de-prueba");
+        var token = TokensDePrueba.Vendedor();
+        solicitud.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         using var respuesta = await _cliente.SendAsync(solicitud);
         var eco = await respuesta.Content.ReadFromJsonAsync<EcoDelServicio>();
@@ -64,7 +66,7 @@ public sealed class EnrutamientoTests : IClassFixture<ServiciosFalsos>, IAsyncLi
         Assert.NotNull(eco);
         Assert.Equal("usuarios", eco.Servicio);
         Assert.Equal("PUT", eco.Metodo);
-        Assert.Equal("Bearer token-de-prueba", eco.Authorization);
+        Assert.Equal($"Bearer {token}", eco.Authorization);
         Assert.Equal("""{"contrasenaActual":"a","contrasenaNueva":"b"}""", eco.Cuerpo);
     }
 
