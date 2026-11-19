@@ -12,6 +12,7 @@ Entregable de microservicios con un Front Razor Pages, un API Gateway YARP y una
 | Productos | `src/Libreria.Servicio.Productos` | 5104 | MongoDB · `libreria_productos` | Clean Architecture |
 | Gateway | `src/Libreria.Gateway` | 5080 | — | YARP |
 | Front | `src/Libreria.Client` | 5000 | — | Razor Pages |
+| Keycloak | contenedor `keycloak` | 8080 | Volumen `keycloak_data` · realm `libreria` | Proveedor de identidad (OIDC, JWT RS256) |
 
 El proceso principal no forma parte de este entregable. Su código previo quedó conservado en la rama remota `respaldo/ventas-entrega-final`, para retomarlo únicamente en la entrega final. En esta rama no hay orquestación distribuida ni compensaciones entre microservicios.
 
@@ -33,6 +34,44 @@ Los scripts dentro de `db/clientes`, `db/proveedores`, `db/productos` y `db/usua
 ```powershell
 docker exec proveedores-db bash -lc 'for f in /scripts/*.sql; do echo "Ejecutando $f..."; /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -b -i "$f" || exit 1; done'
 ```
+
+## Keycloak (proveedor de identidad)
+
+Keycloak corre en `http://localhost:8080`, realm `libreria`. Contrato completo: [`docs/contratos/keycloak.md`](docs/contratos/keycloak.md).
+
+**Desde cero** (borra los datos de Keycloak y de las cuatro bases):
+
+```powershell
+docker compose down -v
+docker compose up -d                 # BD + keycloak + keycloak-configurar
+docker compose ps -a                 # keycloak «healthy»; keycloak-configurar «Exited (0)»
+docker compose logs keycloak-configurar
+```
+
+1. `keycloak` arranca en modo desarrollo e importa `keycloak/realm-libreria.json` (roles, los 4 clientes, audiencia `libreria-api`, claim `roles`, política de contraseñas, español, token de 60 minutos). La importación ocurre **solo si el realm no existe**; si cambia el JSON, hay que borrar el volumen (`docker compose down -v`).
+2. `keycloak-configurar` corre una vez `keycloak/configurar.sh`: asigna los secretos de los clientes y crea `admin` y `vendedor` con los GUID de `docs/contratos/datos-semilla.md`, con sus contraseñas de `.env`. Es idempotente. Para repetirlo, por ejemplo después de cambiar una contraseña en `.env`:
+
+```powershell
+docker compose run --rm keycloak-configurar
+```
+
+Variables necesarias en `.env`: `KC_BOOTSTRAP_ADMIN_*`, `KEYCLOAK_*_CLIENT_SECRET`, `KEYCLOAK_*_SEMILLA_PASSWORD` y `KEYCLOAK_HABILITAR_CLIENTE_PRUEBAS` (ver `.env.example`). La consola de administración (`http://localhost:8080/admin`) usa `KC_BOOTSTRAP_ADMIN_*`.
+
+Secretos para los procesos .NET (los mismos valores de `.env`):
+
+```powershell
+dotnet user-secrets set "Keycloak:ClientSecret" "<KEYCLOAK_USUARIOS_ADMIN_CLIENT_SECRET>" --project src/Libreria.Servicio.Usuarios
+dotnet user-secrets set "Keycloak:VerificacionClientSecret" "<KEYCLOAK_USUARIOS_VERIFICACION_CLIENT_SECRET>" --project src/Libreria.Servicio.Usuarios
+```
+
+Prueba de integración del adaptador de Keycloak (crea y borra un usuario temporal):
+
+```powershell
+$env:KEYCLOAK_PRUEBAS_INTEGRACION = "1"   # y $env:Keycloak__ClientSecret / $env:Keycloak__VerificacionClientSecret
+dotnet test tests/Libreria.Servicio.Usuarios.Tests --filter "FullyQualifiedName~KeycloakIntegracion"
+```
+
+Mientras no se cierre US-125, el Front todavía inicia sesión con el login propio (`/api/auth`); ver `keycloak.md`, sección 7.
 
 ## Variables para ejecutar .NET localmente
 
