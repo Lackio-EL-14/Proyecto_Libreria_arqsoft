@@ -2,7 +2,7 @@ using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Libreria.Client.Clients.Usuarios;
+using Libreria.Client.Adapters.Usuarios;
 using Libreria.Client.DTOs.Usuarios;
 using Libreria.Client.Clients.Common;
 
@@ -13,12 +13,12 @@ public class IndexModel : PageModel
 {
    private readonly IAuthorizationService _authorizationService;
     private readonly IUrlProtector _protector;
-    private readonly IServicioUsuariosClient _usuariosClient;
+    private readonly IUsuariosApi _usuariosClient;
 
     public IndexModel(
         IAuthorizationService authorizationService,
         IUrlProtector protector,
-        IServicioUsuariosClient usuariosClient)
+        IUsuariosApi usuariosClient)
     {
         _authorizationService = authorizationService;
         _protector = protector;

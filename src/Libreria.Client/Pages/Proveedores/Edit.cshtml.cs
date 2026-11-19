@@ -1,4 +1,4 @@
-using Libreria.Client.Clients.Proveedores;
+using Libreria.Client.Adapters.Proveedores;
 using Libreria.Client.DTOs.Common;
 using Libreria.Client.DTOs.Proveedores;
 using Libreria.Client.Services.Auditoria;
@@ -9,11 +9,11 @@ namespace Libreria.Client.Pages.Proveedores;
 
 public sealed class EditModel : PageModel
 {
-    private readonly IServicioProveedoresClient _proveedores;
+    private readonly IProveedoresApi _proveedores;
     private readonly IAuditoriaService _auditoria;
 
     public EditModel(
-        IServicioProveedoresClient proveedores,
+        IProveedoresApi proveedores,
         IAuditoriaService auditoria)
     {
         _proveedores = proveedores;

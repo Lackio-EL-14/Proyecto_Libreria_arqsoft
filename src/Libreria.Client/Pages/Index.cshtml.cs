@@ -1,5 +1,5 @@
 using Libreria.Client.Clients.Common;
-using Libreria.Client.Clients.Productos;
+using Libreria.Client.Adapters.Productos;
 using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -13,11 +13,11 @@ public class IndexModel : PageModel
 {
     private const int UmbralStockCritico = 5;
 
-    private readonly IServicioProductosClient _productos;
+    private readonly IProductosApi _productos;
     private readonly IAuthorizationService _authorizationService;
 
     public IndexModel(
-        IServicioProductosClient productos,
+        IProductosApi productos,
         IAuthorizationService authorizationService)
     {
         _productos = productos;

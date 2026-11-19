@@ -1,17 +1,22 @@
+using Libreria.Client.Adapters.DependencyInjection;
 using Libreria.Client.Clients.Common;
 using Libreria.Client.DTOs.Clientes;
 using Libreria.Client.DTOs.Common;
 using static Libreria.Client.Clients.Common.ConsultaHttp;
 
-namespace Libreria.Client.Clients.Clientes;
+namespace Libreria.Client.Adapters.Clientes;
 
-/// <summary>Adapter: traduce las operaciones del Front a las rutas REST del MS Clientes.</summary>
-public sealed class ServicioClientesClient : ApiClientBase, IServicioClientesClient
+/// <summary>
+/// Patrón Adapter (US-140): adapta el `HttpClient` «ApiGateway» a la interfaz destino
+/// <see cref="IClientesApi"/>. Arma la URL, envía el token (handler de US-125) y traduce JSON,
+/// `ProblemDetails` y códigos HTTP a DTOs del Front y a mensajes para la UI.
+/// </summary>
+public sealed class ClientesApiAdapter : ApiClientBase, IClientesApi
 {
     private const string Ruta = "api/clientes";
 
-    public ServicioClientesClient(HttpClient httpClient)
-        : base(httpClient, "Clientes")
+    public ClientesApiAdapter(IHttpClientFactory fabrica)
+        : base(fabrica.CreateClient(ApiGateway.NombreCliente), "Clientes")
     {
     }
 

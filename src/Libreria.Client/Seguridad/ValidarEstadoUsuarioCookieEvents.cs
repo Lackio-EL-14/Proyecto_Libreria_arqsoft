@@ -1,6 +1,6 @@
 using System.Globalization;
 using Libreria.Client.Clients.Common;
-using Libreria.Client.Clients.Usuarios;
+using Libreria.Client.Adapters.Usuarios;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Caching.Memory;
@@ -22,14 +22,14 @@ public class ValidarEstadoUsuarioCookieEvents : CookieAuthenticationEvents
 {
     private const string CacheKeyPrefix = "sesion-activa:";
 
-    private readonly IServicioUsuariosClient _usuariosClient;
+    private readonly IUsuariosApi _usuariosClient;
     private readonly IMemoryCache _cache;
     private readonly TimeProvider _tiempo;
     private readonly ILogger<ValidarEstadoUsuarioCookieEvents> _logger;
     private readonly TimeSpan _cacheDuration;
 
     public ValidarEstadoUsuarioCookieEvents(
-        IServicioUsuariosClient usuariosClient,
+        IUsuariosApi usuariosClient,
         IMemoryCache cache,
         IOptions<SesionActivaOptions> options,
         TimeProvider tiempo,

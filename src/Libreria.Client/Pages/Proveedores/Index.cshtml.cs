@@ -1,4 +1,4 @@
-using Libreria.Client.Clients.Proveedores;
+using Libreria.Client.Adapters.Proveedores;
 using Libreria.Client.DTOs.Proveedores;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -7,9 +7,9 @@ namespace Libreria.Client.Pages.Proveedores;
 
 public sealed class IndexModel : PageModel
 {
-    private readonly IServicioProveedoresClient _proveedores;
+    private readonly IProveedoresApi _proveedores;
 
-    public IndexModel(IServicioProveedoresClient proveedores)
+    public IndexModel(IProveedoresApi proveedores)
     {
         _proveedores = proveedores;
     }

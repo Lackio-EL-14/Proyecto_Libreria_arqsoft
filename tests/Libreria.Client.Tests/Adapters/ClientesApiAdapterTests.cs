@@ -1,12 +1,12 @@
+using Libreria.Client.Tests.Clients;
 using System.Net;
-using Libreria.Client.Clients.Clientes;
+using Libreria.Client.Adapters.Clientes;
 using Libreria.Client.Clients.Common;
 using Libreria.Client.DTOs.Clientes;
 
-namespace Libreria.Client.Tests.Clients;
-
-/// <summary>US-116: el cliente tipado arma las rutas del contrato de Clientes y traduce sus respuestas.</summary>
-public sealed class ServicioClientesClientTests
+namespace Libreria.Client.Tests.Adapters;
+/// <summary>US-116: el adaptador arma las rutas del contrato de Clientes y traduce sus respuestas.</summary>
+public sealed class ClientesApiAdapterTests
 {
     private static readonly Guid PublicId = Guid.Parse("c0000000-0000-0000-0000-000000000002");
 
@@ -17,11 +17,11 @@ public sealed class ServicioClientesClientTests
          "fechaModificacion":null,"usuarioModificacionId":null}
         """;
 
-    private static (ServicioClientesClient Cliente, ManejadorHttpFalso Manejador) Crear(
+    private static (ClientesApiAdapter Cliente, ManejadorHttpFalso Manejador) Crear(
         HttpStatusCode estado, string cuerpo = "")
     {
         var manejador = new ManejadorHttpFalso(estado, cuerpo);
-        return (new ServicioClientesClient(ManejadorHttpFalso.CrearHttp(manejador)), manejador);
+        return (new ClientesApiAdapter(ManejadorHttpFalso.CrearFabrica(manejador)), manejador);
     }
 
     [Theory]
@@ -133,7 +133,7 @@ public sealed class ServicioClientesClientTests
     [Fact]
     public async Task Sin_conexion_la_escritura_no_lanza()
     {
-        var cliente = new ServicioClientesClient(ManejadorHttpFalso.CrearHttp(new ManejadorSinConexion()));
+        var cliente = new ClientesApiAdapter(ManejadorHttpFalso.CrearFabrica(new ManejadorSinConexion()));
 
         var resultado = await cliente.CambiarEstadoClienteAsync(PublicId, false);
 

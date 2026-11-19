@@ -1,4 +1,4 @@
-using Libreria.Client.Clients.Productos;
+using Libreria.Client.Adapters.Productos;
 using Libreria.Client.DTOs.Common;
 using Libreria.Client.DTOs.Productos;
 using Microsoft.AspNetCore.Mvc;
@@ -8,9 +8,9 @@ namespace Libreria.Client.Pages.Categorias;
 
 public class CreateModel : PageModel
 {
-    private readonly IServicioProductosClient _productos;
+    private readonly IProductosApi _productos;
 
-    public CreateModel(IServicioProductosClient productos)
+    public CreateModel(IProductosApi productos)
     {
         _productos = productos;
     }

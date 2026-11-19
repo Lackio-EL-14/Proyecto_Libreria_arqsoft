@@ -1,5 +1,5 @@
 using Libreria.Client.DTOs.Common;
-using Libreria.Client.Clients.Productos;
+using Libreria.Client.Adapters.Productos;
 using Libreria.Client.DTOs.Productos;
 using Libreria.Client.Seguridad;
 using Libreria.Client.Services.Auditoria;
@@ -13,12 +13,12 @@ namespace Libreria.Client.Pages.Categorias;
 
 public class EditModel : PageModel
 {
-    private readonly IServicioProductosClient _productos;
+    private readonly IProductosApi _productos;
     private readonly IUrlProtector _urlProtector;
     private readonly IAuditoriaService _auditoriaService;
 
     public EditModel(
-        IServicioProductosClient productos,
+        IProductosApi productos,
         IUrlProtector urlProtector,
         IAuditoriaService auditoriaService)
     {
