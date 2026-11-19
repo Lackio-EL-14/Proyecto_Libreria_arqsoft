@@ -1,6 +1,8 @@
 
 namespace Libreria.Servicio.Usuarios.Presentation.Middleware;
 
+// TRANSITORIO: confía en X-Usuario-Id/X-Usuario-Nombre sin autenticar. Lo reemplaza el
+// usuario actual desde el token de Keycloak (US-126 y US-127). No exponer el puerto 5102 fuera de localhost.
 public sealed class CurrentUserMiddleware
 {
     public const string UserIdItem = "CurrentUser.UserId";

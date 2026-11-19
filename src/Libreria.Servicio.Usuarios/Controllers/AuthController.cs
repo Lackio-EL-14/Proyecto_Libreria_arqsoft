@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Libreria.Servicio.Usuarios.Controllers;
 
+// TRANSITORIO (US-124 por etapas): se retira en US-125, cuando el Front inicie sesión con OIDC
+// contra Keycloak. Ver docs/contratos/keycloak.md, «Retiro del login transitorio».
 [ApiController]
 [Route("api/auth")]
 public sealed class AuthController : ControllerBase

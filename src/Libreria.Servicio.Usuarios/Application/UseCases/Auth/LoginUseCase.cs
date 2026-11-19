@@ -7,6 +7,8 @@ using Libreria.Servicio.Usuarios.Domain.Constants;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Auth;
 
+// TRANSITORIO (US-124 por etapas): se retira en US-125, cuando el Front inicie sesión con OIDC
+// contra Keycloak. Ver docs/contratos/keycloak.md, «Retiro del login transitorio».
 public sealed class LoginUseCase : ILoginUseCase
 {
     private readonly IUserRepository _userRepository;
