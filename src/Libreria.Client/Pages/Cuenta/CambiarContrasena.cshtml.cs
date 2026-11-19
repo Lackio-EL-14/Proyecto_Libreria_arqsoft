@@ -1,5 +1,5 @@
 using Libreria.Client.Clients.Common;
-using Libreria.Client.Clients.Usuarios;
+using Libreria.Client.Adapters.Usuarios;
 using Libreria.Client.DTOs.Usuarios;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,10 +10,10 @@ namespace Libreria.Client.Pages.Cuenta;
 [Authorize]
 public class CambiarContrasenaModel : PageModel
 {
-    private readonly IServicioUsuariosClient _usuariosClient;
+    private readonly IUsuariosApi _usuariosClient;
 
     public CambiarContrasenaModel(
-        IServicioUsuariosClient usuariosClient)
+        IUsuariosApi usuariosClient)
     {
         _usuariosClient = usuariosClient;
     }

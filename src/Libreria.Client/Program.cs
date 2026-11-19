@@ -1,5 +1,5 @@
 using Libreria.Client.Clients.Common;
-using Libreria.Client.Clients.DependencyInjection;
+using Libreria.Client.Adapters.DependencyInjection;
 using Libreria.Client.DTOs.Usuarios;
 using Libreria.Client.Seguridad;
 using Libreria.Client.Services.Auditoria;
@@ -27,14 +27,15 @@ builder.Services
         options.Filters.Add<SesionExpiradaFilter>();
     });
 
-// Un módulo por microservicio; todos hablan solo con el gateway (Servicios:Gateway:BaseUrl).
-// Cada dueño edita únicamente su método de extensión (sección 7 del planning).
+// Patrón Adapter (US-140): un HttpClient «ApiGateway» (Servicios:Gateway:BaseUrl) y un
+// adaptador por API detrás de su interfaz (IClientesApi → ClientesApiAdapter, etc.).
 builder.Services
     .AddContextoUsuarioServicios()
-    .AddModuloClientes(builder.Configuration)
-    .AddModuloProveedores(builder.Configuration)
-    .AddModuloProductos(builder.Configuration)
-    .AddModuloUsuarios(builder.Configuration);
+    .AddApiGateway(builder.Configuration)
+    .AddModuloClientes()
+    .AddModuloProveedores()
+    .AddModuloProductos()
+    .AddModuloUsuarios();
 
 builder.Services.AddMemoryCache();
 builder.Services.Configure<SesionActivaOptions>(

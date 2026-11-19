@@ -1,5 +1,5 @@
 using Libreria.Client.DTOs.Common;
-using Libreria.Client.Clients.Productos;
+using Libreria.Client.Adapters.Productos;
 using Libreria.Client.Services.Auditoria;
 using Libreria.Client.DTOs.Productos;
 using Microsoft.AspNetCore.Mvc;
@@ -9,11 +9,11 @@ namespace Libreria.Client.Pages.Productos;
 
 public class DetailsModel : PageModel
 {
-    private readonly IServicioProductosClient _productos;
+    private readonly IProductosApi _productos;
     private readonly IAuditoriaService _auditoriaService;
 
     public DetailsModel(
-        IServicioProductosClient productos,
+        IProductosApi productos,
         IAuditoriaService auditoriaService)
     {
         _productos = productos;

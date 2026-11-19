@@ -2,13 +2,16 @@ using Libreria.Client.Clients.Common;
 using Libreria.Client.DTOs.Common;
 using Libreria.Client.DTOs.Productos;
 
-namespace Libreria.Client.Clients.Productos;
+namespace Libreria.Client.Adapters.Productos;
 
 /// <summary>
-/// MS Productos detrás del gateway: productos, categorías, marcas e histórico de costos
-/// (rutas <c>api/productos</c>, <c>api/categorias</c>, <c>api/marcas</c> y <c>api/historico</c>).
+/// Patrón Adapter (US-140), interfaz destino: el puente de la UI hacia el MS Productos
+/// (rutas <c>api/productos</c>, <c>api/categorias</c>, <c>api/marcas</c> y <c>api/historico</c>
+/// del gateway). Las páginas dependen solo de esta interfaz.
+/// Las lecturas lanzan <see cref="ServicioNoDisponibleException"/> si el MS no responde;
+/// las escrituras devuelven <see cref="ResultadoApi"/> y nunca lanzan.
 /// </summary>
-public interface IServicioProductosClient : IApiClient
+public interface IProductosApi
 {
     Task<IReadOnlyList<CategoriaDto>> ObtenerCategoriasAsync(string? busqueda, CancellationToken ct = default);
     Task<CategoriaDto?> ObtenerCategoriaAsync(Guid publicId, bool activa, CancellationToken ct = default);

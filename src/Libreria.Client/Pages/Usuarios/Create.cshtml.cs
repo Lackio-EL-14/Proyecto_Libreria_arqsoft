@@ -1,5 +1,5 @@
 using Libreria.Client.Clients.Common;
-using Libreria.Client.Clients.Usuarios;
+using Libreria.Client.Adapters.Usuarios;
 using Libreria.Client.DTOs.Usuarios;
 using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authorization;
@@ -12,11 +12,11 @@ namespace Libreria.Client.Pages.Usuarios;
 [Authorize(Policy = PoliticasAcceso.SoloAdministrador)]
 public class CreateModel : PageModel
 {
-    private readonly IServicioUsuariosClient _usuariosClient;
+    private readonly IUsuariosApi _usuariosClient;
     private readonly ILogger<CreateModel> _logger;
 
     public CreateModel(
-        IServicioUsuariosClient usuariosClient,
+        IUsuariosApi usuariosClient,
         ILogger<CreateModel> logger)
     {
         _usuariosClient = usuariosClient;

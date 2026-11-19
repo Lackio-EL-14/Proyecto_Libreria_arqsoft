@@ -9,6 +9,8 @@ internal sealed class ManejadorHttpFalso(HttpStatusCode estado, string cuerpo = 
     public HttpRequestMessage? UltimaPeticion { get; private set; }
     public string? UltimoCuerpo { get; private set; }
 
+    public static IHttpClientFactory CrearFabrica(HttpMessageHandler manejador) => new FabricaHttpFalsa(manejador);
+
     public static HttpClient CrearHttp(HttpMessageHandler manejador) =>
         new(manejador) { BaseAddress = new Uri("http://localhost:5080/") };
 
@@ -28,4 +30,16 @@ internal sealed class ManejadorSinConexion : HttpMessageHandler
 {
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
         throw new HttpRequestException("Conexión rechazada.");
+}
+
+/// <summary>
+/// <see cref="IHttpClientFactory"/> de prueba: entrega solo el cliente «ApiGateway», igual que el
+/// registro real, para que un adaptador que pida otro nombre falle en la prueba.
+/// </summary>
+internal sealed class FabricaHttpFalsa(HttpMessageHandler manejador) : IHttpClientFactory
+{
+    public HttpClient CreateClient(string name) =>
+        name == Libreria.Client.Adapters.DependencyInjection.ApiGateway.NombreCliente
+            ? ManejadorHttpFalso.CrearHttp(manejador)
+            : throw new InvalidOperationException($"Cliente HTTP inesperado: «{name}».");
 }

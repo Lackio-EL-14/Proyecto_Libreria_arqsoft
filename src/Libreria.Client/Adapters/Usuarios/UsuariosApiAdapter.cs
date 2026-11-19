@@ -1,12 +1,18 @@
+using Libreria.Client.Adapters.DependencyInjection;
 using Libreria.Client.Clients.Common;
 using Libreria.Client.DTOs.Usuarios;
 
-namespace Libreria.Client.Clients.Usuarios;
+namespace Libreria.Client.Adapters.Usuarios;
 
-public sealed class ServicioUsuariosClient : ApiClientBase, IServicioUsuariosClient
+/// <summary>
+/// Patrón Adapter (US-140): adapta el `HttpClient` «ApiGateway» a la interfaz destino
+/// <see cref="IUsuariosApi"/>. Arma la URL, envía el token (handler de US-125) y traduce JSON,
+/// `ProblemDetails` y códigos HTTP a DTOs del Front y a mensajes para la UI.
+/// </summary>
+public sealed class UsuariosApiAdapter : ApiClientBase, IUsuariosApi
 {
-    public ServicioUsuariosClient(HttpClient httpClient)
-        : base(httpClient, "Usuarios")
+    public UsuariosApiAdapter(IHttpClientFactory fabrica)
+        : base(fabrica.CreateClient(ApiGateway.NombreCliente), "Usuarios")
     {
     }
 

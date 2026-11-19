@@ -1,5 +1,5 @@
 using System.Net;
-using Libreria.Client.Clients.Usuarios;
+using Libreria.Client.Adapters.Usuarios;
 using Libreria.Client.DTOs.Productos;
 using Libreria.Client.Services.Auditoria;
 using Libreria.Client.Tests.Clients;
@@ -20,7 +20,7 @@ public sealed class AuditoriaServiceGuidTests
     private static (AuditoriaService Servicio, ManejadorHttpFalso Manejador) Crear(HttpStatusCode estado, string cuerpo = "")
     {
         var manejador = new ManejadorHttpFalso(estado, cuerpo);
-        var usuarios = new ServicioUsuariosClient(ManejadorHttpFalso.CrearHttp(manejador));
+        var usuarios = new UsuariosApiAdapter(ManejadorHttpFalso.CrearFabrica(manejador));
         return (new AuditoriaService(usuarios), manejador);
     }
 

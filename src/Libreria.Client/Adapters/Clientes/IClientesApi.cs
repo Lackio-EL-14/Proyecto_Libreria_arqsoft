@@ -2,14 +2,15 @@ using Libreria.Client.Clients.Common;
 using Libreria.Client.DTOs.Clientes;
 using Libreria.Client.DTOs.Common;
 
-namespace Libreria.Client.Clients.Clientes;
+namespace Libreria.Client.Adapters.Clientes;
 
 /// <summary>
-/// Puerto del Front hacia el MS Clientes detrás del gateway (ruta <c>api/clientes</c>).
+/// Patrón Adapter (US-140), interfaz destino: el puente de la UI hacia el MS Clientes
+/// (ruta <c>api/clientes</c> del gateway). Las páginas dependen solo de esta interfaz.
 /// Las lecturas lanzan <see cref="ServicioNoDisponibleException"/> si el MS no responde;
 /// las escrituras devuelven <see cref="ResultadoApi"/> y nunca lanzan.
 /// </summary>
-public interface IServicioClientesClient : IApiClient
+public interface IClientesApi
 {
     Task<IReadOnlyList<ClienteDetalleDto>> ObtenerClientesAsync(FiltroClientes filtro, CancellationToken ct = default);
 

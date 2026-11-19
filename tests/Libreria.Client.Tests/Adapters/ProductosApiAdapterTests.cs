@@ -1,15 +1,15 @@
+using Libreria.Client.Tests.Clients;
 using System.Net;
 using Libreria.Client.Clients.Common;
-using Libreria.Client.Clients.Productos;
+using Libreria.Client.Adapters.Productos;
 using Libreria.Client.DTOs.Productos;
 
-namespace Libreria.Client.Tests.Clients;
-
+namespace Libreria.Client.Tests.Adapters;
 /// <summary>
 /// US-113: el cliente de Productos conserva las rutas y la traducción a ResultadoApi
 /// que consume el Front; solo cambia el servicio que responde detrás del gateway.
 /// </summary>
-public sealed class ServicioProductosClientTests
+public sealed class ProductosApiAdapterTests
 {
     private static readonly Guid PublicId = Guid.Parse("11111111-2222-3333-4444-555555555555");
 
@@ -17,7 +17,7 @@ public sealed class ServicioProductosClientTests
     public async Task La_busqueda_de_categorias_arma_la_consulta_y_lee_la_lista()
     {
         var manejador = new ManejadorHttpFalso(HttpStatusCode.OK, "[]");
-        var cliente = new ServicioProductosClient(ManejadorHttpFalso.CrearHttp(manejador));
+        var cliente = new ProductosApiAdapter(ManejadorHttpFalso.CrearFabrica(manejador));
 
         var categorias = await cliente.ObtenerCategoriasAsync("  útiles escolares ");
 
@@ -31,8 +31,8 @@ public sealed class ServicioProductosClientTests
     [Fact]
     public async Task Un_producto_inexistente_devuelve_null()
     {
-        var cliente = new ServicioProductosClient(
-            ManejadorHttpFalso.CrearHttp(new ManejadorHttpFalso(HttpStatusCode.NotFound)));
+        var cliente = new ProductosApiAdapter(
+            ManejadorHttpFalso.CrearFabrica(new ManejadorHttpFalso(HttpStatusCode.NotFound)));
 
         Assert.Null(await cliente.ObtenerProductoAsync(PublicId));
     }
@@ -40,8 +40,8 @@ public sealed class ServicioProductosClientTests
     [Fact]
     public async Task Un_error_en_una_lectura_sigue_lanzando_HttpRequestException()
     {
-        var cliente = new ServicioProductosClient(
-            ManejadorHttpFalso.CrearHttp(new ManejadorHttpFalso(HttpStatusCode.InternalServerError)));
+        var cliente = new ProductosApiAdapter(
+            ManejadorHttpFalso.CrearFabrica(new ManejadorHttpFalso(HttpStatusCode.InternalServerError)));
 
         await Assert.ThrowsAsync<HttpRequestException>(() => cliente.ObtenerProductosAsync(null, null, null));
     }
@@ -52,8 +52,8 @@ public sealed class ServicioProductosClientTests
     [InlineData(HttpStatusCode.GatewayTimeout)]
     public async Task Un_MS_caido_en_una_lectura_lleva_a_servicio_no_disponible(HttpStatusCode estado)
     {
-        var cliente = new ServicioProductosClient(
-            ManejadorHttpFalso.CrearHttp(new ManejadorHttpFalso(estado)));
+        var cliente = new ProductosApiAdapter(
+            ManejadorHttpFalso.CrearFabrica(new ManejadorHttpFalso(estado)));
 
         var error = await Assert.ThrowsAsync<ServicioNoDisponibleException>(
             () => cliente.ObtenerProductoAsync(PublicId));
@@ -64,7 +64,7 @@ public sealed class ServicioProductosClientTests
     [Fact]
     public async Task Sin_conexion_una_lectura_lleva_a_servicio_no_disponible()
     {
-        var cliente = new ServicioProductosClient(ManejadorHttpFalso.CrearHttp(new ManejadorSinConexion()));
+        var cliente = new ProductosApiAdapter(ManejadorHttpFalso.CrearFabrica(new ManejadorSinConexion()));
 
         await Assert.ThrowsAsync<ServicioNoDisponibleException>(() => cliente.ObtenerMarcasAsync(null));
     }
@@ -73,7 +73,7 @@ public sealed class ServicioProductosClientTests
     public async Task El_cambio_de_estado_usa_patch_con_el_estado_en_la_consulta()
     {
         var manejador = new ManejadorHttpFalso(HttpStatusCode.NoContent);
-        var cliente = new ServicioProductosClient(ManejadorHttpFalso.CrearHttp(manejador));
+        var cliente = new ProductosApiAdapter(ManejadorHttpFalso.CrearFabrica(manejador));
 
         var resultado = await cliente.CambiarEstadoMarcaAsync(PublicId, false);
 
@@ -86,7 +86,7 @@ public sealed class ServicioProductosClientTests
     [Fact]
     public async Task Un_400_con_errores_por_campo_llega_al_resultado()
     {
-        var cliente = new ServicioProductosClient(ManejadorHttpFalso.CrearHttp(
+        var cliente = new ProductosApiAdapter(ManejadorHttpFalso.CrearFabrica(
             new ManejadorHttpFalso(HttpStatusCode.BadRequest, """{"Input.Nombre":"El nombre es obligatorio."}""")));
 
         var resultado = await cliente.CrearCategoriaAsync(new CategoriaInput());
@@ -102,7 +102,7 @@ public sealed class ServicioProductosClientTests
             {"title":"One or more validation errors occurred.","status":400,
              "errors":{"Nombre":["El nombre es obligatorio."],"$.ubicacion":["Seleccione una ubicación."]}}
             """;
-        var cliente = new ServicioProductosClient(ManejadorHttpFalso.CrearHttp(
+        var cliente = new ProductosApiAdapter(ManejadorHttpFalso.CrearFabrica(
             new ManejadorHttpFalso(HttpStatusCode.BadRequest, cuerpo)));
 
         var resultado = await cliente.CrearCategoriaAsync(new CategoriaInput());
@@ -115,7 +115,7 @@ public sealed class ServicioProductosClientTests
     [Fact]
     public async Task Un_409_devuelve_el_mensaje_del_servicio()
     {
-        var cliente = new ServicioProductosClient(ManejadorHttpFalso.CrearHttp(
+        var cliente = new ProductosApiAdapter(ManejadorHttpFalso.CrearFabrica(
             new ManejadorHttpFalso(HttpStatusCode.Conflict, """{"mensaje":"Ya existe una marca con ese nombre."}""")));
 
         var resultado = await cliente.CrearMarcaAsync(new MarcaInput());
@@ -127,8 +127,8 @@ public sealed class ServicioProductosClientTests
     [Fact]
     public async Task Un_404_sin_mensaje_en_una_escritura_es_NoEncontrado()
     {
-        var cliente = new ServicioProductosClient(
-            ManejadorHttpFalso.CrearHttp(new ManejadorHttpFalso(HttpStatusCode.NotFound)));
+        var cliente = new ProductosApiAdapter(
+            ManejadorHttpFalso.CrearFabrica(new ManejadorHttpFalso(HttpStatusCode.NotFound)));
 
         var resultado = await cliente.DarDeBajaProductoAsync(PublicId);
 
@@ -138,7 +138,7 @@ public sealed class ServicioProductosClientTests
     [Fact]
     public async Task Sin_conexion_una_escritura_no_lanza_y_nombra_al_servicio()
     {
-        var cliente = new ServicioProductosClient(ManejadorHttpFalso.CrearHttp(new ManejadorSinConexion()));
+        var cliente = new ProductosApiAdapter(ManejadorHttpFalso.CrearFabrica(new ManejadorSinConexion()));
 
         var resultado = await cliente.ActualizarProductoAsync(PublicId, new ProductoInput());
 
@@ -170,8 +170,8 @@ public sealed class ServicioProductosClientTests
                 cuerpo);
 
         var cliente =
-            new ServicioProductosClient(
-                ManejadorHttpFalso.CrearHttp(manejador));
+            new ProductosApiAdapter(
+                ManejadorHttpFalso.CrearFabrica(manejador));
 
         var resultado =
             await cliente.ObtenerProductosAsync(
@@ -211,8 +211,8 @@ public sealed class ServicioProductosClientTests
                 cuerpo);
 
         var cliente =
-            new ServicioProductosClient(
-                ManejadorHttpFalso.CrearHttp(manejador));
+            new ProductosApiAdapter(
+                ManejadorHttpFalso.CrearFabrica(manejador));
 
         var resultado =
             await cliente.ObtenerProductosAsync(
@@ -240,8 +240,8 @@ public sealed class ServicioProductosClientTests
                 HttpStatusCode.NoContent);
 
         var cliente =
-            new ServicioProductosClient(
-                ManejadorHttpFalso.CrearHttp(manejador));
+            new ProductosApiAdapter(
+                ManejadorHttpFalso.CrearFabrica(manejador));
 
         var resultado =
             await cliente.ReactivarProductoAsync(PublicId);

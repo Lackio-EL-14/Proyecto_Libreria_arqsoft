@@ -1,4 +1,4 @@
-using Libreria.Client.Clients.Productos;
+using Libreria.Client.Adapters.Productos;
 using Libreria.Client.DTOs.Common;
 using Libreria.Client.DTOs.Productos;
 using Libreria.Client.Services.Auditoria;
@@ -9,11 +9,11 @@ namespace Libreria.Client.Pages.Historico;
 
 public class IndexModel : PageModel
 {
-    private readonly IServicioProductosClient _productos;
+    private readonly IProductosApi _productos;
     private readonly IAuditoriaService _auditoriaService;
 
     public IndexModel(
-        IServicioProductosClient productos,
+        IProductosApi productos,
         IAuditoriaService auditoriaService)
     {
         _productos = productos;

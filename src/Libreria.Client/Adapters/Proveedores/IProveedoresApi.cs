@@ -1,10 +1,16 @@
+using Libreria.Client.Clients.Common;
 using Libreria.Client.DTOs.Common;
 using Libreria.Client.DTOs.Proveedores;
 
-namespace Libreria.Client.Clients.Proveedores;
+namespace Libreria.Client.Adapters.Proveedores;
 
-/// <summary>Puerto del Front hacia el microservicio de Proveedores.</summary>
-public interface IServicioProveedoresClient
+/// <summary>
+/// Patrón Adapter (US-140), interfaz destino: el puente de la UI hacia el MS Proveedores
+/// (ruta <c>api/proveedores</c> del gateway). Las páginas dependen solo de esta interfaz.
+/// Las lecturas lanzan <see cref="ServicioNoDisponibleException"/> si el MS no responde;
+/// las escrituras devuelven <see cref="ResultadoApi"/> y nunca lanzan.
+/// </summary>
+public interface IProveedoresApi
 {
     Task<IReadOnlyList<ProveedorDetalleDto>> ObtenerProveedoresAsync(
         FiltroProveedores filtro,

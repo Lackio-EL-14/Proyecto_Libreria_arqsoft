@@ -1,4 +1,4 @@
-using Libreria.Client.Clients.Clientes;
+using Libreria.Client.Adapters.Clientes;
 using Libreria.Client.DTOs.Clientes;
 using Libreria.Client.DTOs.Usuarios;
 using Microsoft.AspNetCore.Mvc;
@@ -12,9 +12,9 @@ namespace Libreria.Client.Pages.Clientes;
 /// </summary>
 public class IndexModel : PageModel
 {
-    private readonly IServicioClientesClient _clientes;
+    private readonly IClientesApi _clientes;
 
-    public IndexModel(IServicioClientesClient clientes)
+    public IndexModel(IClientesApi clientes)
     {
         _clientes = clientes;
     }

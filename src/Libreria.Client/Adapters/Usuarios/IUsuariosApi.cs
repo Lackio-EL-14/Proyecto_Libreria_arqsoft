@@ -1,9 +1,15 @@
 using Libreria.Client.Clients.Common;
 using Libreria.Client.DTOs.Usuarios;
 
-namespace Libreria.Client.Clients.Usuarios;
+namespace Libreria.Client.Adapters.Usuarios;
 
-public interface IServicioUsuariosClient : IApiClient
+/// <summary>
+/// Patrón Adapter (US-140), interfaz destino: el puente de la UI hacia el MS Usuarios
+/// (ruta <c>api/usuarios</c> del gateway). Las páginas dependen solo de esta interfaz.
+/// Si el MS no responde lanza <see cref="ServicioNoDisponibleException"/>; si rechaza la
+/// solicitud lanza <see cref="ApiClientException"/> con el mensaje del <c>ProblemDetails</c>.
+/// </summary>
+public interface IUsuariosApi
 {
     Task<bool> SesionActivaAsync(
         int usuarioId,
@@ -18,27 +24,27 @@ public interface IServicioUsuariosClient : IApiClient
         IEnumerable<int> usuarioIds,
         CancellationToken cancellationToken = default);
 
-    // Contrato 6.4: consulta de nombres por PublicId (GUID) para auditoría entre MS.
+    /// <summary>Contrato 6.4: nombres por <c>PublicId</c> (GUID) para la auditoría.</summary>
     Task<IReadOnlyDictionary<Guid, string>> ObtenerNombresAsync(
         IEnumerable<Guid> usuarioIds,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<UserListItemDto>> ObtenerUsuariosAsync(
-    string? estado = null,
-    CancellationToken cancellationToken = default);
+        string? estado = null,
+        CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<string>> ObtenerRolesAsync(
-    CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default);
 
     Task<CreateUserResultDto?> CrearUsuarioAsync(
         CreateUserRequestDto request,
         CancellationToken cancellationToken = default);
 
     Task CambiarContrasenaAsync(
-    ChangePasswordRequestDto request,
-    CancellationToken cancellationToken = default);
+        ChangePasswordRequestDto request,
+        CancellationToken cancellationToken = default);
 
     Task DarDeBajaUsuarioAsync(
-    Guid publicId,
-    CancellationToken cancellationToken = default);
+        Guid publicId,
+        CancellationToken cancellationToken = default);
 }

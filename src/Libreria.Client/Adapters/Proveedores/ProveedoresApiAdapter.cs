@@ -1,17 +1,22 @@
+using Libreria.Client.Adapters.DependencyInjection;
 using Libreria.Client.Clients.Common;
 using Libreria.Client.DTOs.Common;
 using Libreria.Client.DTOs.Proveedores;
 using static Libreria.Client.Clients.Common.ConsultaHttp;
 
-namespace Libreria.Client.Clients.Proveedores;
+namespace Libreria.Client.Adapters.Proveedores;
 
-/// <summary>Adaptador HTTP entre Razor Pages y el microservicio de Proveedores.</summary>
-public sealed class ServicioProveedoresClient : ApiClientBase, IServicioProveedoresClient
+/// <summary>
+/// Patrón Adapter (US-140): adapta el `HttpClient` «ApiGateway» a la interfaz destino
+/// <see cref="IProveedoresApi"/>. Arma la URL, envía el token (handler de US-125) y traduce JSON,
+/// `ProblemDetails` y códigos HTTP a DTOs del Front y a mensajes para la UI.
+/// </summary>
+public sealed class ProveedoresApiAdapter : ApiClientBase, IProveedoresApi
 {
     private const string Ruta = "api/proveedores";
 
-    public ServicioProveedoresClient(HttpClient httpClient)
-        : base(httpClient, "Proveedores")
+    public ProveedoresApiAdapter(IHttpClientFactory fabrica)
+        : base(fabrica.CreateClient(ApiGateway.NombreCliente), "Proveedores")
     {
     }
 

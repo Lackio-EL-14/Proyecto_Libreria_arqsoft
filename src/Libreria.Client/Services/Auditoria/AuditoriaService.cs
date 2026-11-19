@@ -1,4 +1,4 @@
-using Libreria.Client.Clients.Usuarios;
+using Libreria.Client.Adapters.Usuarios;
 using Libreria.Client.DTOs.Common;
 using Libreria.Client.DTOs.Productos;
 
@@ -6,9 +6,9 @@ namespace Libreria.Client.Services.Auditoria;
 
 public sealed class AuditoriaService : IAuditoriaService
 {
-    private readonly IServicioUsuariosClient _usuariosClient;
+    private readonly IUsuariosApi _usuariosClient;
 
-    public AuditoriaService(IServicioUsuariosClient usuariosClient)
+    public AuditoriaService(IUsuariosApi usuariosClient)
     {
         _usuariosClient = usuariosClient;
     }
