@@ -1,3 +1,5 @@
+using Libreria.Servicio.Usuarios.Infrastructure.Seguridad;
+using Microsoft.AspNetCore.Authorization;
 using Libreria.Servicio.Usuarios.Application.Ports.Primary;
 using Libreria.Servicio.Usuarios.Presentation.Comun;
 using Libreria.Servicio.Usuarios.Application.UseCases.Users;
@@ -7,6 +9,8 @@ using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 namespace Libreria.Servicio.Usuarios.Controllers;
 
 [ApiController]
+// US-126: todo exige token; listar, crear, ver roles y dar de baja son solo del Administrador.
+// Cambiar la contraseña, la sesión activa y los nombres (auditoría) sirven a cualquier usuario con sesión.
 [Route("api/usuarios")]
 public sealed class UsersController : ControllerBase
 {
@@ -37,6 +41,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = SeguridadJwtExtensions.SoloAdministrador)]
     [ProducesResponseType(
         typeof(IReadOnlyList<UserListItemDto>),
         StatusCodes.Status200OK)]
@@ -156,6 +161,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = SeguridadJwtExtensions.SoloAdministrador)]
     [ProducesResponseType(
         typeof(CreateUserResultDto),
         StatusCodes.Status201Created)]
@@ -181,6 +187,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpGet("roles")]
+    [Authorize(Policy = SeguridadJwtExtensions.SoloAdministrador)]
     [ProducesResponseType(
         typeof(IReadOnlyList<string>),
         StatusCodes.Status200OK)]
@@ -237,6 +244,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpDelete("{publicId:guid}")]
+    [Authorize(Policy = SeguridadJwtExtensions.SoloAdministrador)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(
