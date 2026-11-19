@@ -5,25 +5,30 @@ using Libreria.Servicio.Usuarios.Application.Services;
 using Libreria.Servicio.Usuarios.Application.Facades;
 using Libreria.Servicio.Usuarios.Infrastructure.Email;
 using Libreria.Servicio.Usuarios.Infrastructure.Configuration;
-using Libreria.Servicio.Usuarios.Application.UseCases.Auth;
 using Libreria.Servicio.Usuarios.Application.UseCases.Users;
 using Libreria.Servicio.Usuarios.Application.Validation;
 using Libreria.Servicio.Usuarios.Infrastructure.Connection;
 using Libreria.Servicio.Usuarios.Infrastructure.Factories;
-using Libreria.Servicio.Usuarios.Presentation.Security;
-using Libreria.Servicio.Usuarios.Presentation.Middleware;
-using Libreria.Servicio.Usuarios.Infrastructure.Security;
+using Libreria.Servicio.Usuarios.Infrastructure.Identidad;
+using Libreria.Servicio.Usuarios.Infrastructure.Seguridad;
 using Libreria.Servicio.Usuarios.Infrastructure.Transactions;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(opciones => opciones.AgregarBearerDeKeycloak());
+
+// US-126: todo exige el JWT de Keycloak (firma RS256, emisor, audiencia libreria-api, vencimiento)
+// y los roles se aplican con [Authorize(Policy = ...)]. Ver Infrastructure/Seguridad/SeguridadJwtExtensions.cs.
+builder.Services.AddSeguridadJwt(builder.Configuration, builder.Environment);
 builder.Services.AddScoped<
     ITransactionRunner,
     TransactionRunner>();
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+// US-126: el usuario actual sale del JWT validado (sub y preferred_username), no de cabeceras.
+builder.Services.AddScoped<ICurrentUser, UsuarioActualDesdeToken>();
 
 var connectionString =
     builder.Configuration.GetConnectionString("UsuariosDb")
@@ -43,11 +48,6 @@ builder.Services.AddScoped<
     SqlUsuarioRepositoryFactory>();
 builder.Services.AddScoped<IUserRepository>(provider =>
     provider.GetRequiredService<UsuarioRepositoryFactory>().CreateRepository());
-builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
-
-builder.Services.AddScoped<LoginValidator>();
-
-builder.Services.AddScoped<ILoginUseCase, LoginUseCase>();
 builder.Services.AddScoped<ICheckActiveSessionUseCase, CheckActiveSessionUseCase>();
 builder.Services.AddScoped<IGetUserNamesUseCase, GetUserNamesUseCase>();
 builder.Services.AddScoped<IListUsersUseCase, ListUsersUseCase>();
@@ -62,13 +62,25 @@ builder.Services.AddScoped<IApplicationConfiguration, ApplicationConfiguration>(
 builder.Services.AddScoped<UsuarioFacade>();
 builder.Services.AddSingleton(TimeProvider.System);
 
+// US-124: Keycloak como proveedor de identidad (puerto IProveedorIdentidad).
+builder.Services.AddProveedorIdentidad(builder.Configuration, builder.Environment);
+
 var app = builder.Build();
 
-app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-app.UseMiddleware<CurrentUserMiddleware>();
-
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
-app.MapGet("/salud", () => Results.Ok(new { servicio = "Usuarios", estado = "ok" }));
+app.MapGet("/salud", () => Results.Ok(new { servicio = "Usuarios", estado = "ok" }))
+    .AllowAnonymous();
 
 app.Run();
+
+// Visible para las pruebas de la API (WebApplicationFactory).
+public partial class Program;

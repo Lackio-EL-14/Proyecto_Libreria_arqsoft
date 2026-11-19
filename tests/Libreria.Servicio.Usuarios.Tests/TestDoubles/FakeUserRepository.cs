@@ -6,12 +6,6 @@ namespace Libreria.Servicio.Usuarios.Tests.TestDoubles;
 
 public sealed class FakeUserRepository : IUserRepository
 {
-    public User? UserByUsername { get; set; }
-
-    public string? ActivePasswordHash { get; set; }
-
-    public bool UpdatePasswordResult { get; set; } = true;
-
     public bool SessionActive { get; set; }
 
     public bool IsActiveAdministrator { get; set; }
@@ -41,37 +35,6 @@ public sealed class FakeUserRepository : IUserRepository
 
     public HashSet<string> ExistingUsernames { get; } =
         new(StringComparer.OrdinalIgnoreCase);
-
-    public int UpdatePasswordCalls { get; private set; }
-
-    public Guid? UpdatedPasswordUserId { get; private set; }
-
-    public string? PreviousPasswordHash { get; private set; }
-
-    public string? NewPasswordHash { get; private set; }
-
-    public Task<User?> GetActiveByUsernameAsync(string username)
-    {
-        return Task.FromResult(UserByUsername);
-    }
-
-    public Task<string?> GetActivePasswordHashAsync(Guid userId)
-    {
-        return Task.FromResult(ActivePasswordHash);
-    }
-
-    public Task<bool> UpdatePasswordAsync(
-        Guid userId,
-        string previousHash,
-        string newHash)
-    {
-        UpdatePasswordCalls++;
-        UpdatedPasswordUserId = userId;
-        PreviousPasswordHash = previousHash;
-        NewPasswordHash = newHash;
-
-        return Task.FromResult(UpdatePasswordResult);
-    }
 
     public Task<bool> IsSessionActiveAsync(int userId)
     {

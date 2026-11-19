@@ -5,6 +5,7 @@ using Libreria.Servicio.Clientes.Application.Factories;
 using Libreria.Servicio.Clientes.Application.Ports.Secondary;
 using Libreria.Servicio.Clientes.Tests.Fakes;
 using Libreria.Servicio.Clientes.Tests.Integracion;
+using Libreria.Servicio.Clientes.Tests.Seguridad;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -45,6 +46,8 @@ public sealed class ClientesApiFactory : WebApplicationFactory<Program>
 
         builder.ConfigureTestServices(servicios =>
         {
+            servicios.UsarJwtDePrueba();
+
             if (_baseDeDatosCaida)
             {
                 servicios.AddScoped<IDbConnectionFactory, ConexionSinServidor>();
@@ -54,6 +57,13 @@ public sealed class ClientesApiFactory : WebApplicationFactory<Program>
                 servicios.AddScoped<ClienteRepositoryFactory>(_ => new ClienteRepositoryFactoryFalsa(Repositorio));
             }
         });
+    }
+
+    /// <summary>Los clientes salen con un token de Administrador; las pruebas de seguridad lo cambian o lo quitan.</summary>
+    protected override void ConfigureClient(HttpClient client)
+    {
+        base.ConfigureClient(client);
+        client.DefaultRequestHeaders.Authorization = TokensDePrueba.Bearer(TokensDePrueba.Admin());
     }
 
     /// <summary>Abre MySQL en un puerto donde no escucha nadie: falla igual que con el contenedor apagado.</summary>

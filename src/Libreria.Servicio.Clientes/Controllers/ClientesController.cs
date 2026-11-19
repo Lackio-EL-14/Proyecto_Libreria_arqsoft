@@ -1,3 +1,5 @@
+using Libreria.Servicio.Clientes.Infrastructure.Seguridad;
+using Microsoft.AspNetCore.Authorization;
 using Libreria.Servicio.Clientes.Application.Models;
 using Libreria.Servicio.Clientes.Application.Ports.Primary;
 using Libreria.Servicio.Clientes.Controllers.Comun;
@@ -11,6 +13,8 @@ namespace Libreria.Servicio.Clientes.Controllers;
 /// por REST (contrato 6.6) y traduce cada <c>Result</c> a HTTP con <see cref="ResultadoHttpExtensions"/>.
 /// </summary>
 [ApiController]
+// US-126: Administrador y Vendedor gestionan clientes; solo el Administrador cambia el estado.
+[Authorize(Policy = SeguridadJwtExtensions.GestionClientes)]
 [Route("api/clientes")]
 [Produces("application/json")]
 public sealed class ClientesController : ControllerBase
@@ -60,6 +64,7 @@ public sealed class ClientesController : ControllerBase
 
     /// <summary>Delete lógico (<c>{ "activo": false }</c>) o reactivación (<c>{ "activo": true }</c>).</summary>
     [HttpPatch("{publicId:guid}/estado")]
+    [Authorize(Policy = SeguridadJwtExtensions.SoloAdministrador)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

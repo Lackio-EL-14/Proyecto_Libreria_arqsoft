@@ -1,3 +1,5 @@
+using Libreria.Servicio.Proveedores.Infrastructure.Seguridad;
+using Microsoft.AspNetCore.Authorization;
 using Libreria.Servicio.Proveedores.Application.Models;
 using Libreria.Servicio.Proveedores.Application.Ports.Primary;
 using Libreria.Servicio.Proveedores.Controllers.Comun;
@@ -7,6 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Libreria.Servicio.Proveedores.Controllers;
 
 [ApiController]
+// US-126: solo el Administrador gestiona proveedores.
+[Authorize(Policy = SeguridadJwtExtensions.SoloAdministrador)]
 [Route("api/proveedores")]
 [Produces("application/json")]
 public sealed class ProveedoresController : ControllerBase

@@ -1,5 +1,6 @@
 @page
 @model Libreria.Client.Pages.IndexModel
+@using Libreria.Client.Seguridad
 @{
     ViewData["Title"] = "Panel Principal";
 }
@@ -15,7 +16,7 @@
 
 <section class="dashboard-panel">
     <div class="dashboard-panel__header">
-        <h2>Bienvenido, @(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity?.Name)</h2>
+        <h2>Bienvenido, @User.NombreVisible()</h2>
         <p>El Front está preparado para consumir los módulos mediante sus APIs independientes.</p>
     </div>
     <div class="quick-actions-grid">

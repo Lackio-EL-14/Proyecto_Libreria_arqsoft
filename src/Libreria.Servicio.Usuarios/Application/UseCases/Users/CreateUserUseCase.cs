@@ -85,8 +85,6 @@ public sealed class CreateUserUseCase : ICreateUserUseCase
             Username = username,
             FullName = string.Join(" ", new[] { firstName, lastName, maternalLastName }
                 .Where(part => !string.IsNullOrWhiteSpace(part))),
-            PasswordHash = string.Empty,
-            TemporaryPasswordExpiresAt = null,
             RoleId = roleId.Value,
             Status = UserStatuses.Pending,
             CreatedByUserId = currentUserId

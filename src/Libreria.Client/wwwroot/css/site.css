@@ -1005,6 +1005,17 @@ textarea:focus {
     margin-top: 0.5rem;
 }
 
+/* Aviso neutro del login (US-125), por ejemplo «Cerró su sesión correctamente.» */
+.auth-card__info {
+    background-color: var(--color-bg, #F8FAFC);
+    border: 1px solid var(--color-border, #E2E8F0);
+    color: var(--color-secondary);
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-base);
+    margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+}
+
 .auth-body .app-footer {
     margin-top: 0;
 }

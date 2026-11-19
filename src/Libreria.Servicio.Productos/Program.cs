@@ -106,7 +106,11 @@ builder.Services.AddControllers(opciones =>
     opciones.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(opciones => opciones.AgregarBearerDeKeycloak());
+
+// US-126: todo exige el JWT de Keycloak (firma RS256, emisor, audiencia libreria-api, vencimiento)
+// y los roles se aplican con [Authorize(Policy = ...)]. Ver Infrastructure/Seguridad/SeguridadJwtExtensions.cs.
+builder.Services.AddSeguridadJwt(builder.Configuration, builder.Environment);
 
 // 2. Usuario que opera (puerto IUsuarioActual). Hasta US-127 solo existe el de desarrollo.
 if (builder.Environment.IsDevelopment())
@@ -125,7 +129,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
-app.MapGet("/salud", () => Results.Ok(new { servicio = "Productos", estado = "ok" }));
+app.MapGet("/salud", () => Results.Ok(new { servicio = "Productos", estado = "ok" }))
+    .AllowAnonymous();
 
 app.Run();
+
+// Visible para las pruebas de la API (WebApplicationFactory).
+public partial class Program;

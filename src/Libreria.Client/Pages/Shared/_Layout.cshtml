@@ -44,8 +44,8 @@
         {
             <div class="app-header__user">
                 <div class="user-chip" title="Sesión activa">
-                    <span class="user-chip__name">@(User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity.Name)</span>
-                    <span class="user-chip__role">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                    <span class="user-chip__name">@User.NombreVisible()</span>
+                    <span class="user-chip__role">@User.RolesVisibles()</span>
                 </div>
                 <a asp-page="/Cuenta/CambiarContrasena" class="btn btn--secondary">Cambiar contraseña</a>
                 <form method="post" asp-page="/Cuenta/Logout" class="logout-form">

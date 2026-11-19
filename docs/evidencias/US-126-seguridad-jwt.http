@@ -1,0 +1,59 @@
+# US-126 · Evidencia de la validación del JWT (VS Code REST Client / Rider / Visual Studio).
+# 1. Obtenga los tokens con libreria-pruebas (docs/contratos/keycloak.md §5) y péguelos SOLO aquí, en local.
+# 2. No suba este archivo con tokens reales.
+@gateway = http://localhost:5080
+@admin = <token-de-admin>
+@vendedor = <token-de-vendedor>
+@alterado = <token-de-admin-con-un-caracter-de-la-firma-cambiado>
+
+### 401 · sin token (gateway)
+GET {{gateway}}/api/clientes
+
+### 401 · sin token (directo al MS: también valida)
+GET http://localhost:5103/api/clientes
+
+### 401 · firma alterada
+GET {{gateway}}/api/productos
+Authorization: Bearer {{alterado}}
+
+### 200 · Vendedor gestiona clientes
+GET {{gateway}}/api/clientes
+Authorization: Bearer {{vendedor}}
+
+### 403 · Vendedor no cambia el estado de un cliente
+PATCH {{gateway}}/api/clientes/c0000000-0000-0000-0000-000000000001/estado
+Authorization: Bearer {{vendedor}}
+Content-Type: application/json
+
+{ "activo": false }
+
+### 403 · Vendedor en Proveedores
+GET {{gateway}}/api/proveedores
+Authorization: Bearer {{vendedor}}
+
+### 200 · Administrador en Proveedores
+GET {{gateway}}/api/proveedores
+Authorization: Bearer {{admin}}
+
+### 403 · Vendedor en Productos (directo)
+GET http://localhost:5104/api/productos
+Authorization: Bearer {{vendedor}}
+
+### 200 · Administrador en Productos
+GET {{gateway}}/api/productos
+Authorization: Bearer {{admin}}
+
+### 403 · Vendedor lista usuarios
+GET {{gateway}}/api/usuarios
+Authorization: Bearer {{vendedor}}
+
+### 200 · Administrador lista usuarios
+GET {{gateway}}/api/usuarios
+Authorization: Bearer {{admin}}
+
+### 200 · Cualquier usuario consulta su sesión activa (por su sub)
+GET {{gateway}}/api/usuarios/a0000000-0000-0000-0000-000000000002/sesion-activa
+Authorization: Bearer {{vendedor}}
+
+### 200 · /salud no exige token
+GET {{gateway}}/salud

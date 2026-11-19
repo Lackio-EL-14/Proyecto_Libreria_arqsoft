@@ -9,27 +9,18 @@
     <div class="auth-card__brand">
         <img src="~/images/icono.svg" alt="Librería" class="auth-card__logo" />
         <h1 id="auth-title">Iniciar sesión</h1>
-        <p>Ingrese sus credenciales para acceder al sistema.</p>
+        <p>El acceso al sistema se valida con el proveedor de identidad de la librería.</p>
     </div>
+
+    @if (Model.Mensaje is not null)
+    {
+        <div class="@(Model.EsAviso ? "validation-summary-errors" : "auth-card__info")" role="status">
+            @Model.Mensaje
+        </div>
+    }
 
     <form method="post">
         <input type="hidden" asp-for="ReturnUrl" />
-        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
-
-        <div class="form-group">
-            <label asp-for="Input.NombreUsuario">Usuario</label>
-            <input asp-for="Input.NombreUsuario" class="form-control" maxlength="50"
-                   autocomplete="username" autofocus />
-            <span asp-validation-for="Input.NombreUsuario" class="text-danger"></span>
-        </div>
-
-        <div class="form-group">
-            <label asp-for="Input.Contrasena">Contraseña</label>
-            <input asp-for="Input.Contrasena" type="password" class="form-control" maxlength="128"
-                   autocomplete="current-password" />
-            <span asp-validation-for="Input.Contrasena" class="text-danger"></span>
-        </div>
-
-        <button type="submit" class="btn btn--primary auth-card__submit">Ingresar</button>
+        <button type="submit" class="btn btn--primary auth-card__submit">Iniciar sesión</button>
     </form>
 </section>

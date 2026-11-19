@@ -36,8 +36,7 @@ public sealed class CreateUserUseCaseTests
         Assert.Equal("García", repository.CreatedUser.MaternalLastName);
         Assert.Equal("José Pérez García", repository.CreatedUser.FullName);
         Assert.Equal(AdminPublicId, repository.CreatedUser.CreatedByUserId);
-        Assert.Null(repository.CreatedUser.TemporaryPasswordExpiresAt);
-        Assert.Equal(string.Empty, repository.CreatedUser.PasswordHash);
+        Assert.Null(repository.CreatedUser.KeycloakId);
         Assert.Null(emailSender.Recipient); // US-124 no envía correo antes de US-130.
     }
 

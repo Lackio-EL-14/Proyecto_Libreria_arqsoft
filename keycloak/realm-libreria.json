@@ -1,0 +1,262 @@
+{
+  "realm": "libreria",
+  "enabled": true,
+  "displayName": "Librería",
+  "displayNameHtml": "Librería",
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "es"
+  ],
+  "defaultLocale": "es",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+  "editUsernameAllowed": false,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": false,
+  "verifyEmail": false,
+  "defaultSignatureAlgorithm": "RS256",
+  "accessTokenLifespan": 3600,
+  "ssoSessionIdleTimeout": 3600,
+  "ssoSessionMaxLifespan": 36000,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "maxDeltaTimeSeconds": 43200,
+  "quickLoginCheckMilliSeconds": 1000,
+  "minimumQuickLoginWaitSeconds": 60,
+  "passwordPolicy": "length(8) and digits(1) and upperCase(1) and lowerCase(1) and specialChars(1) and notUsername(undefined)",
+  "roles": {
+    "realm": [
+      {
+        "name": "Administrador",
+        "description": "Acceso total a catálogos, clientes, proveedores y usuarios"
+      },
+      {
+        "name": "Vendedor",
+        "description": "Consulta de catálogo y gestión de clientes"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "libreria-front",
+      "name": "Librería — Front",
+      "description": "Front en Razor Pages. Flujo de código de autorización con PKCE (S256).",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "frontchannelLogout": true,
+      "fullScopeAllowed": false,
+      "rootUrl": "http://localhost:5000",
+      "baseUrl": "http://localhost:5000",
+      "redirectUris": [
+        "http://localhost:5000/signin-oidc"
+      ],
+      "webOrigins": [
+        "http://localhost:5000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5000/signout-callback-oidc",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "standard.token.exchange.enabled": "false"
+      },
+      "defaultClientScopes": [
+        "basic",
+        "profile",
+        "email",
+        "web-origins",
+        "acr"
+      ],
+      "optionalClientScopes": [],
+      "protocolMappers": [
+        {
+          "name": "audiencia libreria-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "libreria-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "roles del realm",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "libreria-usuarios-admin",
+      "name": "Librería — MS Usuarios (administración)",
+      "description": "Cuenta de servicio del MS Usuarios para la API de administración: crear usuarios, asignar roles, fijar contraseñas, habilitar y deshabilitar.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": false,
+      "redirectUris": [],
+      "webOrigins": [],
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "standard.token.exchange.enabled": "false"
+      },
+      "defaultClientScopes": [
+        "basic",
+        "roles"
+      ],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "libreria-usuarios-verificacion",
+      "name": "Librería — MS Usuarios (verificación de contraseña)",
+      "description": "Solo lo usa el MS Usuarios para comprobar la contraseña actual (US-129). Su token no tiene la audiencia libreria-api ni roles, así que no sirve contra las API.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": false,
+      "redirectUris": [],
+      "webOrigins": [],
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "standard.token.exchange.enabled": "false"
+      },
+      "defaultClientScopes": [
+        "basic"
+      ],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "libreria-pruebas",
+      "name": "Librería — pruebas (SOLO DESARROLLO)",
+      "description": "SOLO DESARROLLO. Cliente público con direct access grants para obtener tokens en Swagger y archivos .http. keycloak/configurar.sh lo deshabilita si KEYCLOAK_HABILITAR_CLIENTE_PRUEBAS no es true.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": false,
+      "redirectUris": [],
+      "webOrigins": [],
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "standard.token.exchange.enabled": "false"
+      },
+      "defaultClientScopes": [
+        "basic",
+        "profile",
+        "email",
+        "acr"
+      ],
+      "optionalClientScopes": [],
+      "protocolMappers": [
+        {
+          "name": "audiencia libreria-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "libreria-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "roles del realm",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "scopeMappings": [
+    {
+      "client": "libreria-front",
+      "roles": [
+        "Administrador",
+        "Vendedor"
+      ]
+    },
+    {
+      "client": "libreria-pruebas",
+      "roles": [
+        "Administrador",
+        "Vendedor"
+      ]
+    }
+  ],
+  "clientScopeMappings": {
+    "realm-management": [
+      {
+        "client": "libreria-usuarios-admin",
+        "roles": [
+          "manage-users",
+          "view-users"
+        ]
+      }
+    ]
+  },
+  "users": [
+    {
+      "username": "service-account-libreria-usuarios-admin",
+      "enabled": true,
+      "serviceAccountClientId": "libreria-usuarios-admin",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users"
+        ]
+      }
+    }
+  ]
+}

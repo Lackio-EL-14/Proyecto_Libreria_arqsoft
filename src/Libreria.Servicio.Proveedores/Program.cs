@@ -13,7 +13,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers(options =>
     options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options => options.AgregarBearerDeKeycloak());
+
+// US-126: todo exige el JWT de Keycloak (firma RS256, emisor, audiencia libreria-api, vencimiento)
+// y los roles se aplican con [Authorize(Policy = ...)]. Ver Infrastructure/Seguridad/SeguridadJwtExtensions.cs.
+builder.Services.AddSeguridadJwt(builder.Configuration, builder.Environment);
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ManejadorExcepciones>();
 
@@ -47,10 +51,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 app.MapGet(
     "/salud",
-    () => Results.Ok(new { servicio = "Proveedores", estado = "ok" }));
+    () => Results.Ok(new { servicio = "Proveedores", estado = "ok" }))
+    .AllowAnonymous();
 app.Run();
 
 public partial class Program;

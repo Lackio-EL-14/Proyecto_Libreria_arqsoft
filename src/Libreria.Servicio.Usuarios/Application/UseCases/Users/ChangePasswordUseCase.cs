@@ -1,107 +1,99 @@
+using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Application.Ports.Primary;
 using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
-using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Application.Validation;
+using Libreria.Servicio.Usuarios.Domain;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Users;
 
+/// <summary>
+/// Cambio de contraseña del usuario actual (US-129), con las credenciales en Keycloak (US-125):
+/// valida la entrada, comprueba la contraseña actual y fija la nueva como definitiva por medio
+/// de <see cref="IProveedorIdentidad"/>. Las validaciones vuelven como <see cref="Result"/>.
+/// </summary>
 public sealed class ChangePasswordUseCase : IChangePasswordUseCase
 {
-    private readonly IUserRepository _userRepository;
+    private const int LongitudMaxima = 128;
+
+    private readonly IProveedorIdentidad _proveedorIdentidad;
     private readonly ICurrentUser _currentUser;
-    private readonly IPasswordHasher _passwordHasher;
     private readonly PasswordPolicyValidator _passwordPolicy;
 
     public ChangePasswordUseCase(
-        IUserRepository userRepository,
+        IProveedorIdentidad proveedorIdentidad,
         ICurrentUser currentUser,
-        IPasswordHasher passwordHasher,
         PasswordPolicyValidator passwordPolicy)
     {
-        _userRepository = userRepository;
+        _proveedorIdentidad = proveedorIdentidad;
         _currentUser = currentUser;
-        _passwordHasher = passwordHasher;
         _passwordPolicy = passwordPolicy;
     }
 
-    public async Task<bool> ExecuteAsync(ChangePasswordRequest request)
+    public async Task<Result?> ExecuteAsync(ChangePasswordRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var userId = _currentUser.UserId;
-
-        if (userId is null || userId == Guid.Empty)
+        if (_currentUser.UserId is not Guid keycloakId ||
+            keycloakId == Guid.Empty ||
+            string.IsNullOrWhiteSpace(_currentUser.Username))
         {
-            return false;
+            return null;
         }
 
+        var validacion = Validar(request, _currentUser.Username);
+        if (validacion.IsError)
+        {
+            return validacion;
+        }
+
+        var verificacion = await _proveedorIdentidad.VerificarContrasenaAsync(
+            _currentUser.Username,
+            request.CurrentPassword);
+
+        if (verificacion.IsError)
+        {
+            return verificacion;
+        }
+
+        return await _proveedorIdentidad.FijarContrasenaAsync(
+            keycloakId,
+            request.NewPassword,
+            temporal: false);
+    }
+
+    private Result Validar(ChangePasswordRequest request, string nombreUsuario)
+    {
         if (string.IsNullOrEmpty(request.CurrentPassword))
         {
-            throw new ArgumentException(
-                "Ingrese su contraseña actual.");
+            return Result.Validacion("ContrasenaActual", "Ingrese su contraseña actual.");
         }
 
-        if (!string.Equals(
-                request.NewPassword,
-                request.Confirmation,
-                StringComparison.Ordinal))
+        if (!string.Equals(request.NewPassword, request.Confirmation, StringComparison.Ordinal))
         {
-            throw new ArgumentException(
-                "La confirmación no coincide con la nueva contraseña.");
+            return Result.Validacion("Confirmacion", "La confirmación no coincide con la nueva contraseña.");
         }
 
-        var policyErrors =
-            _passwordPolicy.Validate(request.NewPassword);
-
-        if (policyErrors.Count > 0)
+        var errores = _passwordPolicy.Validate(request.NewPassword);
+        if (errores.Count > 0)
         {
-            throw new ArgumentException(
-                string.Join(" ", policyErrors));
+            return Result.Validacion("NuevaContrasena", string.Join(" ", errores));
         }
 
-        if (request.NewPassword.Length > 128)
+        if (request.NewPassword.Length > LongitudMaxima)
         {
-            throw new ArgumentException(
-                "La contraseña no puede superar los 128 caracteres.");
+            return Result.Validacion("NuevaContrasena", "La contraseña no puede superar los 128 caracteres.");
         }
 
-        var currentHash =
-            await _userRepository.GetActivePasswordHashAsync(
-                userId.Value);
-
-        if (currentHash is null ||
-            !_passwordHasher.Verify(
-                currentHash,
-                request.CurrentPassword))
+        if (string.Equals(request.NewPassword, nombreUsuario, StringComparison.OrdinalIgnoreCase))
         {
-            throw new ArgumentException(
-                "La contraseña actual es incorrecta.");
+            return Result.Validacion("NuevaContrasena", "La contraseña no puede ser igual al nombre de usuario.");
         }
 
-        if (string.Equals(
-                request.NewPassword,
-                request.CurrentPassword,
-                StringComparison.Ordinal))
+        if (string.Equals(request.NewPassword, request.CurrentPassword, StringComparison.Ordinal))
         {
-            throw new ArgumentException(
-                "La nueva contraseña debe ser distinta de la actual.");
+            return Result.Validacion("NuevaContrasena", "La nueva contraseña debe ser distinta de la actual.");
         }
 
-        var newHash =
-            _passwordHasher.Hash(request.NewPassword);
-
-        var updated =
-            await _userRepository.UpdatePasswordAsync(
-                userId.Value,
-                currentHash,
-                newHash);
-
-        if (!updated)
-        {
-            throw new InvalidOperationException(
-                "No fue posible cambiar la contraseña. Intente nuevamente.");
-        }
-
-        return true;
+        return Result.Exito();
     }
 }

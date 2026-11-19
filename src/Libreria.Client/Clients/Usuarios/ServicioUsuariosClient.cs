@@ -10,14 +10,6 @@ public sealed class ServicioUsuariosClient : ApiClientBase, IServicioUsuariosCli
     {
     }
 
-    public Task<AuthenticatedUserDto?> IniciarSesionAsync(
-        LoginRequestDto request,
-        CancellationToken cancellationToken = default) =>
-        PostAsync<LoginRequestDto, AuthenticatedUserDto>(
-            "api/auth/login",
-            request,
-            cancellationToken);
-
     public async Task<bool> SesionActivaAsync(
         int usuarioId,
         CancellationToken cancellationToken = default)
@@ -30,16 +22,16 @@ public sealed class ServicioUsuariosClient : ApiClientBase, IServicioUsuariosCli
     }
 
     public async Task<bool> SesionActivaAsync(
-        Guid publicId,
+        Guid keycloakId,
         CancellationToken cancellationToken = default)
     {
-        if (publicId == Guid.Empty)
+        if (keycloakId == Guid.Empty)
         {
             return false;
         }
 
         return await GetAsync<bool>(
-            $"api/usuarios/{publicId:D}/sesion-activa",
+            $"api/usuarios/{keycloakId:D}/sesion-activa",
             cancellationToken);
     }
 

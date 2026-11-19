@@ -7,7 +7,7 @@ El Front conoce una única URL: `Servicios:Gateway:BaseUrl`. Cada módulo implem
 | Clientes | `IServicioClientesClient` | `api/clientes` |
 | Proveedores | `IServicioProveedoresClient` | `api/proveedores` |
 | Productos | `IServicioProductosClient` | `api/productos`, `api/categorias`, `api/marcas`, `api/historico` |
-| Usuarios | `IServicioUsuariosClient` | `api/auth`, `api/usuarios` |
+| Usuarios | `IServicioUsuariosClient` | `api/usuarios` |
 
 Registro en `Program.cs`:
 
@@ -20,4 +20,4 @@ builder.Services
     .AddModuloUsuarios(builder.Configuration);
 ```
 
-`UsuarioActualDelegatingHandler` agrega el contexto de identidad a las peticiones. Los menús son parciales independientes: `_MenuClientes`, `_MenuProveedores`, `_MenuInventario` y `_MenuUsuarios`.
+`BearerTokenDelegatingHandler` (US-125) agrega `Authorization: Bearer <token de Keycloak>` a todas las peticiones y convierte un 401 en cierre de sesión. El login, el logout y la sesión se describen en `keycloak.md` §4. Los menús son parciales independientes: `_MenuClientes`, `_MenuProveedores`, `_MenuInventario` y `_MenuUsuarios`.

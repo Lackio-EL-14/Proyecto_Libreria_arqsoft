@@ -1,3 +1,5 @@
+using Libreria.Servicio.Usuarios.Infrastructure.Seguridad;
+using Microsoft.AspNetCore.Authorization;
 using Libreria.Servicio.Usuarios.Application.Ports.Primary;
 using Libreria.Servicio.Usuarios.Presentation.Comun;
 using Libreria.Servicio.Usuarios.Application.UseCases.Users;
@@ -7,6 +9,8 @@ using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 namespace Libreria.Servicio.Usuarios.Controllers;
 
 [ApiController]
+// US-126: todo exige token; listar, crear, ver roles y dar de baja son solo del Administrador.
+// Cambiar la contraseña, la sesión activa y los nombres (auditoría) sirven a cualquier usuario con sesión.
 [Route("api/usuarios")]
 public sealed class UsersController : ControllerBase
 {
@@ -37,6 +41,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = SeguridadJwtExtensions.SoloAdministrador)]
     [ProducesResponseType(
         typeof(IReadOnlyList<UserListItemDto>),
         StatusCodes.Status200OK)]
@@ -156,6 +161,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = SeguridadJwtExtensions.SoloAdministrador)]
     [ProducesResponseType(
         typeof(CreateUserResultDto),
         StatusCodes.Status201Created)]
@@ -181,6 +187,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpGet("roles")]
+    [Authorize(Policy = SeguridadJwtExtensions.SoloAdministrador)]
     [ProducesResponseType(
         typeof(IReadOnlyList<string>),
         StatusCodes.Status200OK)]
@@ -209,40 +216,35 @@ public sealed class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(
         typeof(ProblemDetails),
-        StatusCodes.Status409Conflict)]
+        StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ChangePasswordAsync(
         [FromBody] ChangePasswordRequest request)
     {
-        try
+        var resultado =
+            await _changePasswordUseCase.ExecuteAsync(request);
+
+        if (resultado is null)
         {
-            var changed =
-                await _changePasswordUseCase.ExecuteAsync(request);
+            return StatusCode(
+                StatusCodes.Status403Forbidden);
+        }
 
-            if (!changed)
-            {
-                return StatusCode(
-                    StatusCodes.Status403Forbidden);
-            }
-
+        if (resultado.IsSuccess)
+        {
             return NoContent();
         }
-        catch (ArgumentException exception)
-        {
-            return Problem(
-                title: "No fue posible cambiar la contraseña.",
-                detail: exception.Message,
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-        catch (InvalidOperationException exception)
-        {
-            return Problem(
-                title: "No fue posible cambiar la contraseña.",
-                detail: exception.Message,
-                statusCode: StatusCodes.Status409Conflict);
-        }
+
+        // El Front muestra Detail; se conserva el contrato previo (400 con el mensaje).
+        return Problem(
+            title: "No fue posible cambiar la contraseña.",
+            detail: string.Join(" ", resultado.Errors()),
+            statusCode: resultado.Tipo == Domain.TipoError.NoEncontrado
+                ? StatusCodes.Status404NotFound
+                : StatusCodes.Status400BadRequest);
     }
 
     [HttpDelete("{publicId:guid}")]
+    [Authorize(Policy = SeguridadJwtExtensions.SoloAdministrador)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(
@@ -288,6 +290,12 @@ public sealed class UsersController : ControllerBase
                     title: "No fue posible dar de baja al usuario.",
                     detail: "No puede darse de baja a sí mismo.",
                     statusCode: StatusCodes.Status409Conflict),
+
+            DeactivateUserResult.IdentityProviderUnavailable =>
+                Problem(
+                    title: "No fue posible dar de baja al usuario.",
+                    detail: "El proveedor de identidad no respondió; no se realizó ningún cambio.",
+                    statusCode: StatusCodes.Status503ServiceUnavailable),
 
             _ => throw new InvalidOperationException(
                 "Resultado de baja de usuario no reconocido.")

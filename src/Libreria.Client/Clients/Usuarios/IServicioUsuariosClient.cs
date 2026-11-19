@@ -5,16 +5,13 @@ namespace Libreria.Client.Clients.Usuarios;
 
 public interface IServicioUsuariosClient : IApiClient
 {
-    Task<AuthenticatedUserDto?> IniciarSesionAsync(
-        LoginRequestDto request,
-        CancellationToken cancellationToken = default);
-
     Task<bool> SesionActivaAsync(
         int usuarioId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Si el usuario (por su <c>sub</c> de Keycloak) sigue activo en el MS Usuarios (US-125).</summary>
     Task<bool> SesionActivaAsync(
-        Guid publicId,
+        Guid keycloakId,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyDictionary<int, string>> ObtenerNombresAsync(

@@ -11,6 +11,15 @@ Los scripts `db/<servicio>/50_datos_semilla.*` son idempotentes y usan estos pre
 | `b0000000-…` | Marca | `libreria_productos` |
 | `d0000000-…` | Producto | `libreria_productos` |
 
+## Usuarios
+
+Existen con el **mismo GUID** en `LibreriaUsuarios` (`PublicId` y `KeycloakId`) y en Keycloak (`sub`), así que la auditoría semilla apunta a usuarios reales. En Keycloak los crea `keycloak/configurar.sh` a partir de `keycloak/usuarios-semilla.json`; sus contraseñas de desarrollo vienen de `.env` y no se documentan.
+
+| PublicId = KeycloakId = `sub` | Usuario | Nombre | Rol |
+|---|---|---|---|
+| `a0000000-0000-0000-0000-000000000001` | `admin` | Administrador Sistema | Administrador |
+| `a0000000-0000-0000-0000-000000000002` | `vendedor` | Vendedor Mostrador | Vendedor |
+
 ## Proveedores
 
 | PublicId | NIT | Razón social | Contacto principal |
