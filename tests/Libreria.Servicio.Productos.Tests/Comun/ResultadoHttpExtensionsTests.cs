@@ -1,4 +1,4 @@
-using Libreria.Servicio.Productos.Application.Comun;
+using Libreria.Servicio.Productos.Domain;
 using Libreria.Servicio.Productos.Presentation.Comun;
 using Microsoft.AspNetCore.Mvc;
 

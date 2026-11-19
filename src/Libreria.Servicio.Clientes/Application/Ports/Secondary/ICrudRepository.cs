@@ -1,6 +1,6 @@
 namespace Libreria.Servicio.Clientes.Application.Ports.Secondary;
 
-/// <summary>Puerto CRUD genérico (copia del de Ventas; no hay bibliotecas compartidas).</summary>
+/// <summary>Puerto CRUD genérico propio del microservicio.</summary>
 public interface ICrudRepository<TEntity> where TEntity : class
 {
     Task<IReadOnlyList<TEntity>> ObtenerActivasAsync(string? busqueda = null);

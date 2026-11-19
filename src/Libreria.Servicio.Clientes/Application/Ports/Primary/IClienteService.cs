@@ -1,4 +1,4 @@
-using Libreria.Servicio.Clientes.Application.Comun;
+using Libreria.Servicio.Clientes.Domain;
 using Libreria.Servicio.Clientes.Application.Models;
 
 namespace Libreria.Servicio.Clientes.Application.Ports.Primary;
@@ -9,9 +9,6 @@ public interface IClienteService
     Task<IReadOnlyList<ClienteDetalle>> ListarAsync(FiltroClientes filtro);
 
     Task<Result<ClienteDetalle>> ObtenerAsync(Guid publicId);
-
-    /// <summary>Clientes activos para la venta, por prefijo de CI/NIT.</summary>
-    Task<Result<IReadOnlyList<ClienteVentaItem>>> BuscarParaVentaAsync(string? ciNit);
 
     Task<Result<ClienteDetalle>> RegistrarAsync(ClienteInput input);
 

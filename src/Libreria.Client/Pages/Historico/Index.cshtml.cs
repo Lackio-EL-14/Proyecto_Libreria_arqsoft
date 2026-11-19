@@ -1,6 +1,7 @@
-using Libreria.Client.Clients.Productos;
+using Libreria.Client.Adapters.Productos;
 using Libreria.Client.DTOs.Common;
 using Libreria.Client.DTOs.Productos;
+using Libreria.Client.Services.Auditoria;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -8,11 +9,15 @@ namespace Libreria.Client.Pages.Historico;
 
 public class IndexModel : PageModel
 {
-    private readonly IServicioProductosClient _productos;
+    private readonly IProductosApi _productos;
+    private readonly IAuditoriaService _auditoriaService;
 
-    public IndexModel(IServicioProductosClient productos)
+    public IndexModel(
+        IProductosApi productos,
+        IAuditoriaService auditoriaService)
     {
         _productos = productos;
+        _auditoriaService = auditoriaService;
     }
 
     public Guid PublicId { get; private set; }
@@ -39,7 +44,10 @@ public class IndexModel : PageModel
         PublicId = publicId.Value;
         NombreProducto = historico.Nombre;
         ProductoActivo = historico.Activo;
-        Historial = historico.Historial;
+        Historial =
+            await _auditoriaService
+                .ResolverUsuariosHistoricoAsync(
+                    historico.Historial);
 
         return Page();
     }

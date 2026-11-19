@@ -1,9 +1,10 @@
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Primary;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Application.Factories;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Users;
 
-public sealed class GetUserNamesUseCase
+public sealed class GetUserNamesUseCase : IGetUserNamesUseCase
 {
     private readonly IUserRepository _userRepository;
 
@@ -26,5 +27,13 @@ public sealed class GetUserNamesUseCase
 
         return _userRepository
             .GetFullNamesByIdsAsync(ids);
+    }
+    public Task<IReadOnlyDictionary<Guid, string>> ExecuteAsync(
+        IEnumerable<Guid> publicIds)
+    {
+        ArgumentNullException.ThrowIfNull(publicIds);
+
+        return _userRepository.GetFullNamesByPublicIdsAsync(
+            publicIds.Where(id => id != Guid.Empty).Distinct().ToArray());
     }
 }

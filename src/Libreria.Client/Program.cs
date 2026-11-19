@@ -1,9 +1,8 @@
 using Libreria.Client.Clients.Common;
-using Libreria.Client.Clients.DependencyInjection;
+using Libreria.Client.Adapters.DependencyInjection;
 using Libreria.Client.DTOs.Usuarios;
 using Libreria.Client.Seguridad;
 using Libreria.Client.Services.Auditoria;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,23 +17,25 @@ builder.Services
         options.Conventions.AuthorizeFolder("/Productos", PoliticasAcceso.SoloAdministrador);
         options.Conventions.AuthorizeFolder("/Historico", PoliticasAcceso.SoloAdministrador);
 
-        options.Conventions.AuthorizeFolder("/Ventas", PoliticasAcceso.Ventas);
-        options.Conventions.AuthorizeFolder("/Clientes", PoliticasAcceso.Ventas);
+        options.Conventions.AuthorizeFolder("/Clientes", PoliticasAcceso.GestionClientes);
+        options.Conventions.AuthorizeFolder("/Proveedores", PoliticasAcceso.SoloAdministrador);
     })
     .AddMvcOptions(options =>
     {
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
         options.Filters.Add<ServicioNoDisponibleFilter>();
+        options.Filters.Add<SesionExpiradaFilter>();
     });
 
-// Un módulo por microservicio; todos hablan solo con el gateway (Servicios:Gateway:BaseUrl).
-// Cada dueño edita únicamente su método de extensión (sección 7 del planning).
+// Patrón Adapter (US-140): un HttpClient «ApiGateway» (Servicios:Gateway:BaseUrl) y un
+// adaptador por API detrás de su interfaz (IClientesApi → ClientesApiAdapter, etc.).
 builder.Services
     .AddContextoUsuarioServicios()
-    .AddModuloClientes(builder.Configuration)
-    .AddModuloVentas(builder.Configuration)
-    .AddModuloProductos(builder.Configuration)
-    .AddModuloUsuarios(builder.Configuration);
+    .AddApiGateway(builder.Configuration)
+    .AddModuloClientes()
+    .AddModuloProveedores()
+    .AddModuloProductos()
+    .AddModuloUsuarios();
 
 builder.Services.AddMemoryCache();
 builder.Services.Configure<SesionActivaOptions>(
@@ -51,34 +52,8 @@ builder.Services.AddScoped<
     Libreria.Client.Services.Auditoria.IAuditoriaService,
     Libreria.Client.Services.Auditoria.AuditoriaService>();
 
-builder.Services
-    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/Cuenta/Login";
-        options.LogoutPath = "/Cuenta/Logout";
-        options.AccessDeniedPath = "/Cuenta/AccesoDenegado";
-        options.Cookie.Name = "Libreria.Sesion";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-        options.Cookie.IsEssential = true;
-        options.ExpireTimeSpan = TimeSpan.FromHours(8);
-        options.SlidingExpiration = true;
-        options.EventsType = typeof(ValidarEstadoUsuarioCookieEvents);
-    });
-
-// US-39: Políticas de autorización por rol
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy(PoliticasAcceso.SoloAdministrador, politica =>
-        politica.RequireRole(RolesSistema.Administrador));
-
-    options.AddPolicy(PoliticasAcceso.Ventas, politica =>
-        politica.RequireRole(RolesSistema.Administrador, RolesSistema.Vendedor));
-});
-
-builder.Services.AddScoped<ValidarEstadoUsuarioCookieEvents>();
+// US-125: login y sesiones con OpenID Connect contra Keycloak, y políticas por rol (US-39).
+builder.Services.AddAutenticacionKeycloak(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 

@@ -1,4 +1,6 @@
-# JWT
+# JWT (versión 1, OBSOLETO)
+
+> **Reemplazado por [`keycloak.md`](keycloak.md) (US-124).** Keycloak emite los JWT: el emisor, la audiencia, los claims (`roles`, no `role`) y las políticas cambiaron. Ya no hay `debe_cambiar_contrasena`: el cambio obligatorio lo exige Keycloak antes de emitir el token. Se conserva solo como historial; no implementar contra este archivo.
 
 | Aspecto | Contrato |
 |---|---|

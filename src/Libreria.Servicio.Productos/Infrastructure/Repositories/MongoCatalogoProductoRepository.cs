@@ -60,4 +60,36 @@ public sealed class MongoCatalogoProductoRepository
         return await _context.Marcas
             .CountDocumentsAsync(filtro) > 0;
     }
+
+    public async Task<Categoria?> ObtenerCategoriaActivaAsync(
+    Guid publicId)
+    {
+        var filtro =
+            Builders<Categoria>.Filter.Eq(
+                categoria => categoria.PublicId,
+                publicId)
+            & Builders<Categoria>.Filter.Eq(
+                categoria => categoria.Estado,
+                true);
+
+        return await _context.Categorias
+            .Find(filtro)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<Marca?> ObtenerMarcaActivaAsync(
+        Guid publicId)
+    {
+        var filtro =
+            Builders<Marca>.Filter.Eq(
+                marca => marca.PublicId,
+                publicId)
+            & Builders<Marca>.Filter.Eq(
+                marca => marca.Estado,
+                true);
+
+        return await _context.Marcas
+            .Find(filtro)
+            .FirstOrDefaultAsync();
+    }
 }

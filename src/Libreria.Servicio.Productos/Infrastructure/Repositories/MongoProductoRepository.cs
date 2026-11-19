@@ -250,76 +250,6 @@ public sealed class MongoProductoRepository : IProductoRepository
         return Task.FromResult(false);
     }
 
-    public async Task<Producto?> ObtenerParaVentaAsync(Guid publicId)
-    {
-        return await ObtenerPorPublicIdAsync(publicId, true);
-    }
-
-    public async Task<bool> DescontarStockAsync(
-        Guid publicId,
-        int cantidad)
-    {
-        if (cantidad <= 0)
-            return false;
-
-        var usuarioId = ObtenerUsuarioId();
-
-        var filtro =
-            Builders<Producto>.Filter.Eq(
-                producto => producto.PublicId,
-                publicId)
-            & Builders<Producto>.Filter.Eq(
-                producto => producto.Estado,
-                true)
-            & Builders<Producto>.Filter.Gte(
-                producto => producto.Stock,
-                cantidad);
-
-        var actualizacion = Builders<Producto>.Update
-            .Inc(producto => producto.Stock, -cantidad)
-            .Set(producto => producto.FechaModificacion, DateTime.UtcNow)
-            .Set(
-                producto => producto.UsuarioModificacionId,
-                usuarioId);
-
-        var resultado = await _context.Productos.UpdateOneAsync(
-            filtro,
-            actualizacion);
-
-        return resultado.ModifiedCount == 1;
-    }
-
-    public async Task<bool> RestaurarStockAsync(
-        Guid publicId,
-        int cantidad)
-    {
-        if (cantidad <= 0)
-            return false;
-
-        var usuarioId = ObtenerUsuarioId();
-
-        var filtro =
-            Builders<Producto>.Filter.Eq(
-                producto => producto.PublicId,
-                publicId)
-            & Builders<Producto>.Filter.Eq(
-                producto => producto.Estado,
-                true);
-
-        var actualizacion = Builders<Producto>.Update
-            .Inc(producto => producto.Stock, cantidad)
-            .Set(producto => producto.FechaModificacion, DateTime.UtcNow)
-            .Set(
-                producto => producto.UsuarioModificacionId,
-                usuarioId);
-
-        var resultado = await _context.Productos.UpdateOneAsync(
-            filtro,
-            actualizacion);
-
-        return resultado.ModifiedCount == 1;
-    }
-
     public async Task ActualizarCategoriaEmbebidaAsync(
         Guid categoriaPublicId,
         string nuevoNombre)
@@ -359,5 +289,56 @@ public sealed class MongoProductoRepository : IProductoRepository
         return _usuarioActual.UsuarioId
             ?? throw new InvalidOperationException(
                 "No existe un usuario actual para registrar la auditoría.");
+    }
+
+    public async Task<IReadOnlyList<Producto>> ObtenerFiltradasAsync(
+        string? busqueda,
+        Guid? categoriaPublicId,
+        Guid? marcaPublicId,
+        bool? estado)
+    {
+        var filtro = Builders<Producto>.Filter.Empty;
+
+        if (estado.HasValue)
+        {
+            filtro &= Builders<Producto>.Filter.Eq(
+                producto => producto.Estado,
+                estado.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(busqueda))
+        {
+            var termino = Regex.Escape(busqueda.Trim());
+            var regex = new BsonRegularExpression(termino, "i");
+
+            var filtroBusqueda =
+                Builders<Producto>.Filter.Regex(
+                    producto => producto.Nombre,
+                    regex)
+                | Builders<Producto>.Filter.Regex(
+                    producto => producto.DescripcionEspecifica,
+                    regex);
+
+            filtro &= filtroBusqueda;
+        }
+
+        if (categoriaPublicId.HasValue)
+        {
+            filtro &= Builders<Producto>.Filter.Eq(
+                producto => producto.Categoria.PublicId,
+                categoriaPublicId.Value);
+        }
+
+        if (marcaPublicId.HasValue)
+        {
+            filtro &= Builders<Producto>.Filter.Eq(
+                producto => producto.Marca.PublicId,
+                marcaPublicId.Value);
+        }
+
+        return await _context.Productos
+            .Find(filtro)
+            .SortBy(producto => producto.Nombre)
+            .ToListAsync();
     }
 }

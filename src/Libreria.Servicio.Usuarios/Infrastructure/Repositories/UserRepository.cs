@@ -1,6 +1,6 @@
 using System.Data;
 using System.Data.Common;
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Domain.Constants;
 using Libreria.Servicio.Usuarios.Domain.Entities;
 using Libreria.Servicio.Usuarios.Infrastructure.Connection;
@@ -15,152 +15,6 @@ public sealed class UserRepository : IUserRepository
     public UserRepository(SqlConnectionFactory connectionFactory)
     {
         _connectionFactory = connectionFactory;
-    }
-
-    public async Task<User?> GetActiveByUsernameAsync(string username)
-    {
-        await using var connection = _connectionFactory.CreateConnection();
-        await using var command = connection.CreateCommand();
-
-        command.CommandText = """
-            SELECT
-                u.UsuarioId,
-                u.PublicId,
-                u.Nombre,
-                u.Apellido,
-                u.Correo,
-                u.NombreUsuario,
-                u.NombreCompleto,
-                u.PasswordHash,
-                u.RolId,
-                u.Estado,
-                u.TokenActivacionHash,
-                u.TokenActivacionExpiracion,
-                u.TokenActivacionFechaUso,
-                u.FechaCreacion,
-                u.FechaModificacion,
-                u.UsuarioCreacionId,
-                u.UsuarioModificacionId,
-                r.Nombre AS RolNombre,
-                r.Descripcion AS RolDescripcion,
-                r.Estado AS RolEstado
-            FROM dbo.Usuario u
-            INNER JOIN dbo.Rol r
-                ON r.RolId = u.RolId
-            WHERE u.NombreUsuario = @Username
-              AND u.Estado = @ActiveStatus
-              AND r.Estado = 1;
-            """;
-
-        AddParameter(
-            command,
-            "@Username",
-            username.Trim(),
-            DbType.String,
-            50);
-
-        AddParameter(
-            command,
-            "@ActiveStatus",
-            UserStatuses.Active,
-            DbType.String,
-            20);
-
-        await using var reader = await command.ExecuteReaderAsync();
-
-        return await reader.ReadAsync()
-            ? MapUser(reader)
-            : null;
-    }
-
-    public async Task<string?> GetActivePasswordHashAsync(int userId)
-    {
-        await using var connection = _connectionFactory.CreateConnection();
-        await using var command = connection.CreateCommand();
-
-        command.CommandText = """
-        SELECT u.PasswordHash
-        FROM dbo.Usuario u
-        INNER JOIN dbo.Rol r
-            ON r.RolId = u.RolId
-        WHERE u.UsuarioId = @UserId
-          AND u.Estado = @ActiveStatus
-          AND r.Estado = 1;
-        """;
-
-        AddParameter(
-            command,
-            "@UserId",
-            userId,
-            DbType.Int32);
-
-        AddParameter(
-            command,
-            "@ActiveStatus",
-            UserStatuses.Active,
-            DbType.String,
-            20);
-
-        var result = await command.ExecuteScalarAsync();
-
-        return result is null || result == DBNull.Value
-            ? null
-            : Convert.ToString(result);
-    }
-
-    public async Task<bool> UpdatePasswordAsync(
-        int userId,
-        string previousHash,
-        string newHash)
-    {
-        await using var connection = _connectionFactory.CreateConnection();
-        await using var command = connection.CreateCommand();
-
-        command.CommandText = """
-            UPDATE dbo.Usuario
-            SET PasswordHash = @NewHash,
-                UsuarioModificacionId = @UserId,
-                FechaModificacion = SYSDATETIME()
-            WHERE UsuarioId = @UserId
-              AND Estado = @ActiveStatus
-              AND PasswordHash COLLATE Latin1_General_100_BIN2 = @PreviousHash
-              AND EXISTS
-              (
-                  SELECT 1
-                  FROM dbo.Rol r
-                  WHERE r.RolId = dbo.Usuario.RolId
-                    AND r.Estado = 1
-              );
-            """;
-
-        AddParameter(
-            command,
-            "@UserId",
-            userId,
-            DbType.Int32);
-
-        AddParameter(
-            command,
-            "@ActiveStatus",
-            UserStatuses.Active,
-            DbType.String,
-            20);
-
-        AddParameter(
-            command,
-            "@PreviousHash",
-            previousHash,
-            DbType.String,
-            500);
-
-        AddParameter(
-            command,
-            "@NewHash",
-            newHash,
-            DbType.String,
-            500);
-
-        return await command.ExecuteNonQueryAsync() == 1;
     }
 
     public async Task<bool> IsSessionActiveAsync(int userId)
@@ -193,6 +47,35 @@ public sealed class UserRepository : IUserRepository
 
         return Convert.ToInt32(
             await command.ExecuteScalarAsync()) == 1;
+    }
+
+    public async Task<bool> IsSessionActiveAsync(Guid keycloakId)
+    {
+        await using var connection = _connectionFactory.CreateConnection();
+        await using var command = connection.CreateCommand();
+
+        // El usuario de la sesión se identifica por el sub del token de Keycloak (US-125).
+        // Solo la baja (Inactivo) corta la sesión: un usuario «Pendiente» que ya tiene token
+        // cambió su contraseña temporal, porque Keycloak no lo emite antes (US-131).
+        command.CommandText = """
+            SELECT COUNT(1)
+            FROM dbo.Usuario u
+            INNER JOIN dbo.Rol r
+                ON r.RolId = u.RolId
+            WHERE u.KeycloakId = @KeycloakId
+              AND u.Estado <> @InactiveStatus
+              AND r.Estado = 1;
+            """;
+
+        AddParameter(command, "@KeycloakId", keycloakId, DbType.Guid);
+        AddParameter(
+            command,
+            "@InactiveStatus",
+            UserStatuses.Inactive,
+            DbType.String,
+            20);
+
+        return Convert.ToInt32(await command.ExecuteScalarAsync()) == 1;
     }
 
     public async Task<IReadOnlyDictionary<int, string>> GetFullNamesByIdsAsync(
@@ -258,7 +141,49 @@ public sealed class UserRepository : IUserRepository
     }
 
 
-    public async Task<bool> IsActiveAdministratorAsync(int userId)
+    public async Task<IReadOnlyDictionary<Guid, string>> GetFullNamesByPublicIdsAsync(
+        IReadOnlyCollection<Guid> publicIds)
+    {
+        ArgumentNullException.ThrowIfNull(publicIds);
+
+        var ids = publicIds
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToArray();
+
+        if (ids.Length == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        await using var connection = _connectionFactory.CreateConnection();
+        await using var command = connection.CreateCommand();
+        var parameters = new string[ids.Length];
+
+        for (var i = 0; i < ids.Length; i++)
+        {
+            parameters[i] = $"@PublicId{i}";
+            AddParameter(command, parameters[i], ids[i], DbType.Guid);
+        }
+
+        command.CommandText = $"""
+            SELECT PublicId, NombreCompleto
+            FROM dbo.Usuario
+            WHERE PublicId IN ({string.Join(", ", parameters)});
+            """;
+
+        var result = new Dictionary<Guid, string>();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            result[reader.GetGuid(reader.GetOrdinal("PublicId"))] =
+                reader.GetString(reader.GetOrdinal("NombreCompleto"));
+        }
+
+        return result;
+    }
+
+    public async Task<bool> IsActiveAdministratorAsync(Guid userId)
     {
         await using var connection =
             _connectionFactory.CreateConnection();
@@ -271,7 +196,7 @@ public sealed class UserRepository : IUserRepository
             FROM dbo.Usuario u
             INNER JOIN dbo.Rol r
                 ON r.RolId = u.RolId
-            WHERE u.UsuarioId = @UserId
+            WHERE u.KeycloakId = @UserId
             AND u.Estado = @ActiveStatus
             AND r.Nombre = @AdministratorRole
             AND r.Estado = 1;
@@ -281,7 +206,7 @@ public sealed class UserRepository : IUserRepository
             command,
             "@UserId",
             userId,
-            DbType.Int32);
+            DbType.Guid);
 
         AddParameter(
             command,
@@ -446,123 +371,68 @@ public sealed class UserRepository : IUserRepository
     {
         ArgumentNullException.ThrowIfNull(user);
 
-        await using var connection =
-            _connectionFactory.CreateConnection();
-
-        await using var command =
-            connection.CreateCommand();
+        await using var connection = _connectionFactory.CreateConnection();
+        await using var command = connection.CreateCommand();
 
         command.CommandText = """
             INSERT INTO dbo.Usuario
             (
+                KeycloakId,
                 Nombre,
-                Apellido,
+                ApellidoPaterno,
+                ApellidoMaterno,
                 Correo,
                 NombreUsuario,
                 NombreCompleto,
-                PasswordHash,
                 RolId,
                 Estado,
-                TokenActivacionHash,
-                TokenActivacionExpiracion,
-                TokenActivacionFechaUso,
-                UsuarioCreacionId,
-                UsuarioModificacionId
+                UsuarioCreacionId
             )
             OUTPUT INSERTED.PublicId
             VALUES
             (
+                @KeycloakId,
                 @FirstName,
                 @LastName,
+                @MaternalLastName,
                 @Email,
                 @Username,
                 @FullName,
-                NULL,
                 @RoleId,
                 @Status,
-                @ActivationTokenHash,
-                @ActivationTokenExpiresAt,
-                NULL,
-                @CreatedByUserId,
-                NULL
+                @CreatedByUserId
             );
             """;
 
         AddParameter(
             command,
-            "@FirstName",
-            user.FirstName.Trim(),
+            "@KeycloakId",
+            user.KeycloakId.HasValue ? user.KeycloakId.Value : DBNull.Value,
+            DbType.Guid);
+        AddParameter(command, "@FirstName", user.FirstName.Trim(), DbType.String, 100);
+        AddParameter(command, "@LastName", user.LastName.Trim(), DbType.String, 100);
+        AddParameter(
+            command,
+            "@MaternalLastName",
+            string.IsNullOrWhiteSpace(user.MaternalLastName)
+                ? DBNull.Value
+                : user.MaternalLastName.Trim(),
             DbType.String,
             100);
-
-        AddParameter(
-            command,
-            "@LastName",
-            user.LastName.Trim(),
-            DbType.String,
-            100);
-
-        AddParameter(
-            command,
-            "@Email",
-            user.Email.Trim(),
-            DbType.String,
-            254);
-
-        AddParameter(
-            command,
-            "@Username",
-            user.Username.Trim(),
-            DbType.String,
-            50);
-
-        AddParameter(
-            command,
-            "@FullName",
-            user.FullName.Trim(),
-            DbType.String,
-            150);
-
-        AddParameter(
-            command,
-            "@RoleId",
-            user.RoleId,
-            DbType.Int32);
-
-        AddParameter(
-            command,
-            "@Status",
-            UserStatuses.Pending,
-            DbType.String,
-            20);
-
-        AddParameter(
-            command,
-            "@ActivationTokenHash",
-            user.ActivationTokenHash
-                ?? throw new InvalidOperationException(
-                    "El token de activación es obligatorio."),
-            DbType.String,
-            200);
-
-        AddParameter(
-            command,
-            "@ActivationTokenExpiresAt",
-            user.ActivationTokenExpiresAt
-                ?? throw new InvalidOperationException(
-                    "La expiración del token es obligatoria."),
-            DbType.DateTime2);
-
+        AddParameter(command, "@Email", user.Email.Trim(), DbType.String, 254);
+        AddParameter(command, "@Username", user.Username.Trim(), DbType.String, 50);
+        AddParameter(command, "@FullName", user.FullName.Trim(), DbType.String, 150);
+        AddParameter(command, "@RoleId", user.RoleId, DbType.Int32);
+        AddParameter(command, "@Status", UserStatuses.Pending, DbType.String, 20);
         AddParameter(
             command,
             "@CreatedByUserId",
             user.CreatedByUserId.HasValue
                 ? user.CreatedByUserId.Value
                 : DBNull.Value,
-            DbType.Int32);
+            DbType.Guid);
 
         var result = await command.ExecuteScalarAsync();
-
         return (Guid)(result
             ?? throw new InvalidOperationException(
                 "No fue posible obtener el identificador del usuario."));
@@ -585,7 +455,13 @@ public sealed class UserRepository : IUserRepository
                 reader.GetOrdinal("Nombre")),
 
             LastName = reader.GetString(
-                reader.GetOrdinal("Apellido")),
+                reader.GetOrdinal("ApellidoPaterno")),
+
+            MaternalLastName = reader.IsDBNull(
+                    reader.GetOrdinal("ApellidoMaterno"))
+                ? null
+                : reader.GetString(
+                    reader.GetOrdinal("ApellidoMaterno")),
 
             Email = reader.GetString(
                 reader.GetOrdinal("Correo")),
@@ -596,38 +472,16 @@ public sealed class UserRepository : IUserRepository
             FullName = reader.GetString(
                 reader.GetOrdinal("NombreCompleto")),
 
-            PasswordHash =
-                reader.IsDBNull(
-                    reader.GetOrdinal("PasswordHash"))
-                    ? string.Empty
-                    : reader.GetString(
-                        reader.GetOrdinal("PasswordHash")),
+            KeycloakId = reader.IsDBNull(
+                    reader.GetOrdinal("KeycloakId"))
+                ? null
+                : reader.GetGuid(
+                    reader.GetOrdinal("KeycloakId")),
 
             RoleId = roleId,
 
             Status = reader.GetString(
                 reader.GetOrdinal("Estado")),
-
-            ActivationTokenHash =
-                reader.IsDBNull(
-                    reader.GetOrdinal("TokenActivacionHash"))
-                    ? null
-                    : reader.GetString(
-                        reader.GetOrdinal("TokenActivacionHash")),
-
-            ActivationTokenExpiresAt =
-                reader.IsDBNull(
-                    reader.GetOrdinal("TokenActivacionExpiracion"))
-                    ? null
-                    : reader.GetDateTime(
-                        reader.GetOrdinal("TokenActivacionExpiracion")),
-
-            ActivationTokenUsedAt =
-                reader.IsDBNull(
-                    reader.GetOrdinal("TokenActivacionFechaUso"))
-                    ? null
-                    : reader.GetDateTime(
-                        reader.GetOrdinal("TokenActivacionFechaUso")),
 
             CreatedAt = reader.GetDateTime(
                 reader.GetOrdinal("FechaCreacion")),
@@ -643,14 +497,14 @@ public sealed class UserRepository : IUserRepository
                 reader.IsDBNull(
                     reader.GetOrdinal("UsuarioCreacionId"))
                     ? null
-                    : reader.GetInt32(
+                    : reader.GetGuid(
                         reader.GetOrdinal("UsuarioCreacionId")),
 
             ModifiedByUserId =
                 reader.IsDBNull(
                     reader.GetOrdinal("UsuarioModificacionId"))
                     ? null
-                    : reader.GetInt32(
+                    : reader.GetGuid(
                         reader.GetOrdinal("UsuarioModificacionId")),
 
             Role = new Role
@@ -721,59 +575,6 @@ public sealed class UserRepository : IUserRepository
             await command.ExecuteScalarAsync()) > 0;
     }
 
-    public async Task<User?> GetByActivationTokenHashAsync(
-    string tokenHash)
-    {
-        await using var connection =
-            _connectionFactory.CreateConnection();
-
-        await using var command =
-            connection.CreateCommand();
-
-        command.CommandText = """
-            SELECT
-                u.UsuarioId,
-                u.PublicId,
-                u.Nombre,
-                u.Apellido,
-                u.Correo,
-                u.NombreUsuario,
-                u.NombreCompleto,
-                u.PasswordHash,
-                u.RolId,
-                u.Estado,
-                u.TokenActivacionHash,
-                u.TokenActivacionExpiracion,
-                u.TokenActivacionFechaUso,
-                u.FechaCreacion,
-                u.FechaModificacion,
-                u.UsuarioCreacionId,
-                u.UsuarioModificacionId,
-                r.Nombre AS RolNombre,
-                r.Descripcion AS RolDescripcion,
-                r.Estado AS RolEstado
-            FROM dbo.Usuario u
-            INNER JOIN dbo.Rol r
-                ON r.RolId = u.RolId
-            WHERE u.TokenActivacionHash = @TokenHash
-            AND r.Estado = 1;
-            """;
-
-        AddParameter(
-            command,
-            "@TokenHash",
-            tokenHash.Trim(),
-            DbType.String,
-            200);
-
-        await using var reader =
-            await command.ExecuteReaderAsync();
-
-        return await reader.ReadAsync()
-            ? MapUser(reader)
-            : null;
-    }
-
     public async Task<User?> GetByPublicIdAsync(Guid publicId)
     {
         await using var connection =
@@ -786,16 +587,14 @@ public sealed class UserRepository : IUserRepository
                 u.UsuarioId,
                 u.PublicId,
                 u.Nombre,
-                u.Apellido,
+                u.ApellidoPaterno,
+                u.ApellidoMaterno,
                 u.Correo,
                 u.NombreUsuario,
                 u.NombreCompleto,
-                u.PasswordHash,
+                u.KeycloakId,
                 u.RolId,
                 u.Estado,
-                u.TokenActivacionHash,
-                u.TokenActivacionExpiracion,
-                u.TokenActivacionFechaUso,
                 u.FechaCreacion,
                 u.FechaModificacion,
                 u.UsuarioCreacionId,
@@ -822,129 +621,6 @@ public sealed class UserRepository : IUserRepository
             : null;
     }
 
-    public async Task<bool> UpdateActivationTokenAsync(
-        int userId,
-        string tokenHash,
-        DateTime expiresAt,
-        int modifiedByUserId,
-        DateTime modifiedAt)
-    {
-        await using var connection =
-            _connectionFactory.CreateConnection();
-
-        await using var command = connection.CreateCommand();
-
-        command.CommandText = """
-            UPDATE dbo.Usuario
-            SET TokenActivacionHash = @TokenHash,
-                TokenActivacionExpiracion = @ExpiresAt,
-                TokenActivacionFechaUso = NULL,
-                FechaModificacion = @ModifiedAt,
-                UsuarioModificacionId = @ModifiedByUserId
-            WHERE UsuarioId = @UserId
-            AND Estado = @PendingStatus
-            AND TokenActivacionFechaUso IS NULL;
-            """;
-
-        AddParameter(
-            command,
-            "@TokenHash",
-            tokenHash,
-            DbType.String,
-            200);
-
-        AddParameter(
-            command,
-            "@ExpiresAt",
-            expiresAt,
-            DbType.DateTime2);
-
-        AddParameter(
-            command,
-            "@ModifiedAt",
-            modifiedAt,
-            DbType.DateTime2);
-
-        AddParameter(
-            command,
-            "@ModifiedByUserId",
-            modifiedByUserId,
-            DbType.Int32);
-
-        AddParameter(
-            command,
-            "@UserId",
-            userId,
-            DbType.Int32);
-
-        AddParameter(
-            command,
-            "@PendingStatus",
-            UserStatuses.Pending,
-            DbType.String,
-            20);
-
-        return await command.ExecuteNonQueryAsync() == 1;
-    }
-
-    public async Task<bool> ActivateAsync(
-        int userId,
-        string passwordHash,
-        DateTime activatedAt)
-    {
-        await using var connection =
-            _connectionFactory.CreateConnection();
-
-        await using var command =
-            connection.CreateCommand();
-
-        command.CommandText = """
-            UPDATE dbo.Usuario
-            SET PasswordHash = @PasswordHash,
-                Estado = @ActiveStatus,
-                TokenActivacionFechaUso = @ActivatedAt,
-                FechaModificacion = @ActivatedAt
-            WHERE UsuarioId = @UserId
-            AND Estado = @PendingStatus
-            AND TokenActivacionFechaUso IS NULL
-            AND TokenActivacionExpiracion > @ActivatedAt;
-            """;
-
-        AddParameter(
-            command,
-            "@PasswordHash",
-            passwordHash,
-            DbType.String,
-            500);
-
-        AddParameter(
-            command,
-            "@ActiveStatus",
-            UserStatuses.Active,
-            DbType.String,
-            20);
-
-        AddParameter(
-            command,
-            "@PendingStatus",
-            UserStatuses.Pending,
-            DbType.String,
-            20);
-
-        AddParameter(
-            command,
-            "@ActivatedAt",
-            activatedAt,
-            DbType.DateTime2);
-
-        AddParameter(
-            command,
-            "@UserId",
-            userId,
-            DbType.Int32);
-
-        return await command.ExecuteNonQueryAsync() == 1;
-    }
     public async Task<IReadOnlyList<UserDeactivationData>>
         GetUsersForDeactivationAsync()
     {
@@ -962,6 +638,7 @@ public sealed class UserRepository : IUserRepository
             SELECT
                 u.UsuarioId,
                 u.PublicId,
+                u.KeycloakId,
                 u.Estado,
                 r.Nombre AS Rol,
                 r.Estado AS RolActivo
@@ -984,6 +661,9 @@ public sealed class UserRepository : IUserRepository
                         reader.GetOrdinal("UsuarioId")),
                     reader.GetGuid(
                         reader.GetOrdinal("PublicId")),
+                    reader.IsDBNull(reader.GetOrdinal("KeycloakId"))
+                        ? null
+                        : reader.GetGuid(reader.GetOrdinal("KeycloakId")),
                     reader.GetString(
                         reader.GetOrdinal("Estado")),
                     reader.GetString(
@@ -997,7 +677,7 @@ public sealed class UserRepository : IUserRepository
 
     public async Task<bool> DeactivateAsync(
         int userId,
-        int modifiedByUserId)
+        Guid modifiedByUserId)
     {
         await using var connection =
             _connectionFactory.CreateConnection();
@@ -1031,7 +711,7 @@ public sealed class UserRepository : IUserRepository
             command,
             "@ModifiedByUserId",
             modifiedByUserId,
-            DbType.Int32);
+            DbType.Guid);
 
         AddParameter(
             command,

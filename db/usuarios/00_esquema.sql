@@ -1,9 +1,15 @@
 -- =========================================================
 -- MS Usuarios · SQL Server · LibreriaUsuarios (US-111)
 -- Esquema inicial de la sección 5 del planning. Idempotente.
--- Sin token de activación: el primer ingreso usa contraseña
--- temporal (ContrasenaTemporalExpiracion) y Estado = 'Pendiente'.
+-- US-124/125: las credenciales viven solo en Keycloak. KeycloakId
+-- guarda el sub del token; no hay columnas de contraseña.
 -- =========================================================
+
+-- UX_Usuario_KeycloakId es un índice filtrado: crearlo y escribir en
+-- dbo.Usuario exige QUOTED_IDENTIFIER ON. ADO.NET lo trae activo;
+-- sqlcmd no, así que se fija aquí para toda la sesión.
+SET QUOTED_IDENTIFIER ON;
+GO
 
 IF DB_ID('LibreriaUsuarios') IS NULL
 BEGIN
@@ -35,8 +41,7 @@ GO
 
 -- ---------------------------------------------------------
 -- Usuario
--- PasswordHash guarda el hash Argon2id con sal aleatoria;
--- nunca la contraseña.
+-- KeycloakId: id del usuario en Keycloak (el sub del token), sin FK.
 -- La auditoría guarda el PublicId (sub del JWT) sin FK, igual
 -- que en las otras tres BD.
 -- ---------------------------------------------------------
@@ -46,14 +51,13 @@ BEGIN
         UsuarioId                    INT IDENTITY(1,1) PRIMARY KEY,
         PublicId                     UNIQUEIDENTIFIER NOT NULL
             CONSTRAINT DF_Usuario_PublicId DEFAULT NEWID(),
+        KeycloakId                   UNIQUEIDENTIFIER NULL,
         NombreUsuario                NVARCHAR(50) NOT NULL,
         Nombre                       NVARCHAR(100) NOT NULL,
         ApellidoPaterno              NVARCHAR(100) NOT NULL,
         ApellidoMaterno              NVARCHAR(100) NULL,
         NombreCompleto               NVARCHAR(150) NOT NULL,
         Correo                       NVARCHAR(254) NOT NULL,
-        PasswordHash                 NVARCHAR(500) NULL,
-        ContrasenaTemporalExpiracion DATETIME2 NULL,
         RolId                        INT NOT NULL,
         Estado                       NVARCHAR(20) NOT NULL
             CONSTRAINT DF_Usuario_Estado DEFAULT (N'Pendiente'),
@@ -76,5 +80,42 @@ BEGIN
         CONSTRAINT CK_Usuario_Estado
             CHECK (Estado IN (N'Pendiente', N'Activo', N'Inactivo'))
     );
+END
+GO
+
+-- ---------------------------------------------------------
+-- US-124: KeycloakId en bases creadas antes de esta historia.
+-- Único solo cuando tiene valor (los usuarios aún sin alta en
+-- Keycloak quedan en NULL).
+-- ---------------------------------------------------------
+IF COL_LENGTH('dbo.Usuario', 'KeycloakId') IS NULL
+BEGIN
+    ALTER TABLE dbo.Usuario ADD KeycloakId UNIQUEIDENTIFIER NULL;
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+               WHERE name = 'UX_Usuario_KeycloakId'
+                 AND object_id = OBJECT_ID('dbo.Usuario'))
+BEGIN
+    CREATE UNIQUE INDEX UX_Usuario_KeycloakId
+        ON dbo.Usuario (KeycloakId)
+        WHERE KeycloakId IS NOT NULL;
+END
+GO
+
+-- ---------------------------------------------------------
+-- US-125: se eliminan las columnas del login propio en bases
+-- creadas antes (las credenciales viven solo en Keycloak).
+-- ---------------------------------------------------------
+IF COL_LENGTH('dbo.Usuario', 'PasswordHash') IS NOT NULL
+BEGIN
+    ALTER TABLE dbo.Usuario DROP COLUMN PasswordHash;
+END
+GO
+
+IF COL_LENGTH('dbo.Usuario', 'ContrasenaTemporalExpiracion') IS NOT NULL
+BEGIN
+    ALTER TABLE dbo.Usuario DROP COLUMN ContrasenaTemporalExpiracion;
 END
 GO

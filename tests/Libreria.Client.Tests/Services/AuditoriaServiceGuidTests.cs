@@ -1,5 +1,6 @@
 using System.Net;
-using Libreria.Client.Clients.Usuarios;
+using Libreria.Client.Adapters.Usuarios;
+using Libreria.Client.DTOs.Productos;
 using Libreria.Client.Services.Auditoria;
 using Libreria.Client.Tests.Clients;
 
@@ -19,7 +20,7 @@ public sealed class AuditoriaServiceGuidTests
     private static (AuditoriaService Servicio, ManejadorHttpFalso Manejador) Crear(HttpStatusCode estado, string cuerpo = "")
     {
         var manejador = new ManejadorHttpFalso(estado, cuerpo);
-        var usuarios = new ServicioUsuariosClient(ManejadorHttpFalso.CrearHttp(manejador));
+        var usuarios = new UsuariosApiAdapter(ManejadorHttpFalso.CrearFabrica(manejador));
         return (new AuditoriaService(usuarios), manejador);
     }
 
@@ -72,5 +73,43 @@ public sealed class AuditoriaServiceGuidTests
 
         Assert.Null(manejador.UltimaPeticion);
         Assert.Null(auditoria.CreadoPor);
+    }
+
+
+    [Fact]
+    public async Task Historico_resuelve_GUID_del_usuario_a_nombre()
+    {
+        var (servicio, manejador) = Crear(
+            HttpStatusCode.OK,
+            $$"""{"{{Admin}}":"Administrador Sistema"}""");
+
+        var historial = new[]
+        {
+            new HistoricoCostoDto(
+                Alta,
+                11m,
+                10m,
+                1m,
+                null,
+                "Prueba US-123",
+                Admin.ToString())
+        };
+
+        var resultado =
+            await servicio
+                .ResolverUsuariosHistoricoAsync(
+                    historial);
+
+        var registro = Assert.Single(resultado);
+
+        Assert.Equal(
+            "Administrador Sistema",
+            registro.RegistradoPor);
+
+        Assert.Contains(
+            $"ids={Admin}",
+            manejador.UltimaPeticion!
+                .RequestUri!
+                .Query);
     }
 }

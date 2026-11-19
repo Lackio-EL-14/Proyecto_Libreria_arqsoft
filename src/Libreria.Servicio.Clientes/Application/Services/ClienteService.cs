@@ -1,4 +1,3 @@
-using Libreria.Servicio.Clientes.Application.Comun;
 using Libreria.Servicio.Clientes.Application.Factories;
 using Libreria.Servicio.Clientes.Application.Models;
 using Libreria.Servicio.Clientes.Application.Ports.Primary;
@@ -16,7 +15,6 @@ public class ClienteService : IClienteService
 {
     public const string MensajeNoEncontrado = "El cliente no existe.";
     public const string MensajeInactivo = "El cliente está inactivo. Reactívelo antes de editarlo.";
-    public const string MensajeCiNitBusqueda = "Ingrese el CI/NIT que desea buscar.";
 
     private readonly IClienteRepository _repositorio;
     private readonly ClienteValidator _validador;
@@ -42,21 +40,6 @@ public class ClienteService : IClienteService
         return cliente is null
             ? Result<ClienteDetalle>.Fallo(Result.NoEncontrado(MensajeNoEncontrado))
             : ClienteDetalle.Desde(cliente);
-    }
-
-    public async Task<Result<IReadOnlyList<ClienteVentaItem>>> BuscarParaVentaAsync(string? ciNit)
-    {
-        if (string.IsNullOrWhiteSpace(ciNit))
-        {
-            return Result<IReadOnlyList<ClienteVentaItem>>.Fallo(
-                Result.Validacion(ClienteValidator.CampoCiNit, MensajeCiNitBusqueda));
-        }
-
-        var clientes = await _repositorio.BuscarActivosPorCiNitAsync(ciNit.Trim());
-
-        return Result<IReadOnlyList<ClienteVentaItem>>.Exito(clientes
-            .Select(cliente => new ClienteVentaItem(cliente.PublicId, cliente.CiNit, cliente.RazonSocial))
-            .ToList());
     }
 
     public async Task<Result<ClienteDetalle>> RegistrarAsync(ClienteInput input)

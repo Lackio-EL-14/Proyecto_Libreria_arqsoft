@@ -1,246 +1,84 @@
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Application.UseCases.Users;
 using Libreria.Servicio.Usuarios.Application.Validation;
+using Libreria.Servicio.Usuarios.Infrastructure.Identidad;
 using Libreria.Servicio.Usuarios.Tests.TestDoubles;
 
 namespace Libreria.Servicio.Usuarios.Tests;
 
+/// <summary>Cambio de contraseña contra el proveedor de identidad (Keycloak simulado en memoria).</summary>
 public sealed class ChangePasswordUseCaseTests
 {
+    private static readonly Guid Vendedor = ProveedorIdentidadEnMemoria.IdVendedorSemilla;
+    private const string Actual = "Actual#2026";
+
     [Fact]
-    public async Task AuthenticatedUser_WithValidData_ChangesPassword()
+    public async Task DatosValidos_CambiaLaContrasenaEnElProveedor()
     {
-        var repository = new FakeUserRepository
-        {
-            ActivePasswordHash = "hash-anterior"
-        };
+        var (useCase, identidad) = await CrearAsync();
 
-        var currentUser = new FakeCurrentUser
-        {
-            UserId = 10,
-            Username = "usuario"
-        };
+        var resultado = await useCase.ExecuteAsync(new ChangePasswordRequest(Actual, "Nueva#2026x", "Nueva#2026x"));
 
-        var hasher = new FakePasswordHasher
-        {
-            VerifyResult = true,
-            GeneratedHash = "hash-nuevo"
-        };
-
-        var useCase = CreateUseCase(
-            repository,
-            currentUser,
-            hasher);
-
-        var result = await useCase.ExecuteAsync(
-            new ChangePasswordRequest(
-                "Actual1!",
-                "Nueva123!",
-                "Nueva123!"));
-
-        Assert.True(result);
-        Assert.Equal(1, repository.UpdatePasswordCalls);
-        Assert.Equal(10, repository.UpdatedPasswordUserId);
-        Assert.Equal(
-            "hash-anterior",
-            repository.PreviousPasswordHash);
-        Assert.Equal(
-            "hash-nuevo",
-            repository.NewPasswordHash);
+        Assert.True(resultado!.IsSuccess);
+        Assert.True((await identidad.VerificarContrasenaAsync("vendedor", "Nueva#2026x")).IsSuccess);
+        Assert.False((await identidad.TieneCambioDeContrasenaPendienteAsync(Vendedor)).Valor);
     }
 
     [Fact]
-    public async Task UnauthenticatedUser_CannotChangePassword()
+    public async Task SinUsuarioActual_DevuelveNull()
     {
-        var repository = new FakeUserRepository();
-        var currentUser = new FakeCurrentUser();
-        var hasher = new FakePasswordHasher();
+        var (useCase, _) = await CrearAsync(new FakeCurrentUser());
 
-        var useCase = CreateUseCase(
-            repository,
-            currentUser,
-            hasher);
+        Assert.Null(await useCase.ExecuteAsync(new ChangePasswordRequest(Actual, "Nueva#2026x", "Nueva#2026x")));
+    }
 
-        var result = await useCase.ExecuteAsync(
-            new ChangePasswordRequest(
-                "Actual1!",
-                "Nueva123!",
-                "Nueva123!"));
+    [Theory]
+    [InlineData("", "Nueva#2026x", "Nueva#2026x", "Ingrese su contraseña actual.")]
+    [InlineData(Actual, "Nueva#2026x", "Otra#2026xx", "La confirmación no coincide con la nueva contraseña.")]
+    [InlineData(Actual, Actual, Actual, "La nueva contraseña debe ser distinta de la actual.")]
+    [InlineData(Actual, "Vendedor", "Vendedor", "La contraseña debe contener al menos un número.")]
+    public async Task EntradaInvalida_DevuelveMensaje_SinTocarElProveedor(string actual, string nueva, string confirmacion, string mensaje)
+    {
+        var (useCase, identidad) = await CrearAsync();
 
-        Assert.False(result);
-        Assert.Equal(0, repository.UpdatePasswordCalls);
+        var resultado = await useCase.ExecuteAsync(new ChangePasswordRequest(actual, nueva, confirmacion));
+
+        Assert.True(resultado!.IsError);
+        Assert.Contains(mensaje, Assert.Single(resultado.Errors()));
+        Assert.True((await identidad.VerificarContrasenaAsync("vendedor", Actual)).IsSuccess);
     }
 
     [Fact]
-    public async Task EmptyCurrentPassword_IsRejected()
+    public async Task NuevaIgualAlUsuario_SeRechaza()
     {
-        var useCase = CreateUseCase(
-            new FakeUserRepository(),
-            new FakeCurrentUser { UserId = 10 },
-            new FakePasswordHasher());
+        var (useCase, _) = await CrearAsync(new FakeCurrentUser { UserId = Vendedor, Username = "Vendedor#2026" });
 
-        var exception =
-            await Assert.ThrowsAsync<ArgumentException>(
-                () => useCase.ExecuteAsync(
-                    new ChangePasswordRequest(
-                        string.Empty,
-                        "Nueva123!",
-                        "Nueva123!")));
+        var resultado = await useCase.ExecuteAsync(new ChangePasswordRequest(Actual, "Vendedor#2026", "Vendedor#2026"));
 
-        Assert.Equal(
-            "Ingrese su contraseña actual.",
-            exception.Message);
+        Assert.Equal("La contraseña no puede ser igual al nombre de usuario.", Assert.Single(resultado!.Errors()));
     }
 
     [Fact]
-    public async Task ConfirmationDifferentFromNewPassword_IsRejected()
+    public async Task ContrasenaActualIncorrecta_SeRechaza()
     {
-        var useCase = CreateUseCase(
-            new FakeUserRepository(),
-            new FakeCurrentUser { UserId = 10 },
-            new FakePasswordHasher());
+        var (useCase, identidad) = await CrearAsync();
 
-        var exception =
-            await Assert.ThrowsAsync<ArgumentException>(
-                () => useCase.ExecuteAsync(
-                    new ChangePasswordRequest(
-                        "Actual1!",
-                        "Nueva123!",
-                        "Otra123!")));
+        var resultado = await useCase.ExecuteAsync(new ChangePasswordRequest("Incorrecta#1", "Nueva#2026x", "Nueva#2026x"));
 
-        Assert.Equal(
-            "La confirmación no coincide con la nueva contraseña.",
-            exception.Message);
+        Assert.Equal(MensajesIdentidad.ContrasenaActualIncorrecta, Assert.Single(resultado!.Errors()));
+        Assert.True((await identidad.VerificarContrasenaAsync("vendedor", Actual)).IsSuccess);
     }
 
-    [Fact]
-    public async Task WeakNewPassword_IsRejected()
+    private static async Task<(ChangePasswordUseCase, ProveedorIdentidadEnMemoria)> CrearAsync(FakeCurrentUser? usuario = null)
     {
-        var useCase = CreateUseCase(
-            new FakeUserRepository(),
-            new FakeCurrentUser { UserId = 10 },
-            new FakePasswordHasher());
+        var identidad = new ProveedorIdentidadEnMemoria();
+        await identidad.FijarContrasenaAsync(Vendedor, Actual, temporal: false);
 
-        var exception =
-            await Assert.ThrowsAsync<ArgumentException>(
-                () => useCase.ExecuteAsync(
-                    new ChangePasswordRequest(
-                        "Actual1!",
-                        "abc",
-                        "abc")));
-
-        Assert.Contains(
-            "La contraseña debe tener al menos 8 caracteres.",
-            exception.Message);
-    }
-
-    [Fact]
-    public async Task IncorrectCurrentPassword_IsRejected()
-    {
-        var repository = new FakeUserRepository
-        {
-            ActivePasswordHash = "hash-anterior"
-        };
-
-        var hasher = new FakePasswordHasher
-        {
-            VerifyResult = false
-        };
-
-        var useCase = CreateUseCase(
-            repository,
-            new FakeCurrentUser { UserId = 10 },
-            hasher);
-
-        var exception =
-            await Assert.ThrowsAsync<ArgumentException>(
-                () => useCase.ExecuteAsync(
-                    new ChangePasswordRequest(
-                        "Incorrecta1!",
-                        "Nueva123!",
-                        "Nueva123!")));
-
-        Assert.Equal(
-            "La contraseña actual es incorrecta.",
-            exception.Message);
-
-        Assert.Equal(0, repository.UpdatePasswordCalls);
-    }
-
-    [Fact]
-    public async Task NewPasswordEqualToCurrentPassword_IsRejected()
-    {
-        var repository = new FakeUserRepository
-        {
-            ActivePasswordHash = "hash-anterior"
-        };
-
-        var hasher = new FakePasswordHasher
-        {
-            VerifyResult = true
-        };
-
-        var useCase = CreateUseCase(
-            repository,
-            new FakeCurrentUser { UserId = 10 },
-            hasher);
-
-        var exception =
-            await Assert.ThrowsAsync<ArgumentException>(
-                () => useCase.ExecuteAsync(
-                    new ChangePasswordRequest(
-                        "Actual123!",
-                        "Actual123!",
-                        "Actual123!")));
-
-        Assert.Equal(
-            "La nueva contraseña debe ser distinta de la actual.",
-            exception.Message);
-
-        Assert.Equal(0, repository.UpdatePasswordCalls);
-    }
-
-    [Fact]
-    public async Task RepositoryCannotUpdate_ThrowsInvalidOperation()
-    {
-        var repository = new FakeUserRepository
-        {
-            ActivePasswordHash = "hash-anterior",
-            UpdatePasswordResult = false
-        };
-
-        var hasher = new FakePasswordHasher
-        {
-            VerifyResult = true
-        };
-
-        var useCase = CreateUseCase(
-            repository,
-            new FakeCurrentUser { UserId = 10 },
-            hasher);
-
-        var exception =
-            await Assert.ThrowsAsync<InvalidOperationException>(
-                () => useCase.ExecuteAsync(
-                    new ChangePasswordRequest(
-                        "Actual1!",
-                        "Nueva123!",
-                        "Nueva123!")));
-
-        Assert.Equal(
-            "No fue posible cambiar la contraseña. Intente nuevamente.",
-            exception.Message);
-    }
-
-    private static ChangePasswordUseCase CreateUseCase(
-        FakeUserRepository repository,
-        FakeCurrentUser currentUser,
-        FakePasswordHasher passwordHasher)
-    {
-        return new ChangePasswordUseCase(
-            repository,
-            currentUser,
-            passwordHasher,
+        var useCase = new ChangePasswordUseCase(
+            identidad,
+            usuario ?? new FakeCurrentUser { UserId = Vendedor, Username = "vendedor" },
             new PasswordPolicyValidator());
+
+        return (useCase, identidad);
     }
 }

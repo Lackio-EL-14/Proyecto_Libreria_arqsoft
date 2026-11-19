@@ -1,5 +1,5 @@
 using Libreria.Client.Clients.Common;
-using Libreria.Client.Clients.Usuarios;
+using Libreria.Client.Adapters.Usuarios;
 using Libreria.Client.DTOs.Usuarios;
 using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authorization;
@@ -12,11 +12,11 @@ namespace Libreria.Client.Pages.Usuarios;
 [Authorize(Policy = PoliticasAcceso.SoloAdministrador)]
 public class CreateModel : PageModel
 {
-    private readonly IServicioUsuariosClient _usuariosClient;
+    private readonly IUsuariosApi _usuariosClient;
     private readonly ILogger<CreateModel> _logger;
 
     public CreateModel(
-        IServicioUsuariosClient usuariosClient,
+        IUsuariosApi usuariosClient,
         ILogger<CreateModel> logger)
     {
         _usuariosClient = usuariosClient;
@@ -28,6 +28,9 @@ public class CreateModel : PageModel
 
     [BindProperty]
     public string Apellido { get; set; } = string.Empty;
+
+    [BindProperty]
+    public string ApellidoMaterno { get; set; } = string.Empty;
 
     [BindProperty]
     public string Correo { get; set; } = string.Empty;
@@ -74,7 +77,8 @@ public class CreateModel : PageModel
                         Nombre,
                         Apellido,
                         Correo,
-                        Rol));
+                        Rol,
+                        ApellidoMaterno));
 
             if (result is null)
             {
@@ -89,15 +93,43 @@ public class CreateModel : PageModel
 
             MensajeExito =
                 $"Usuario {NombreUsuario} creado correctamente. " +
-                "Se generó el enlace de activación para el correo registrado.";
+                "La cuenta permanece pendiente hasta configurar el primer ingreso.";
 
             return Page();
         }
         catch (ApiClientException error)
         {
-            ModelState.AddModelError(
-                string.Empty,
-                error.Message);
+            var seMostroError = false;
+
+            if (error.Errors is not null)
+            {
+                foreach (var (campo, mensajes) in error.Errors)
+                {
+                    // La API usa nombres en inglés y la página, propiedades en español.
+                    var campoVista = campo switch
+                    {
+                        "FirstName" => nameof(Nombre),
+                        "LastName" => nameof(Apellido),
+                        "MaternalLastName" => nameof(ApellidoMaterno),
+                        "Email" => nameof(Correo),
+                        "Role" => nameof(Rol),
+                        _ => string.Empty
+                    };
+
+                    foreach (var mensaje in mensajes)
+                    {
+                        if (string.IsNullOrWhiteSpace(mensaje)) continue;
+
+                        ModelState.AddModelError(campoVista, mensaje);
+                        seMostroError = true;
+                    }
+                }
+            }
+
+            if (!seMostroError)
+            {
+                ModelState.AddModelError(string.Empty, error.Message);
+            }
 
             return Page();
         }

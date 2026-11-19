@@ -21,7 +21,7 @@ public sealed class ConnectionStringSingleton
     public string LibraryDb =>
         _libraryDb
         ?? throw new InvalidOperationException(
-            "La cadena de conexión 'LibreriaDb' no fue configurada.");
+            "La cadena de conexión 'UsuariosDb' no fue configurada.");
 
     public void Configure(string connectionString)
     {

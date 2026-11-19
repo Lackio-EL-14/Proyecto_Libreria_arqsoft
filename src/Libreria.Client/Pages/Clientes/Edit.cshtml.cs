@@ -1,4 +1,4 @@
-using Libreria.Client.Clients.Clientes;
+using Libreria.Client.Adapters.Clientes;
 using Libreria.Client.DTOs.Clientes;
 using Libreria.Client.DTOs.Common;
 using Libreria.Client.Services.Auditoria;
@@ -9,10 +9,10 @@ namespace Libreria.Client.Pages.Clientes;
 
 public class EditModel : PageModel
 {
-    private readonly IServicioClientesClient _clientes;
+    private readonly IClientesApi _clientes;
     private readonly IAuditoriaService _auditoria;
 
-    public EditModel(IServicioClientesClient clientes, IAuditoriaService auditoria)
+    public EditModel(IClientesApi clientes, IAuditoriaService auditoria)
     {
         _clientes = clientes;
         _auditoria = auditoria;

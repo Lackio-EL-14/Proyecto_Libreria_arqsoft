@@ -1,4 +1,4 @@
-using Libreria.Client.Clients.Productos;
+using Libreria.Client.Adapters.Productos;
 using Libreria.Client.DTOs.Common;
 using Libreria.Client.DTOs.Productos;
 using Microsoft.AspNetCore.Mvc;
@@ -8,9 +8,9 @@ namespace Libreria.Client.Pages.Marcas;
 
 public class ReactivarModel : PageModel
 {
-    private readonly IServicioProductosClient _productos;
+    private readonly IProductosApi _productos;
 
-    public ReactivarModel(IServicioProductosClient productos)
+    public ReactivarModel(IProductosApi productos)
     {
         _productos = productos;
     }

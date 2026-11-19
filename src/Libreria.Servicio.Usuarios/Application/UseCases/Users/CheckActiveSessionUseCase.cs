@@ -1,8 +1,9 @@
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Primary;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Users;
 
-public sealed class CheckActiveSessionUseCase
+public sealed class CheckActiveSessionUseCase : ICheckActiveSessionUseCase
 {
     private readonly IUserRepository _userRepository;
 
@@ -20,5 +21,15 @@ public sealed class CheckActiveSessionUseCase
         }
 
         return _userRepository.IsSessionActiveAsync(userId);
+    }
+
+    public Task<bool> ExecuteAsync(Guid publicId)
+    {
+        if (publicId == Guid.Empty)
+        {
+            return Task.FromResult(false);
+        }
+
+        return _userRepository.IsSessionActiveAsync(publicId);
     }
 }

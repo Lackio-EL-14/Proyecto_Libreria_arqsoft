@@ -1,5 +1,5 @@
 using System.Transactions;
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 
 namespace Libreria.Servicio.Usuarios.Infrastructure.Transactions;
 

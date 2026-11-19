@@ -6,5 +6,5 @@ namespace Libreria.Client.Seguridad;
 public static class PoliticasAcceso
 {
     public const string SoloAdministrador = "SoloAdministrador";
-    public const string Ventas = "Ventas";
+    public const string GestionClientes = "GestionClientes";
 }

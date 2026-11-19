@@ -33,6 +33,12 @@
                 </div>
 
                 <div class="mb-3">
+                    <label asp-for="ApellidoMaterno" class="form-label">Apellido materno (opcional)</label>
+                    <input asp-for="ApellidoMaterno" class="form-control" />
+                    <span asp-validation-for="ApellidoMaterno" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
                     <label asp-for="Correo" class="form-label"></label>
                     <input asp-for="Correo"
                            type="email"

@@ -1,5 +1,5 @@
 using Libreria.Client.DTOs.Common;
-using Libreria.Client.Clients.Productos;
+using Libreria.Client.Adapters.Productos;
 using Libreria.Client.Services.Auditoria;
 using Libreria.Client.DTOs.Productos;
 using Microsoft.AspNetCore.Mvc;
@@ -9,11 +9,11 @@ namespace Libreria.Client.Pages.Productos;
 
 public class DetailsModel : PageModel
 {
-    private readonly IServicioProductosClient _productos;
+    private readonly IProductosApi _productos;
     private readonly IAuditoriaService _auditoriaService;
 
     public DetailsModel(
-        IServicioProductosClient productos,
+        IProductosApi productos,
         IAuditoriaService auditoriaService)
     {
         _productos = productos;
@@ -24,6 +24,7 @@ public class DetailsModel : PageModel
 
     public ProductoDetalleDto Producto { get; private set; } = null!;
     public AuditoriaRegistroDto? Auditoria { get; private set; }
+    public HistoricoProductoDto? Historico { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
@@ -40,6 +41,23 @@ public class DetailsModel : PageModel
             producto.FechaCreacion,
             producto.UsuarioModificacionId,
             producto.FechaModificacion);
+
+        var historico =
+            await _productos.ObtenerHistoricoAsync(id);
+
+        if (historico is not null)
+        {
+            var historial =
+                await _auditoriaService
+                    .ResolverUsuariosHistoricoAsync(
+                        historico.Historial);
+
+            Historico = historico with
+            {
+                Historial = historial
+            };
+        }
+
         return Page();
     }
 

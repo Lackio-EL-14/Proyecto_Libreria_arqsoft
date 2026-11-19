@@ -81,6 +81,132 @@
         <partial name="_AuditoriaInfo" model="Model.Auditoria" />
     }
 
+
+    <div style="border-top: 1px solid var(--color-border); padding-top: 1.5rem; margin-top: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;">
+            <div>
+                <h2 style="margin: 0; font-size: 1.15rem;">
+                    Histórico de costos
+                </h2>
+                <p style="color: var(--color-secondary); margin: 0.25rem 0 0;">
+                    Variaciones registradas del costo de adquisición.
+                </p>
+            </div>
+
+            <a asp-page="/Historico/Index"
+               asp-route-publicId="@Model.PublicId"
+               class="btn btn--secondary">
+                Ver histórico completo
+            </a>
+        </div>
+
+        @if (Model.Historico is null ||
+             Model.Historico.Historial.Count == 0)
+        {
+            <div style="padding: 1.25rem; text-align: center; color: var(--color-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-base);">
+                No existen registros históricos de costo.
+            </div>
+        }
+        else
+        {
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Costo anterior</th>
+                            <th>Costo nuevo</th>
+                            <th>Variación</th>
+                            <th>Vencimiento</th>
+                            <th>Motivo</th>
+                            <th>Registrado por</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var item in Model.Historico.Historial)
+                        {
+                            <tr>
+                                <td>
+                                    @item.FechaVigencia.ToString(
+                                        "dd/MM/yyyy HH:mm")
+                                </td>
+
+                                <td>
+                                    @if (item.CostoAnterior.HasValue)
+                                    {
+                                        <span>
+                                            Bs. @item.CostoAnterior.Value.ToString("0.00")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color: var(--color-secondary);">
+                                            —
+                                        </span>
+                                    }
+                                </td>
+
+                                <td style="font-weight: 600;">
+                                    Bs. @item.CostoNuevo.ToString("0.00")
+                                </td>
+
+                                <td>
+                                    @if (item.VariacionAbsoluta.HasValue)
+                                    {
+                                        var variacion =
+                                            item.VariacionAbsoluta.Value;
+
+                                        if (variacion > 0)
+                                        {
+                                            <span style="color: #991B1B; font-weight: 600;">
+                                                +@variacion.ToString("0.00")
+                                            </span>
+                                        }
+                                        else if (variacion < 0)
+                                        {
+                                            <span style="color: var(--color-accent); font-weight: 600;">
+                                                @variacion.ToString("0.00")
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span>0.00</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span style="color: var(--color-secondary);">
+                                            —
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @(item.FechaVencimiento.HasValue
+                                        ? item.FechaVencimiento.Value.ToString("dd/MM/yyyy")
+                                        : "—")
+                                </td>
+
+                                <td>
+                                    @(string.IsNullOrWhiteSpace(item.Motivo)
+                                        ? "—"
+                                        : item.Motivo)
+                                </td>
+
+                                <td>
+                                    @(string.IsNullOrWhiteSpace(item.RegistradoPor)
+                                        ? "—"
+                                        : item.RegistradoPor)
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
     <div style="border-top: 1px solid var(--color-border); padding-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
         <a asp-page="Edit" asp-route-id="@Model.PublicId" class="btn btn--primary">Editar producto</a>
 

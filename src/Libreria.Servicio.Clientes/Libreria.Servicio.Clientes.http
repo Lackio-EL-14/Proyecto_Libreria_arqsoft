@@ -23,13 +23,7 @@ GET {{host}}/api/clientes?estado=false
 ### Detalle (200) — un GUID inexistente da 404
 GET {{host}}/api/clientes/{{cliente}}
 
-### Búsqueda para la venta: solo activos por prefijo de CI/NIT (1234567 está inactivo → [])
-GET {{host}}/api/clientes/buscar?ciNit=1234567
-
-### Búsqueda para la venta: sin CI/NIT → 400
-GET {{host}}/api/clientes/buscar?ciNit=
-
-### Alta (201 + Location; cuerpo ClienteRegistroResult). Repetirla da 409 por CI/NIT duplicado
+### Alta (201 + Location y cuerpo ClienteDetalle). Repetirla da 409 por CI/NIT duplicado
 # @name alta
 POST {{host}}/api/clientes
 Content-Type: application/json
@@ -51,7 +45,7 @@ Content-Type: application/json
 }
 
 ### Edición del cliente recién creado (200). Con el CI/NIT de otro cliente → 409
-PUT {{host}}/api/clientes/{{alta.response.body.$.cliente.publicId}}
+PUT {{host}}/api/clientes/{{alta.response.body.$.publicId}}
 Content-Type: application/json
 
 {
@@ -60,14 +54,14 @@ Content-Type: application/json
   "correo": null
 }
 
-### Baja lógica (204): sale de /buscar, la fila sigue en la BD
-PATCH {{host}}/api/clientes/{{alta.response.body.$.cliente.publicId}}/estado
+### Baja lógica (204): deja de aparecer en el listado activo, pero la fila sigue en la BD
+PATCH {{host}}/api/clientes/{{alta.response.body.$.publicId}}/estado
 Content-Type: application/json
 
 { "activo": false }
 
 ### Reactivación (204)
-PATCH {{host}}/api/clientes/{{alta.response.body.$.cliente.publicId}}/estado
+PATCH {{host}}/api/clientes/{{alta.response.body.$.publicId}}/estado
 Content-Type: application/json
 
 { "activo": true }

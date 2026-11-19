@@ -1,7 +1,14 @@
 @host = http://localhost:5104
+@producto = d0000000-0000-0000-0000-000000000001
 
-### Salud del servicio
+### Salud
 GET {{host}}/salud
 
-### Swagger
-GET {{host}}/swagger/index.html
+### Listado y filtros
+GET {{host}}/api/productos?estado=true
+
+### Detalle
+GET {{host}}/api/productos/{{producto}}
+
+### Formulario (categorías y marcas)
+GET {{host}}/api/productos/formulario

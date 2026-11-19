@@ -1,0 +1,9 @@
+@host = http://localhost:5101
+GET {{host}}/salud
+###
+GET {{host}}/api/proveedores
+###
+POST {{host}}/api/proveedores
+Content-Type: application/json
+
+{"nit":"1020304050","razonSocial":"Proveedor de prueba","telefono":"70000000","correo":"contacto@proveedor.bo","nombreContacto":"Ana Pérez","cargoContacto":"Ejecutiva","telefonoContacto":"71111111","correoContacto":"ana@proveedor.bo"}

@@ -1,6 +1,7 @@
 @gateway = http://localhost:5080
-# Token de ejemplo: hasta US-126 el gateway no lo valida, solo lo reenvía al MS.
-@token = token-de-desarrollo
+# Token de Keycloak: obténgalo con libreria-pruebas (docs/contratos/keycloak.md §5) y péguelo
+# aquí SOLO en local; no lo suba. El gateway lo valida (US-126): sin él, todo /api/* responde 401.
+@token = <pegue-aquí-el-token>
 
 ### Salud del gateway
 GET {{gateway}}/salud
@@ -11,12 +12,8 @@ GET {{gateway}}/salud
 GET {{gateway}}/api/clientes
 Authorization: Bearer {{token}}
 
-### Ventas (5101)
-GET {{gateway}}/api/ventas/ping
-Authorization: Bearer {{token}}
-
-### Ventas: listado
-GET {{gateway}}/api/ventas
+### Proveedores (5101)
+GET {{gateway}}/api/proveedores
 Authorization: Bearer {{token}}
 
 ### Productos (5104)
@@ -37,22 +34,13 @@ Authorization: Bearer {{token}}
 
 ### ---------- yarp.g2.json (Grupo 2) ----------
 
-### Login (5102, anónima)
-POST {{gateway}}/api/auth/login
-Content-Type: application/json
-
-{
-  "username": "admin",
-  "password": "<contraseña>"
-}
-
 ### Usuarios: roles (5102)
 GET {{gateway}}/api/usuarios/roles
 Authorization: Bearer {{token}}
 
 ### ---------- Fuera del contrato ----------
 
-### Ruta inexistente → 404
+### Ruta inexistente → 404 (también /api/auth: el login lo hace Keycloak desde US-125)
 GET {{gateway}}/api/reportes
 
 ### Microservicio caído → 503 ProblemDetails

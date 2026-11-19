@@ -29,27 +29,27 @@
         </div>
 
         <div class="form-group">
-            <label asp-for="Input.CategoriaId"></label>
-            <select asp-for="Input.CategoriaId" class="form-control">
+            <label asp-for="Input.CategoriaPublicId"></label>
+            <select asp-for="Input.CategoriaPublicId" class="form-control">
                 <option value="">Seleccione una categoría</option>
                 @foreach (var c in Model.Categorias)
                 {
-                    <option value="@c.CategoriaId">@c.Nombre</option>
+                    <option value="@c.PublicId">@c.Nombre</option>
                 }
             </select>
-            <span asp-validation-for="Input.CategoriaId" class="text-danger"></span>
+            <span asp-validation-for="Input.CategoriaPublicId" class="text-danger"></span>
         </div>
 
         <div class="form-group">
-            <label asp-for="Input.MarcaId"></label>
-            <select asp-for="Input.MarcaId" class="form-control">
+            <label asp-for="Input.MarcaPublicId"></label>
+            <select asp-for="Input.MarcaPublicId" class="form-control">
                 <option value="">Seleccione una marca</option>
                 @foreach (var m in Model.Marcas)
                 {
-                    <option value="@m.MarcaId">@m.Nombre</option>
+                    <option value="@m.PublicId">@m.Nombre</option>
                 }
             </select>
-            <span asp-validation-for="Input.MarcaId" class="text-danger"></span>
+            <span asp-validation-for="Input.MarcaPublicId" class="text-danger"></span>
         </div>
 
         <div class="form-group">

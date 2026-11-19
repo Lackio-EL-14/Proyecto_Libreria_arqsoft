@@ -1,3 +1,4 @@
+using Libreria.Gateway.Tests.Seguridad;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -30,17 +31,13 @@ public sealed class EnrutamientoTests : IClassFixture<ServiciosFalsos>, IAsyncLi
 
     [Theory]
     [InlineData("/api/clientes", "clientes")]
-    [InlineData("/api/clientes/buscar?ciNit=1234567", "clientes")]
     [InlineData("/api/clientes/8f6c1a52-0000-4000-8000-000000000001", "clientes")]
-    [InlineData("/api/ventas", "ventas")]
-    [InlineData("/api/ventas/ping", "ventas")]
-    [InlineData("/api/ventas/busquedas/productos?termino=lapiz", "ventas")]
+    [InlineData("/api/proveedores", "proveedores")]
+    [InlineData("/api/proveedores/8f6c1a52-0000-4000-8000-000000000004", "proveedores")]
     [InlineData("/api/productos", "productos")]
-    [InlineData("/api/productos/buscar?termino=cuaderno", "productos")]
     [InlineData("/api/categorias/ubicaciones", "productos")]
     [InlineData("/api/marcas/paises", "productos")]
     [InlineData("/api/historico/8f6c1a52-0000-4000-8000-000000000002", "productos")]
-    [InlineData("/api/auth/login", "usuarios")]
     [InlineData("/api/usuarios", "usuarios")]
     [InlineData("/api/usuarios/nombres?ids=8f6c1a52-0000-4000-8000-000000000003", "usuarios")]
     public async Task La_ruta_llega_a_su_microservicio_con_ruta_y_query_intactas(string url, string servicioEsperado)
@@ -59,7 +56,8 @@ public sealed class EnrutamientoTests : IClassFixture<ServiciosFalsos>, IAsyncLi
         {
             Content = JsonContent.Create(new { contrasenaActual = "a", contrasenaNueva = "b" })
         };
-        solicitud.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "token-de-prueba");
+        var token = TokensDePrueba.Vendedor();
+        solicitud.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         using var respuesta = await _cliente.SendAsync(solicitud);
         var eco = await respuesta.Content.ReadFromJsonAsync<EcoDelServicio>();
@@ -68,12 +66,13 @@ public sealed class EnrutamientoTests : IClassFixture<ServiciosFalsos>, IAsyncLi
         Assert.NotNull(eco);
         Assert.Equal("usuarios", eco.Servicio);
         Assert.Equal("PUT", eco.Metodo);
-        Assert.Equal("Bearer token-de-prueba", eco.Authorization);
+        Assert.Equal($"Bearer {token}", eco.Authorization);
         Assert.Equal("""{"contrasenaActual":"a","contrasenaNueva":"b"}""", eco.Cuerpo);
     }
 
     [Theory]
     [InlineData("/api/reportes")]
+    [InlineData("/api/auth/login")]
     [InlineData("/api/clientesx")]
     [InlineData("/otra/cosa")]
     public async Task Una_ruta_fuera_del_contrato_devuelve_404(string url)

@@ -1,10 +1,6 @@
 {
   "ReverseProxy": {
     "Routes": {
-      "g2-auth": {
-        "ClusterId": "usuarios",
-        "Match": { "Path": "/api/auth/{**resto}" }
-      },
       "g2-usuarios": {
         "ClusterId": "usuarios",
         "Match": { "Path": "/api/usuarios/{**resto}" }

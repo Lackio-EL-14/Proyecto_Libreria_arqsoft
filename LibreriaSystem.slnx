@@ -5,14 +5,14 @@
     <Project Path="src/Libreria.Servicio.Clientes/Libreria.Servicio.Clientes.csproj" />
     <Project Path="src/Libreria.Servicio.Productos/Libreria.Servicio.Productos.csproj" />
     <Project Path="src/Libreria.Servicio.Usuarios/Libreria.Servicio.Usuarios.csproj" />
-    <Project Path="src/Libreria.Servicio.Ventas/Libreria.Servicio.Ventas.csproj" />
+    <Project Path="src/Libreria.Servicio.Proveedores/Libreria.Servicio.Proveedores.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Libreria.Client.Tests/Libreria.Client.Tests.csproj" />
     <Project Path="tests/Libreria.Gateway.Tests/Libreria.Gateway.Tests.csproj" />
     <Project Path="tests/Libreria.Servicio.Clientes.Tests/Libreria.Servicio.Clientes.Tests.csproj" />
     <Project Path="tests/Libreria.Servicio.Productos.Tests/Libreria.Servicio.Productos.Tests.csproj" />
+    <Project Path="tests/Libreria.Servicio.Proveedores.Tests/Libreria.Servicio.Proveedores.Tests.csproj" />
     <Project Path="tests/Libreria.Servicio.Usuarios.Tests/Libreria.Servicio.Usuarios.Tests.csproj" />
-    <Project Path="tests/Libreria.Servicio.Ventas.Tests/Libreria.Servicio.Ventas.Tests.csproj" />
   </Folder>
 </Solution>

@@ -1,4 +1,4 @@
-using Libreria.Client.Clients.Clientes;
+using Libreria.Client.Adapters.Clientes;
 using Libreria.Client.DTOs.Clientes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -7,9 +7,9 @@ namespace Libreria.Client.Pages.Clientes;
 
 public class CreateModel : PageModel
 {
-    private readonly IServicioClientesClient _clientes;
+    private readonly IClientesApi _clientes;
 
-    public CreateModel(IServicioClientesClient clientes)
+    public CreateModel(IClientesApi clientes)
     {
         _clientes = clientes;
     }

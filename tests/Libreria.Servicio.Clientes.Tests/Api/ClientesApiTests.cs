@@ -30,19 +30,16 @@ public sealed class ClientesApiTests : IDisposable
     // ---------- POST api/clientes (Insert) ----------
 
     [Fact]
-    public async Task Alta_valida_devuelve_201_con_Location_y_la_forma_de_ClienteRegistroResult()
+    public async Task Alta_valida_devuelve_201_con_Location_y_el_cliente_creado()
     {
         var respuesta = await _http.PostAsJsonAsync("api/clientes",
             new { ciNit = " 7654321 ", razonSocial = "Ana  Rojas", correo = "ana@correo.bo" });
 
         Assert.Equal(HttpStatusCode.Created, respuesta.StatusCode);
         var json = await Json(respuesta);
-        Assert.True(json.GetProperty("exitoso").GetBoolean());
-        Assert.Empty(json.GetProperty("errores").EnumerateObject());
-        var cliente = json.GetProperty("cliente");
-        Assert.Equal("7654321", cliente.GetProperty("ciNit").GetString());
-        Assert.Equal("Ana Rojas", cliente.GetProperty("razonSocial").GetString());
-        var publicId = cliente.GetProperty("publicId").GetGuid();
+        Assert.Equal("7654321", json.GetProperty("ciNit").GetString());
+        Assert.Equal("Ana Rojas", json.GetProperty("razonSocial").GetString());
+        var publicId = json.GetProperty("publicId").GetGuid();
 
         Assert.EndsWith($"/api/clientes/{publicId}", respuesta.Headers.Location!.ToString(), StringComparison.OrdinalIgnoreCase);
         var creado = Assert.Single(Repositorio.Clientes);
@@ -177,30 +174,6 @@ public sealed class ClientesApiTests : IDisposable
         Assert.Equal("El cliente no existe.", (await Json(noExiste)).GetProperty("detail").GetString());
     }
 
-    // ---------- GET api/clientes/buscar (venta) ----------
-
-    [Fact]
-    public async Task Buscar_para_la_venta_no_devuelve_inactivos()
-    {
-        var activo = Repositorio.Agregar("1234500", "Activo");
-        Repositorio.Agregar("1234567", "Inactivo", estado: false);
-
-        var clientes = await _http.GetFromJsonAsync<JsonElement>("api/clientes/buscar?ciNit=12345");
-
-        var unico = Assert.Single(clientes.EnumerateArray());
-        Assert.Equal(activo.PublicId, unico.GetProperty("publicId").GetGuid());
-        Assert.Equal("1234500", unico.GetProperty("ciNit").GetString());
-        Assert.Equal("Activo", unico.GetProperty("razonSocial").GetString());
-    }
-
-    [Fact]
-    public async Task Buscar_sin_CiNit_devuelve_400()
-    {
-        var respuesta = await _http.GetAsync("api/clientes/buscar?ciNit=");
-
-        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
-    }
-
     // ---------- PUT api/clientes/{publicId} (Update) ----------
 
     [Fact]
@@ -270,21 +243,21 @@ public sealed class ClientesApiTests : IDisposable
     // ---------- PATCH api/clientes/{publicId}/estado (Delete lógico) ----------
 
     [Fact]
-    public async Task Baja_logica_conserva_la_fila_lo_saca_de_buscar_y_se_puede_reactivar()
+    public async Task Baja_logica_conserva_la_fila_lo_saca_del_listado_activo_y_se_puede_reactivar()
     {
         var cliente = Repositorio.Agregar("9999999", "Universidad Mayor");
 
         var baja = await _http.PatchAsJsonAsync($"api/clientes/{cliente.PublicId}/estado", new { activo = false });
-        var enBuscar = await _http.GetFromJsonAsync<JsonElement>("api/clientes/buscar?ciNit=9999999");
+        var activos = await _http.GetFromJsonAsync<JsonElement>("api/clientes");
         var detalle = await _http.GetFromJsonAsync<JsonElement>($"api/clientes/{cliente.PublicId}");
 
         Assert.Equal(HttpStatusCode.NoContent, baja.StatusCode);
-        Assert.Empty(enBuscar.EnumerateArray());
+        Assert.Empty(activos.EnumerateArray());
         Assert.False(detalle.GetProperty("estado").GetBoolean());
         Assert.Single(Repositorio.Clientes);
 
         var reactivar = await _http.PatchAsJsonAsync($"api/clientes/{cliente.PublicId}/estado", new { activo = true });
-        var otraVez = await _http.GetFromJsonAsync<JsonElement>("api/clientes/buscar?ciNit=9999999");
+        var otraVez = await _http.GetFromJsonAsync<JsonElement>("api/clientes");
 
         Assert.Equal(HttpStatusCode.NoContent, reactivar.StatusCode);
         Assert.Single(otraVez.EnumerateArray());

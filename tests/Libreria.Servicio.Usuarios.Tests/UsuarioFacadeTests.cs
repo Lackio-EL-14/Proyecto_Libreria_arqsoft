@@ -1,4 +1,3 @@
-using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Application.Facades;
 using Libreria.Servicio.Usuarios.Application.Services;
 using Libreria.Servicio.Usuarios.Tests.TestDoubles;
@@ -8,78 +7,54 @@ namespace Libreria.Servicio.Usuarios.Tests;
 public sealed class UsuarioFacadeTests
 {
     [Fact]
-    public async Task PrepareActivationAsync_GeneraUsuarioTokenYHash()
+    public async Task GenerateUsernameAsync_UsaGeneradorYRespetaDuplicados()
     {
         var repository = new FakeUserRepository();
-
-        var generator =
-            new UsernameGenerator(repository);
-
+        repository.ExistingUsernames.Add("jperez");
         var facade = new UsuarioFacade(
-            generator,
+            new UsernameGenerator(repository),
             new FakeEmailSender(),
             new FakeApplicationConfiguration());
 
-        var result =
-            await facade.PrepareActivationAsync(
-                "Juan",
-                "Pérez");
+        var username = await facade.GenerateUsernameAsync("Juan", "Pérez");
 
-        Assert.Equal("jperez", result.Username);
-        Assert.False(string.IsNullOrWhiteSpace(result.Token));
-        Assert.False(string.IsNullOrWhiteSpace(result.TokenHash));
-
-        Assert.Equal(
-            ActivationTokenService.CalculateHash(result.Token),
-            result.TokenHash);
-
-        Assert.True(result.ExpiresAt > DateTime.UtcNow);
+        Assert.Equal("jperez2", username);
     }
 
     [Fact]
-    public async Task SendActivationEmailAsync_UsaCorreoYUrlDelFront()
+    public async Task SendTemporaryCredentialsEmailAsync_UsaUrlDelFrontYEscapaHtml()
     {
-        var repository = new FakeUserRepository();
-
-        var emailSender = new FakeEmailSender();
-
-        var configuration =
-            new FakeApplicationConfiguration
-            {
-                BaseUrl = "https://localhost:5000"
-            };
-
+        var sender = new FakeEmailSender();
         var facade = new UsuarioFacade(
-            new UsernameGenerator(repository),
-            emailSender,
-            configuration);
+            new UsernameGenerator(new FakeUserRepository()),
+            sender,
+            new FakeApplicationConfiguration { BaseUrl = "https://libreria.example/" });
 
-        var activation =
-            new UserActivationPreparation(
-                "jperez",
-                "token123",
-                "HASH123",
-                DateTime.UtcNow.AddHours(24));
+        await facade.SendTemporaryCredentialsEmailAsync(
+            "juan@example.com", "Juan <Prueba>", "jperez", "Abc<123>!");
 
-        await facade.SendActivationEmailAsync(
-            "juan@example.com",
-            "Juan",
-            activation);
+        Assert.Equal("juan@example.com", sender.Recipient);
+        Assert.Contains("Acceso temporal", sender.Subject);
+        Assert.Contains("jperez", sender.HtmlBody);
+        Assert.Contains("Juan &lt;Prueba&gt;", sender.HtmlBody);
+        Assert.Contains("Abc&lt;123&gt;!", sender.HtmlBody);
+        Assert.Contains("https://libreria.example/Cuenta/Login", sender.HtmlBody);
+        Assert.DoesNotContain("/Usuarios/Activar", sender.HtmlBody);
+    }
 
-        Assert.Equal(
-            "juan@example.com",
-            emailSender.Recipient);
+    [Fact]
+    public async Task SendTemporaryCredentialsEmailAsync_NoAceptaUrlNoHttp()
+    {
+        var sender = new FakeEmailSender();
+        var facade = new UsuarioFacade(
+            new UsernameGenerator(new FakeUserRepository()),
+            sender,
+            new FakeApplicationConfiguration { BaseUrl = "javascript:alert(1)" });
 
-        Assert.Contains(
-            "Sistema Librería",
-            emailSender.Subject);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            facade.SendTemporaryCredentialsEmailAsync(
+                "juan@example.com", "Juan", "jperez", "Clave!123"));
 
-        Assert.Contains(
-            "jperez",
-            emailSender.HtmlBody);
-
-        Assert.Contains(
-            "https://localhost:5000/Usuarios/Activar",
-            emailSender.HtmlBody);
+        Assert.Null(sender.Recipient);
     }
 }

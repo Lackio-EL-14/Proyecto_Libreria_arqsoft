@@ -1,4 +1,4 @@
-using Libreria.Servicio.Usuarios.Application.Abstractions;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Application.Factories;
 using Libreria.Servicio.Usuarios.Infrastructure.Connection;
 using Libreria.Servicio.Usuarios.Infrastructure.Repositories;

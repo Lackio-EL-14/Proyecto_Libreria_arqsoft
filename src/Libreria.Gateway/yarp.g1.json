@@ -5,9 +5,9 @@
         "ClusterId": "clientes",
         "Match": { "Path": "/api/clientes/{**resto}" }
       },
-      "g1-ventas": {
-        "ClusterId": "ventas",
-        "Match": { "Path": "/api/ventas/{**resto}" }
+      "g1-proveedores": {
+        "ClusterId": "proveedores",
+        "Match": { "Path": "/api/proveedores/{**resto}" }
       },
       "g1-productos": {
         "ClusterId": "productos",
@@ -33,7 +33,7 @@
           "principal": { "Address": "http://localhost:5103" }
         }
       },
-      "ventas": {
+      "proveedores": {
         "HttpRequest": { "ActivityTimeout": "00:00:30" },
         "Destinations": {
           "principal": { "Address": "http://localhost:5101" }

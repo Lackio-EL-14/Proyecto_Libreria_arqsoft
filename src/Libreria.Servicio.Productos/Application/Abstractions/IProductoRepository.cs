@@ -4,16 +4,6 @@ namespace Libreria.Servicio.Productos.Application.Abstractions;
 
 public interface IProductoRepository : ICrudRepository<Producto>
 {
-    Task<Producto?> ObtenerParaVentaAsync(Guid publicId);
-
-    Task<bool> DescontarStockAsync(
-        Guid publicId,
-        int cantidad);
-
-    Task<bool> RestaurarStockAsync(
-        Guid publicId,
-        int cantidad);
-
     Task ActualizarCategoriaEmbebidaAsync(
         Guid categoriaPublicId,
         string nuevoNombre);
@@ -21,4 +11,10 @@ public interface IProductoRepository : ICrudRepository<Producto>
     Task ActualizarMarcaEmbebidaAsync(
         Guid marcaPublicId,
         string nuevoNombre);
+
+    Task<IReadOnlyList<Producto>> ObtenerFiltradasAsync(
+        string? busqueda,
+        Guid? categoriaPublicId,
+        Guid? marcaPublicId,
+        bool? estado);
 }

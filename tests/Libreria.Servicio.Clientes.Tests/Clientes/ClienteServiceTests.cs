@@ -1,4 +1,4 @@
-using Libreria.Servicio.Clientes.Application.Comun;
+using Libreria.Servicio.Clientes.Domain;
 using Libreria.Servicio.Clientes.Application.Models;
 using Libreria.Servicio.Clientes.Application.Services;
 using Libreria.Servicio.Clientes.Application.Validators;
@@ -157,29 +157,6 @@ public class ClienteServiceTests
         var resultado = await _servicio.CambiarEstadoAsync(Guid.NewGuid(), activo: false);
 
         Assert.Equal(TipoError.NoEncontrado, resultado.Tipo);
-    }
-
-    [Fact]
-    public async Task Buscar_para_venta_no_devuelve_inactivos_y_expone_el_public_id()
-    {
-        var activo = _repositorio.Agregar("1234", "Ana");
-        _repositorio.Agregar("12345", "Luis", estado: false);
-
-        var resultado = await _servicio.BuscarParaVentaAsync(" 123 ");
-
-        Assert.True(resultado.EsExito);
-        var encontrado = Assert.Single(resultado.Valor);
-        Assert.Equal(new ClienteVentaItem(activo.PublicId, "1234", "Ana"), encontrado);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("  ")]
-    public async Task Buscar_para_venta_sin_ci_nit_es_validacion(string? ciNit)
-    {
-        var resultado = await _servicio.BuscarParaVentaAsync(ciNit);
-
-        Assert.Equal(TipoError.Validacion, resultado.Tipo);
     }
 
     [Fact]

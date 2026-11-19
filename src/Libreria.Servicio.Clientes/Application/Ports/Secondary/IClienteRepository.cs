@@ -17,6 +17,4 @@ public interface IClienteRepository : ICrudRepository<Cliente>
 
     Task<IReadOnlyList<Cliente>> ListarAsync(FiltroClientes filtro);
 
-    /// <summary>Clientes activos cuyo CI/NIT empieza con <paramref name="ciNit"/> (búsqueda de la venta).</summary>
-    Task<IReadOnlyList<Cliente>> BuscarActivosPorCiNitAsync(string ciNit);
 }

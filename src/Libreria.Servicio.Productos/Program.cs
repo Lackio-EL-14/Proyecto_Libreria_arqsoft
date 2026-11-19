@@ -7,6 +7,11 @@ using Libreria.Servicio.Productos.Domain.Entities;
 using Libreria.Servicio.Productos.Infrastructure.Factories;
 using Libreria.Servicio.Productos.Infrastructure.Repositories;
 using Libreria.Servicio.Productos.Application.UseCases.Productos;
+using Libreria.Servicio.Productos.Application.Validators;
+using Libreria.Servicio.Productos.Application.UseCases.Categorias;
+using Libreria.Servicio.Productos.Application.UseCases.Marcas;
+using Libreria.Servicio.Productos.Application.UseCases.Historico;
+using Libreria.Servicio.Productos.Presentation.Comun;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,16 +67,50 @@ builder.Services.AddScoped<
     MongoHistoricoRepositoryFactory>();
 
 
-// Casos de uso de Application.
 builder.Services.AddScoped<ObtenerListadoProductosUseCase>();
 builder.Services.AddScoped<ObtenerDetalleProductoUseCase>();
+
+builder.Services.AddScoped<
+    ICrudRepository<Categoria>,
+    MongoCategoriaRepository>();
+
+builder.Services.AddScoped<
+    ICrudRepository<Marca>,
+    MongoMarcaRepository>();
+builder.Services.AddScoped<CategoriaValidator>();
+builder.Services.AddScoped<MarcaValidator>();
+
+builder.Services.AddScoped<ListarCategoriasUseCase>();
+builder.Services.AddScoped<ObtenerCategoriaUseCase>();
+builder.Services.AddScoped<CrearCategoriaUseCase>();
+builder.Services.AddScoped<ActualizarCategoriaUseCase>();
+builder.Services.AddScoped<CambiarEstadoCategoriaUseCase>();
+builder.Services.AddScoped<ListarMarcasUseCase>();
+builder.Services.AddScoped<ObtenerMarcaUseCase>();
+builder.Services.AddScoped<CrearMarcaUseCase>();
+builder.Services.AddScoped<ActualizarMarcaUseCase>();
+builder.Services.AddScoped<CambiarEstadoMarcaUseCase>();
+builder.Services.AddScoped<ProductoValidator>();
+builder.Services.AddScoped<ObtenerFormularioProductoUseCase>();
+builder.Services.AddScoped<CrearProductoUseCase>();
+builder.Services.AddScoped<ObtenerProductoEdicionUseCase>();
+builder.Services.AddScoped<ActualizarProductoUseCase>();
+builder.Services.AddScoped<CambiarEstadoProductoUseCase>();
+builder.Services.AddScoped<ObtenerHistoricoProductoUseCase>();
+// Errores que no son de negocio → ProblemDetails: BD caída 503, inesperado 500 (US-139, contrato 6.5).
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ManejadorExcepciones>();
 
 // 1. API REST + Swagger
 builder.Services.AddControllers(opciones =>
     opciones.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(opciones => opciones.AgregarBearerDeKeycloak());
+
+// US-126: todo exige el JWT de Keycloak (firma RS256, emisor, audiencia libreria-api, vencimiento)
+// y los roles se aplican con [Authorize(Policy = ...)]. Ver Infrastructure/Seguridad/SeguridadJwtExtensions.cs.
+builder.Services.AddSeguridadJwt(builder.Configuration, builder.Environment);
 
 // 2. Usuario que opera (puerto IUsuarioActual). Hasta US-127 solo existe el de desarrollo.
 if (builder.Environment.IsDevelopment())
@@ -81,6 +120,8 @@ if (builder.Environment.IsDevelopment())
 
 var app = builder.Build();
 
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -88,7 +129,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
-app.MapGet("/salud", () => Results.Ok(new { servicio = "Productos", estado = "ok" }));
+app.MapGet("/salud", () => Results.Ok(new { servicio = "Productos", estado = "ok" }))
+    .AllowAnonymous();
 
 app.Run();
+
+// Visible para las pruebas de la API (WebApplicationFactory).
+public partial class Program;
