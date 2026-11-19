@@ -10,6 +10,7 @@ using Libreria.Servicio.Usuarios.Application.UseCases.Users;
 using Libreria.Servicio.Usuarios.Application.Validation;
 using Libreria.Servicio.Usuarios.Infrastructure.Connection;
 using Libreria.Servicio.Usuarios.Infrastructure.Factories;
+using Libreria.Servicio.Usuarios.Infrastructure.Identidad;
 using Libreria.Servicio.Usuarios.Presentation.Security;
 using Libreria.Servicio.Usuarios.Presentation.Middleware;
 using Libreria.Servicio.Usuarios.Infrastructure.Security;
@@ -43,6 +44,8 @@ builder.Services.AddScoped<
     SqlUsuarioRepositoryFactory>();
 builder.Services.AddScoped<IUserRepository>(provider =>
     provider.GetRequiredService<UsuarioRepositoryFactory>().CreateRepository());
+// TRANSITORIO (US-124 por etapas): login propio con Argon2 hasta que US-125 active OIDC en el Front.
+// Se retira con la lista de docs/contratos/keycloak.md, sección «Retiro del login transitorio».
 builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
 
 builder.Services.AddScoped<LoginValidator>();
@@ -61,6 +64,9 @@ builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddScoped<IApplicationConfiguration, ApplicationConfiguration>();
 builder.Services.AddScoped<UsuarioFacade>();
 builder.Services.AddSingleton(TimeProvider.System);
+
+// US-124: Keycloak como proveedor de identidad (puerto IProveedorIdentidad).
+builder.Services.AddProveedorIdentidad(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
