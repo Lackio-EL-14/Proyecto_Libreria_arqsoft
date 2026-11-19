@@ -1,0 +1,25 @@
+{
+  "ifResourceExists": "SKIP",
+  "users": [
+    {
+      "id": "a0000000-0000-0000-0000-000000000001",
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@libreria.local",
+      "emailVerified": true,
+      "firstName": "Administrador",
+      "lastName": "Sistema",
+      "realmRoles": ["Administrador"]
+    },
+    {
+      "id": "a0000000-0000-0000-0000-000000000002",
+      "username": "vendedor",
+      "enabled": true,
+      "email": "vendedor@libreria.local",
+      "emailVerified": true,
+      "firstName": "Vendedor",
+      "lastName": "Mostrador",
+      "realmRoles": ["Vendedor"]
+    }
+  ]
+}

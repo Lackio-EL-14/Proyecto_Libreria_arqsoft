@@ -74,8 +74,56 @@ services:
       timeout: 5s
       retries: 10
 
+  # Proveedor de identidad (US-124). Importa keycloak/realm-libreria.json solo si el realm
+  # no existe; los secretos y los usuarios semilla los pone «keycloak-configurar».
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    container_name: keycloak
+    command: ["start-dev", "--import-realm"]
+    environment:
+      - KC_BOOTSTRAP_ADMIN_USERNAME=${KC_BOOTSTRAP_ADMIN_USERNAME:?Defina KC_BOOTSTRAP_ADMIN_USERNAME en .env}
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_BOOTSTRAP_ADMIN_PASSWORD:?Defina KC_BOOTSTRAP_ADMIN_PASSWORD en .env}
+      # Emisor fijo (iss = http://localhost:8080/realms/libreria) aunque se llame desde otro contenedor.
+      - KC_HOSTNAME=http://localhost:8080
+      - KC_HEALTH_ENABLED=true
+    ports:
+      - "8080:8080"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - ./keycloak/realm-libreria.json:/opt/keycloak/data/import/realm-libreria.json:ro
+    healthcheck:
+      # La imagen no trae curl: se consulta /health/ready (puerto de gestión 9000) por /dev/tcp.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  # Tarea de una sola vez: secretos de los clientes, admin y vendedor con sus GUID fijos.
+  # Es idempotente; para repetirla: docker compose run --rm keycloak-configurar
+  keycloak-configurar:
+    image: quay.io/keycloak/keycloak:26.8.1
+    container_name: keycloak-configurar
+    entrypoint: ["/bin/bash", "/config/configurar.sh"]
+    restart: "no"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    environment:
+      - KC_BOOTSTRAP_ADMIN_USERNAME=${KC_BOOTSTRAP_ADMIN_USERNAME:?Defina KC_BOOTSTRAP_ADMIN_USERNAME en .env}
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_BOOTSTRAP_ADMIN_PASSWORD:?Defina KC_BOOTSTRAP_ADMIN_PASSWORD en .env}
+      - KEYCLOAK_FRONT_CLIENT_SECRET=${KEYCLOAK_FRONT_CLIENT_SECRET:?Defina KEYCLOAK_FRONT_CLIENT_SECRET en .env}
+      - KEYCLOAK_USUARIOS_ADMIN_CLIENT_SECRET=${KEYCLOAK_USUARIOS_ADMIN_CLIENT_SECRET:?Defina KEYCLOAK_USUARIOS_ADMIN_CLIENT_SECRET en .env}
+      - KEYCLOAK_USUARIOS_VERIFICACION_CLIENT_SECRET=${KEYCLOAK_USUARIOS_VERIFICACION_CLIENT_SECRET:?Defina KEYCLOAK_USUARIOS_VERIFICACION_CLIENT_SECRET en .env}
+      - KEYCLOAK_ADMIN_SEMILLA_PASSWORD=${KEYCLOAK_ADMIN_SEMILLA_PASSWORD:?Defina KEYCLOAK_ADMIN_SEMILLA_PASSWORD en .env}
+      - KEYCLOAK_VENDEDOR_SEMILLA_PASSWORD=${KEYCLOAK_VENDEDOR_SEMILLA_PASSWORD:?Defina KEYCLOAK_VENDEDOR_SEMILLA_PASSWORD en .env}
+      - KEYCLOAK_HABILITAR_CLIENTE_PRUEBAS=${KEYCLOAK_HABILITAR_CLIENTE_PRUEBAS:-false}
+    volumes:
+      - ./keycloak:/config:ro
+
 volumes:
   proveedores_data:
   usuarios_data:
   clientes_data:
   productos_data:
+  keycloak_data:
