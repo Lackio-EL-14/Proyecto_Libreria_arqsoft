@@ -1,3 +1,5 @@
+using Libreria.Servicio.Productos.Infrastructure.Seguridad;
+using Microsoft.AspNetCore.Authorization;
 using Libreria.Servicio.Productos.Application.Models.Productos;
 using Libreria.Servicio.Productos.Application.UseCases.Productos;
 using Libreria.Servicio.Productos.Presentation.Comun;
@@ -6,6 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Libreria.Servicio.Productos.Presentation.Controllers;
 
 [ApiController]
+// US-126: solo el Administrador gestiona el inventario.
+[Authorize(Policy = SeguridadJwtExtensions.SoloAdministrador)]
 [Route("api/productos")]
 public sealed class ProductosController : ControllerBase
 {
