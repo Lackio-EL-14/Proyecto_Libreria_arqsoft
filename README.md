@@ -79,6 +79,8 @@ dotnet user-secrets set "Keycloak:ClientSecret" "<KEYCLOAK_FRONT_CLIENT_SECRET>"
 
 Usuarios de desarrollo: `admin` y `vendedor`, con las contraseñas de `KEYCLOAK_*_SEMILLA_PASSWORD` de su `.env`.
 
+**Todas las API exigen token (US-126):** el gateway y los 4 MS validan el JWT de Keycloak (firma RS256, emisor, audiencia `libreria-api`, vencimiento) y aplican los roles. Sin token responden 401, y con un rol insuficiente, 403. Para probar en Swagger (`http://localhost:510x/swagger`), use el botón «Authorize» con un token de `libreria-pruebas` (`keycloak.md` §5). Evidencias: `docs/evidencias/US-126-seguridad-jwt.md`.
+
 ## Variables para ejecutar .NET localmente
 
 Docker Compose usa `.env`, pero los procesos `dotnet run` necesitan las cadenas en su entorno o en User Secrets. Ejemplo para Proveedores:

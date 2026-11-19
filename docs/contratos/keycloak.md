@@ -120,34 +120,37 @@ Piezas del Front (`Seguridad/` y `Clients/Common/`):
 - **`/Cuenta/Logout`:** solo por POST con antiforgery. Cierra la cookie **y** la sesión de Keycloak.
 - **`ClaimsKeycloak`:** `User.ObtenerSub()`, `User.NombreVisible()` y `User.RolesVisibles()` para las páginas y el layout.
 
-### Gateway y los 4 MS: `AddJwtBearer` (US-126)
+### Gateway y los 4 MS: `AddJwtBearer` (US-126, implementado)
+
+Cada MS tiene **su copia** en `Infrastructure/Seguridad/SeguridadJwtExtensions.cs`, y el gateway la suya en `Seguridad/SeguridadJwtExtensions.cs` (sin bibliotecas compartidas). En `Program.cs`:
 
 ```csharp
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        var keycloak = builder.Configuration.GetSection("Keycloak");
-        options.Authority = keycloak["Authority"];            // descarga las claves del JWKS
-        options.Audience = keycloak["Audience"];              // libreria-api
-        options.MapInboundClaims = false;
-        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = keycloak["Authority"],
-            ValidateAudience = true,
-            ValidAudience = keycloak["Audience"],
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromSeconds(30),
-            ValidAlgorithms = [SecurityAlgorithms.RsaSha256],
-            NameClaimType = "preferred_username",
-            RoleClaimType = "roles"
-        };
-    });
+builder.Services.AddSwaggerGen(o => o.AgregarBearerDeKeycloak());           // botón «Authorize»
+builder.Services.AddSeguridadJwt(builder.Configuration, builder.Environment);
+// ...
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+app.MapGet("/salud", ...).AllowAnonymous();
 ```
 
-`appsettings.json` (sin secretos):
+En el gateway: `app.MapReverseProxy(...).RequireAuthorization()`. Sin un token válido no se reenvía nada.
+
+Validación del token (idéntica en los 5):
+
+| Parámetro | Valor |
+|---|---|
+| `Authority` | `Keycloak:Authority`: claves públicas del JWKS del realm, que el MS descarga y cachea |
+| `ValidIssuer` / `ValidAudience` | `http://localhost:8080/realms/libreria` / `libreria-api` |
+| `ValidateLifetime`, `RequireExpirationTime`, `RequireSignedTokens` | `true`, con `ClockSkew` de 30 s |
+| `ValidAlgorithms` | solo `RS256` |
+| `MapInboundClaims` | `false` |
+| `NameClaimType` / `RoleClaimType` | `preferred_username` / `roles` |
+| Política por defecto (`FallbackPolicy`) | **todo exige usuario autenticado**; solo `/salud` es anónima (y Swagger en Development) |
+| Políticas | `SoloAdministrador` (rol Administrador) · `GestionClientes` (Administrador o Vendedor) |
+
+`appsettings.json` de cada MS y del gateway (sin secretos):
 
 ```json
 "Keycloak": {
@@ -156,7 +159,27 @@ builder.Services
 }
 ```
 
-Respuestas: sin token, firma alterada, vencido o audiencia equivocada → **401**; rol insuficiente → **403**.
+Respuestas, como `application/problem+json` en español, con `WWW-Authenticate: Bearer`:
+
+| Caso | Estado | `detail` |
+|---|---|---|
+| Sin token | 401 | «Falta el token de acceso (Authorization: Bearer).» |
+| Firma alterada, otra clave, emisor o audiencia equivocados | 401 | «El token de acceso no es válido (firma, emisor o audiencia).» |
+| Vencido | 401 | «El token de acceso venció. Inicie sesión de nuevo.» |
+| Rol insuficiente | 403 | «Su rol no tiene permiso para esta operación.» |
+
+**Matriz de roles en el servidor** (es la misma del Front):
+
+| MS | Administrador | Vendedor |
+|---|---|---|
+| Clientes | todo | listar, ver, crear y editar; **no** `PATCH …/estado` |
+| Proveedores | todo | 403 |
+| Productos (`productos`, `categorias`, `marcas`, `historico`) | todo | 403 |
+| Usuarios | todo | `PUT contrasena`, `GET {sub}/sesion-activa`, `GET nombres`, `GET nombres-publicos`; 403 en listar, crear, `roles` y baja |
+
+**Usuario actual:** en Usuarios sale del token validado (`UsuarioActualDesdeToken`: `sub` y `preferred_username`); las cabeceras `X-Usuario-*` ya no existen. Clientes, Proveedores y Productos siguen con `UsuarioActualDesarrollo` hasta US-127.
+
+**Pruebas sin Keycloak:** cada proyecto de pruebas tiene `Seguridad/TokensDePrueba.cs`, que firma tokens RS256 con una clave local, y `UsarJwtDePrueba()`, que hace que el servicio confíe en esa clave en lugar del JWKS. El resto de la validación es la real. Evidencia en vivo: `docs/evidencias/US-126-seguridad-jwt.md` y `.http`.
 
 ## 5. Token de prueba (solo desarrollo)
 
@@ -217,4 +240,4 @@ El login propio salió por completo en US-125:
 
 **Identidad del usuario actual = `sub`.** En el MS Usuarios, `IsActiveAdministratorAsync`, `IsSessionActiveAsync(Guid)` y el actor de la baja buscan por `KeycloakId`, no por `PublicId`. `GET api/usuarios/{keycloakId}/sesion-activa` es verdadero si el usuario **no está Inactivo** (Activo o Pendiente) y su rol está activo. «Pendiente» no bloquea la sesión porque Keycloak no emite el token hasta que se cambia la contraseña temporal.
 
-**Sigue transitorio hasta US-126/127:** `CurrentUserMiddleware` del MS Usuarios lee `X-Usuario-Id`/`X-Usuario-Nombre` sin validar el JWT. No exponer el puerto 5102 fuera de `localhost`.
+**Cerrado en US-126:** `CurrentUserMiddleware` y las cabeceras `X-Usuario-*` se eliminaron. El MS Usuarios valida el JWT y toma al usuario actual del token; una cabecera falsificada no tiene efecto (hay una prueba que lo demuestra).

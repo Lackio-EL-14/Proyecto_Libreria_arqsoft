@@ -22,6 +22,8 @@ El Front envía todo a `http://localhost:5080`. YARP enruta:
 | `/api/historico/{**resto}` | `productos` |
 | `/api/usuarios/{**resto}` | `usuarios` |
 
+Todas las rutas `/api/*` exigen un JWT de Keycloak válido, tanto en el gateway como en cada MS (US-126); `/salud` es anónima.
+
 No hay ruta de login: el Front inicia sesión directamente con Keycloak (`keycloak.md`); `/api/auth` responde 404.
 
 Cada servicio usa exclusivamente su cadena `ConnectionStrings__<Servicio>Db`. No existen conexiones directas entre sus bases.
