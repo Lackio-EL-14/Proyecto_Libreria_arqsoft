@@ -1,30 +1,8 @@
-using Libreria.Client.DTOs.Common;
-using Libreria.Client.DTOs.Proveedores;
+using Libreria.Client.Adapters.Proveedores;
 
 namespace Libreria.Client.Clients.Proveedores;
 
-/// <summary>Puerto del Front hacia el microservicio de Proveedores.</summary>
-public interface IServicioProveedoresClient
+/// <summary>Cliente tipado de US-113. Transitorio: lo reemplaza <c>ProveedoresApiAdapter</c> (US-140, hito B).</summary>
+public interface IServicioProveedoresClient : IProveedoresApi
 {
-    Task<IReadOnlyList<ProveedorDetalleDto>> ObtenerProveedoresAsync(
-        FiltroProveedores filtro,
-        CancellationToken cancellationToken = default);
-
-    Task<ProveedorDetalleDto?> ObtenerProveedorAsync(
-        Guid publicId,
-        CancellationToken cancellationToken = default);
-
-    Task<ResultadoApi> RegistrarProveedorAsync(
-        ProveedorInput input,
-        CancellationToken cancellationToken = default);
-
-    Task<ResultadoApi> ActualizarProveedorAsync(
-        Guid publicId,
-        ProveedorInput input,
-        CancellationToken cancellationToken = default);
-
-    Task<ResultadoApi> CambiarEstadoProveedorAsync(
-        Guid publicId,
-        bool activo,
-        CancellationToken cancellationToken = default);
 }

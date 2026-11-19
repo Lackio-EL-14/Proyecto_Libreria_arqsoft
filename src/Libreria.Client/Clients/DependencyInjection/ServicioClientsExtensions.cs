@@ -1,4 +1,8 @@
 using System.Net.Http.Headers;
+using Libreria.Client.Adapters.Clientes;
+using Libreria.Client.Adapters.Productos;
+using Libreria.Client.Adapters.Proveedores;
+using Libreria.Client.Adapters.Usuarios;
 using Libreria.Client.Clients.Clientes;
 using Libreria.Client.Clients.Common;
 using Libreria.Client.Clients.Productos;
@@ -28,21 +32,28 @@ public static class ServicioClientsExtensions
         return services;
     }
 
+    // US-140 hito A: cada módulo también expone su interfaz destino (I*Api), resuelta con el
+    // mismo cliente, para que las páginas puedan depender de ella desde ya.
+
     // Dueño: Edson (Clientes).
     public static IServiceCollection AddModuloClientes(this IServiceCollection services, IConfiguration configuration) =>
-        services.AddClienteDelGateway<IServicioClientesClient, ServicioClientesClient>(configuration);
+        services.AddClienteDelGateway<IServicioClientesClient, ServicioClientesClient>(configuration)
+            .AddTransient<IClientesApi>(sp => sp.GetRequiredService<IServicioClientesClient>());
 
     // Microservicio relacional de Proveedores.
     public static IServiceCollection AddModuloProveedores(this IServiceCollection services, IConfiguration configuration) =>
-        services.AddClienteDelGateway<IServicioProveedoresClient, ServicioProveedoresClient>(configuration);
+        services.AddClienteDelGateway<IServicioProveedoresClient, ServicioProveedoresClient>(configuration)
+            .AddTransient<IProveedoresApi>(sp => sp.GetRequiredService<IServicioProveedoresClient>());
 
     // Dueño: Josue (Productos, categorías, marcas e histórico).
     public static IServiceCollection AddModuloProductos(this IServiceCollection services, IConfiguration configuration) =>
-        services.AddClienteDelGateway<IServicioProductosClient, ServicioProductosClient>(configuration);
+        services.AddClienteDelGateway<IServicioProductosClient, ServicioProductosClient>(configuration)
+            .AddTransient<IProductosApi>(sp => sp.GetRequiredService<IServicioProductosClient>());
 
     // Dueño: Grupo 2 (Usuarios).
     public static IServiceCollection AddModuloUsuarios(this IServiceCollection services, IConfiguration configuration) =>
-        services.AddClienteDelGateway<IServicioUsuariosClient, ServicioUsuariosClient>(configuration);
+        services.AddClienteDelGateway<IServicioUsuariosClient, ServicioUsuariosClient>(configuration)
+            .AddTransient<IUsuariosApi>(sp => sp.GetRequiredService<IServicioUsuariosClient>());
 
     private static IServiceCollection AddClienteDelGateway<TClient, TImplementation>(
         this IServiceCollection services,

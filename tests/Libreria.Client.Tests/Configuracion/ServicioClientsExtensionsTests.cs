@@ -34,6 +34,17 @@ public sealed class ServicioClientsExtensionsTests
     }
 
     [Fact]
+    public void Las_cuatro_interfaces_destino_se_resuelven()
+    {
+        using var proveedor = CrearProveedor("http://localhost:5080");
+
+        Assert.NotNull(proveedor.GetRequiredService<Libreria.Client.Adapters.Clientes.IClientesApi>());
+        Assert.NotNull(proveedor.GetRequiredService<Libreria.Client.Adapters.Proveedores.IProveedoresApi>());
+        Assert.NotNull(proveedor.GetRequiredService<Libreria.Client.Adapters.Productos.IProductosApi>());
+        Assert.NotNull(proveedor.GetRequiredService<Libreria.Client.Adapters.Usuarios.IUsuariosApi>());
+    }
+
+    [Fact]
     public void Sin_la_URL_del_gateway_el_arranque_falla_con_un_mensaje_claro()
     {
         var error = Assert.Throws<InvalidOperationException>(() => CrearProveedor(null));
