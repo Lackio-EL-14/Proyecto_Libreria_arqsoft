@@ -519,6 +519,7 @@ public sealed class UserRepository : IUserRepository
         command.CommandText = """
             INSERT INTO dbo.Usuario
             (
+                KeycloakId,
                 Nombre,
                 ApellidoPaterno,
                 ApellidoMaterno,
@@ -534,6 +535,7 @@ public sealed class UserRepository : IUserRepository
             OUTPUT INSERTED.PublicId
             VALUES
             (
+                @KeycloakId,
                 @FirstName,
                 @LastName,
                 @MaternalLastName,
@@ -548,6 +550,11 @@ public sealed class UserRepository : IUserRepository
             );
             """;
 
+        AddParameter(
+            command,
+            "@KeycloakId",
+            user.KeycloakId.HasValue ? user.KeycloakId.Value : DBNull.Value,
+            DbType.Guid);
         AddParameter(command, "@FirstName", user.FirstName.Trim(), DbType.String, 100);
         AddParameter(command, "@LastName", user.LastName.Trim(), DbType.String, 100);
         AddParameter(
