@@ -30,7 +30,7 @@ Productos es el microservicio no relacional; categorías y marcas son dependenci
 
 ## Usuarios
 
-- `POST api/auth/login`
+- `POST api/auth/login` (**transitorio** hasta US-125; ver `keycloak.md`, sección 7)
 - CRUD y operaciones de `api/usuarios`
 
 Todos los microservicios exponen `GET /salud` directamente.
