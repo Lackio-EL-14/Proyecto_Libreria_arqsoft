@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
-using System.Security.Claims;
 using Libreria.Client.Seguridad;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -16,9 +15,8 @@ namespace Libreria.Client.Clients.Common;
 /// <para>Si el token ya venció, o si un servicio responde 401, lanza
 /// <see cref="SesionExpiradaException"/>: <see cref="SesionExpiradaFilter"/> cierra la sesión
 /// y lleva al login con un mensaje.</para>
-/// <para><b>TRANSITORIO hasta US-126/127:</b> el MS Usuarios todavía identifica al usuario
-/// actual por cabecera, así que solo hacia <c>/api/usuarios</c> se envían además
-/// <c>X-Usuario-Id</c> (= <c>sub</c>) y <c>X-Usuario-Nombre</c> (= <c>preferred_username</c>).</para>
+/// <para>Desde US-126 cada microservicio toma al usuario del token validado: no se envían
+/// cabeceras <c>X-Usuario-*</c>.</para>
 /// </remarks>
 public sealed class BearerTokenDelegatingHandler : DelegatingHandler
 {
@@ -28,10 +26,6 @@ public sealed class BearerTokenDelegatingHandler : DelegatingHandler
     /// </summary>
     public const string ClaveTokenEnCurso = "Libreria.AccessToken";
     public const string ClaveVencimientoEnCurso = "Libreria.AccessTokenExpiresAt";
-    public const string ClavePrincipalEnCurso = "Libreria.PrincipalEnCurso";
-
-    public const string UsuarioIdHeader = "X-Usuario-Id";
-    public const string UsuarioNombreHeader = "X-Usuario-Nombre";
 
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly TimeProvider _tiempo;
@@ -44,9 +38,6 @@ public sealed class BearerTokenDelegatingHandler : DelegatingHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        request.Headers.Remove(UsuarioIdHeader);
-        request.Headers.Remove(UsuarioNombreHeader);
-
         var contexto = _httpContextAccessor.HttpContext;
         var (token, venceEn) = contexto is null ? (null, null) : await LeerTokenAsync(contexto);
 
@@ -58,7 +49,6 @@ public sealed class BearerTokenDelegatingHandler : DelegatingHandler
             }
 
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            AgregarCabecerasTransitorias(request, contexto!);
         }
 
         var respuesta = await base.SendAsync(request, cancellationToken);
@@ -100,36 +90,5 @@ public sealed class BearerTokenDelegatingHandler : DelegatingHandler
         return (token, DateTimeOffset.TryParse(vencimiento, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var vence)
             ? vence
             : null);
-    }
-
-    private static void AgregarCabecerasTransitorias(HttpRequestMessage request, HttpContext contexto)
-    {
-        var ruta = request.RequestUri?.AbsolutePath;
-        var esUsuarios =
-            string.Equals(ruta, "/api/usuarios", StringComparison.OrdinalIgnoreCase) ||
-            ruta?.StartsWith("/api/usuarios/", StringComparison.OrdinalIgnoreCase) == true;
-
-        if (!esUsuarios)
-        {
-            return;
-        }
-
-        var principal = contexto.Items.TryGetValue(ClavePrincipalEnCurso, out var enCurso) &&
-                        enCurso is ClaimsPrincipal principalEnCurso
-            ? principalEnCurso
-            : contexto.User;
-
-        if (principal.ObtenerSub() is { } sub)
-        {
-            request.Headers.TryAddWithoutValidation(UsuarioIdHeader, sub.ToString("D"));
-        }
-
-        var nombreUsuario = principal.FindFirst(ClaimsKeycloak.NombreUsuario)?.Value;
-        if (!string.IsNullOrWhiteSpace(nombreUsuario))
-        {
-            request.Headers.TryAddWithoutValidation(
-                UsuarioNombreHeader,
-                nombreUsuario.Replace("\r", string.Empty).Replace("\n", string.Empty));
-        }
     }
 }

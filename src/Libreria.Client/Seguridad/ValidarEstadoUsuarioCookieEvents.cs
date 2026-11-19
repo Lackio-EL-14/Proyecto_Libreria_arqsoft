@@ -72,7 +72,6 @@ public class ValidarEstadoUsuarioCookieEvents : CookieAuthenticationEvents
                 var items = context.HttpContext.Items;
                 items[BearerTokenDelegatingHandler.ClaveTokenEnCurso] = token;
                 items[BearerTokenDelegatingHandler.ClaveVencimientoEnCurso] = vencimiento;
-                items[BearerTokenDelegatingHandler.ClavePrincipalEnCurso] = context.Principal;
                 try
                 {
                     sesionActiva = await _usuariosClient.SesionActivaAsync(
@@ -83,7 +82,6 @@ public class ValidarEstadoUsuarioCookieEvents : CookieAuthenticationEvents
                 {
                     items.Remove(BearerTokenDelegatingHandler.ClaveTokenEnCurso);
                     items.Remove(BearerTokenDelegatingHandler.ClaveVencimientoEnCurso);
-                    items.Remove(BearerTokenDelegatingHandler.ClavePrincipalEnCurso);
                 }
 
                 _cache.Set(cacheKey, sesionActiva, _cacheDuration);

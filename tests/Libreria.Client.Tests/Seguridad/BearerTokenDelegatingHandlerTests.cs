@@ -31,37 +31,13 @@ public sealed class BearerTokenDelegatingHandlerTests
     [Theory]
     [InlineData("/api/clientes")]
     [InlineData("/api/productos")]
-    public async Task OtrosServicios_NoRecibenCabecerasXUsuario(string ruta)
-    {
-        var (capturador, _) = await EnviarAsync(ruta, Autenticado("t", Ahora.AddMinutes(30)));
-
-        Assert.Null(capturador.UsuarioId);
-        Assert.Null(capturador.UsuarioNombre);
-    }
-
-    [Theory]
     [InlineData("/api/usuarios")]
-    [InlineData("/api/usuarios/nombres?ids=a0000000-0000-0000-0000-000000000002")]
-    public async Task Usuarios_RecibeTransitoriamenteElSubYElNombreDeUsuario(string ruta)
+    public async Task NingunServicio_RecibeCabecerasXUsuario_LaIdentidadVaEnElToken(string ruta)
     {
         var (capturador, _) = await EnviarAsync(ruta, Autenticado("t", Ahora.AddMinutes(30)));
 
-        Assert.Equal(Sub, capturador.UsuarioId);
-        Assert.Equal("admin", capturador.UsuarioNombre);
-    }
-
-    [Fact]
-    public async Task CabecerasXUsuarioFalsificadas_SeDescartan()
-    {
-        var (capturador, _) = await EnviarAsync("/api/usuarios", Anonimo(), solicitud =>
-        {
-            solicitud.Headers.Add(BearerTokenDelegatingHandler.UsuarioIdHeader, Guid.NewGuid().ToString());
-            solicitud.Headers.Add(BearerTokenDelegatingHandler.UsuarioNombreHeader, "intruso");
-        });
-
         Assert.Null(capturador.UsuarioId);
         Assert.Null(capturador.UsuarioNombre);
-        Assert.Null(capturador.Autorizacion);
     }
 
     [Fact]
@@ -96,17 +72,15 @@ public sealed class BearerTokenDelegatingHandlerTests
     }
 
     [Fact]
-    public async Task DuranteLaValidacionDeLaCookie_UsaElTokenYElUsuarioEnCurso()
+    public async Task DuranteLaValidacionDeLaCookie_UsaElTokenEnCurso()
     {
         var contexto = Anonimo();
         contexto.Items[BearerTokenDelegatingHandler.ClaveTokenEnCurso] = "token-en-curso";
         contexto.Items[BearerTokenDelegatingHandler.ClaveVencimientoEnCurso] = Ahora.AddMinutes(5).ToString("o", CultureInfo.InvariantCulture);
-        contexto.Items[BearerTokenDelegatingHandler.ClavePrincipalEnCurso] = Principal();
 
         var (capturador, _) = await EnviarAsync($"/api/usuarios/{Sub}/sesion-activa", contexto);
 
         Assert.Equal("Bearer token-en-curso", capturador.Autorizacion);
-        Assert.Equal(Sub, capturador.UsuarioId);
     }
 
     private static async Task<(Capturador, HttpResponseMessage)> EnviarAsync(
@@ -170,8 +144,8 @@ public sealed class BearerTokenDelegatingHandlerTests
         {
             Llamadas++;
             Autorizacion = request.Headers.Authorization?.ToString();
-            UsuarioId = request.Headers.TryGetValues(BearerTokenDelegatingHandler.UsuarioIdHeader, out var id) ? id.Single() : null;
-            UsuarioNombre = request.Headers.TryGetValues(BearerTokenDelegatingHandler.UsuarioNombreHeader, out var nombre) ? nombre.Single() : null;
+            UsuarioId = request.Headers.TryGetValues("X-Usuario-Id", out var id) ? id.Single() : null;
+            UsuarioNombre = request.Headers.TryGetValues("X-Usuario-Nombre", out var nombre) ? nombre.Single() : null;
             return Task.FromResult(new HttpResponseMessage(Estado));
         }
     }
