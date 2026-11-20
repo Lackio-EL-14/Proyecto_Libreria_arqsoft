@@ -141,7 +141,7 @@ public sealed class UserRepository : IUserRepository
     }
 
 
-    public async Task<IReadOnlyDictionary<Guid, string>> GetFullNamesByPublicIdsAsync(
+    public async Task<IReadOnlyDictionary<Guid, string>> GetFullNamesByKeycloakIdsAsync(
         IReadOnlyCollection<Guid> publicIds)
     {
         ArgumentNullException.ThrowIfNull(publicIds);
@@ -167,16 +167,16 @@ public sealed class UserRepository : IUserRepository
         }
 
         command.CommandText = $"""
-            SELECT PublicId, NombreCompleto
+            SELECT KeycloakId, NombreCompleto
             FROM dbo.Usuario
-            WHERE PublicId IN ({string.Join(", ", parameters)});
+            WHERE KeycloakId IN ({string.Join(", ", parameters)});
             """;
 
         var result = new Dictionary<Guid, string>();
         await using var reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
-            result[reader.GetGuid(reader.GetOrdinal("PublicId"))] =
+            result[reader.GetGuid(reader.GetOrdinal("KeycloakId"))] =
                 reader.GetString(reader.GetOrdinal("NombreCompleto"));
         }
 

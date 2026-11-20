@@ -63,7 +63,7 @@ public sealed class FakeUserRepository : IUserRepository
 
     public Dictionary<Guid, string> PublicNames { get; } = new();
 
-    public Task<IReadOnlyDictionary<Guid, string>> GetFullNamesByPublicIdsAsync(
+    public Task<IReadOnlyDictionary<Guid, string>> GetFullNamesByKeycloakIdsAsync(
         IReadOnlyCollection<Guid> publicIds)
     {
         IReadOnlyDictionary<Guid, string> result = PublicNames

@@ -112,11 +112,9 @@ builder.Services.AddSwaggerGen(opciones => opciones.AgregarBearerDeKeycloak());
 // y los roles se aplican con [Authorize(Policy = ...)]. Ver Infrastructure/Seguridad/SeguridadJwtExtensions.cs.
 builder.Services.AddSeguridadJwt(builder.Configuration, builder.Environment);
 
-// 2. Usuario que opera (puerto IUsuarioActual). Hasta US-127 solo existe el de desarrollo.
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddSingleton<IUsuarioActual, UsuarioActualDesarrollo>();
-}
+// US-127: el actor de auditoria sale del JWT validado en cada peticion.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUsuarioActual, UsuarioActualDesdeToken>();
 
 var app = builder.Build();
 

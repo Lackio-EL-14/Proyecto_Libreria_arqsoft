@@ -13,7 +13,7 @@ public interface IUserRepository
     Task<IReadOnlyDictionary<int, string>> GetFullNamesByIdsAsync(
     IReadOnlyCollection<int> userIds);
 
-    Task<IReadOnlyDictionary<Guid, string>> GetFullNamesByPublicIdsAsync(
+    Task<IReadOnlyDictionary<Guid, string>> GetFullNamesByKeycloakIdsAsync(
         IReadOnlyCollection<Guid> publicIds);
 
     Task<bool> UsernameExistsAsync(string username);
