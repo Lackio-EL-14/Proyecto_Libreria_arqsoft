@@ -4,79 +4,81 @@
     ViewData["Title"] = "Crear usuario";
 }
 
-<div class="container mt-4">
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <h1 class="h4 mb-4">Crear usuario</h1>
-
-            @if (!string.IsNullOrWhiteSpace(Model.MensajeExito))
-            {
-                <div class="alert alert-success">
-                    @Model.MensajeExito
-                </div>
-            }
-
-            <div asp-validation-summary="ModelOnly"
-                 class="text-danger mb-3"></div>
-
-            <form method="post">
-                <div class="mb-3">
-                    <label asp-for="Nombre" class="form-label"></label>
-                    <input asp-for="Nombre" class="form-control" />
-                    <span asp-validation-for="Nombre" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Apellido" class="form-label"></label>
-                    <input asp-for="Apellido" class="form-control" />
-                    <span asp-validation-for="Apellido" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="ApellidoMaterno" class="form-label">Apellido materno (opcional)</label>
-                    <input asp-for="ApellidoMaterno" class="form-control" />
-                    <span asp-validation-for="ApellidoMaterno" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Correo" class="form-label"></label>
-                    <input asp-for="Correo"
-                           type="email"
-                           class="form-control" />
-                    <span asp-validation-for="Correo" class="text-danger"></span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Rol" class="form-label">Rol</label>
-                    <select asp-for="Rol"
-                            asp-items="Model.Roles"
-                            class="form-select">
-                        <option value="">Seleccione un rol</option>
-                    </select>
-                    <span asp-validation-for="Rol" class="text-danger"></span>
-                </div>
-
-                <div class="d-flex gap-2 mb-3">
-                    <button type="submit"
-                            asp-page-handler="Crear"
-                            class="btn btn-primary">
-                        Crear usuario
-                    </button>
-                </div>
-
-                @if (!string.IsNullOrWhiteSpace(Model.NombreUsuario))
-                {
-                    <div class="mb-3">
-                        <label class="form-label">
-                            Nombre de usuario generado
-                        </label>
-
-                        <input class="form-control"
-                               value="@Model.NombreUsuario"
-                               readonly />
-                    </div>
-                }
-            </form>
-        </div>
+<div class="page-header">
+    <div>
+        <h1>Crear usuario</h1>
+        <p>Ingrese los datos del nuevo usuario.</p>
     </div>
+</div>
+
+<div class="form-card">
+    @if (!string.IsNullOrWhiteSpace(Model.MensajeExito))
+    {
+        <div class="mensaje mensaje--exito" role="status">
+            @Model.MensajeExito
+        </div>
+    }
+
+    <div asp-validation-summary="ModelOnly"
+         class="validation-summary-errors"
+         role="alert"></div>
+
+    <form method="post">
+        <div class="form-group">
+            <label asp-for="Nombre">Nombre</label>
+            <input asp-for="Nombre" class="form-control" />
+            <span asp-validation-for="Nombre" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Apellido">Apellido paterno</label>
+            <input asp-for="Apellido" class="form-control" />
+            <span asp-validation-for="Apellido" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ApellidoMaterno">Apellido materno (opcional)</label>
+            <input asp-for="ApellidoMaterno" class="form-control" />
+            <span asp-validation-for="ApellidoMaterno" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Correo">Correo</label>
+            <input asp-for="Correo"
+                   type="email"
+                   class="form-control" />
+            <span asp-validation-for="Correo" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Rol">Rol</label>
+            <select asp-for="Rol"
+                    asp-items="Model.Roles"
+                    class="form-control">
+                <option value="">Seleccione un rol</option>
+            </select>
+            <span asp-validation-for="Rol" class="text-danger"></span>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.NombreUsuario))
+        {
+            <div class="form-group">
+                <label for="nombre-usuario-generado">Nombre de usuario generado</label>
+                <input id="nombre-usuario-generado"
+                       type="text"
+                       class="form-control"
+                       value="@Model.NombreUsuario"
+                       readonly />
+            </div>
+        }
+
+        <div class="form-actions">
+            <button type="submit"
+                    asp-page-handler="Crear"
+                    class="btn btn--primary">
+                Crear usuario
+            </button>
+            <a asp-page="./Index" class="btn btn--secondary">Volver</a>
+        </div>
+    </form>
 </div>

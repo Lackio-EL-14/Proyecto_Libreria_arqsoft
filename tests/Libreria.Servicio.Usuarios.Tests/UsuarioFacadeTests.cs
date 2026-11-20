@@ -1,5 +1,7 @@
 using Libreria.Servicio.Usuarios.Application.Facades;
+using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 using Libreria.Servicio.Usuarios.Application.Services;
+using Libreria.Servicio.Usuarios.Infrastructure.Identidad;
 using Libreria.Servicio.Usuarios.Tests.TestDoubles;
 
 namespace Libreria.Servicio.Usuarios.Tests;
@@ -56,5 +58,61 @@ public sealed class UsuarioFacadeTests
                 "juan@example.com", "Juan", "jperez", "Clave!123"));
 
         Assert.Null(sender.Recipient);
+    }
+
+    [Fact]
+    public async Task RegisterUserInKeycloakAsync_Exito_CreaUsuarioConRolYContrasenaTemporal()
+    {
+        var identityProvider = new ProveedorIdentidadEnMemoria();
+        var facade = new UsuarioFacade(
+            new UsernameGenerator(new FakeUserRepository()),
+            new FakeEmailSender(),
+            new FakeApplicationConfiguration(),
+            identityProvider);
+
+        var data = new UsuarioIdentidad("jdoe", "jdoe@example.com", "John", "Doe");
+        var result = await facade.RegisterUserInKeycloakAsync(data, "Vendedor", "SecurePass123!");
+
+        Assert.True(result.IsSuccess);
+        Assert.True(identityProvider.Usuarios.ContainsKey(result.Valor));
+        var user = identityProvider.Usuarios[result.Valor];
+        Assert.Contains("Vendedor", user.Roles);
+        Assert.True(user.CambioPendiente);
+    }
+
+    [Fact]
+    public async Task RegisterUserInKeycloakAsync_RolInvalido_CompensaKeycloak()
+    {
+        var identityProvider = new ProveedorIdentidadEnMemoria();
+        var facade = new UsuarioFacade(
+            new UsernameGenerator(new FakeUserRepository()),
+            new FakeEmailSender(),
+            new FakeApplicationConfiguration(),
+            identityProvider);
+
+        var data = new UsuarioIdentidad("jdoe", "jdoe@example.com", "John", "Doe");
+        var result = await facade.RegisterUserInKeycloakAsync(data, "RolInexistente", "SecurePass123!");
+
+        Assert.False(result.IsSuccess);
+        Assert.DoesNotContain(identityProvider.Usuarios.Values, u => u.Datos.NombreUsuario == "jdoe");
+    }
+
+    [Fact]
+    public async Task CompensateKeycloakAsync_EliminaUsuarioDelProveedor()
+    {
+        var identityProvider = new ProveedorIdentidadEnMemoria();
+        var facade = new UsuarioFacade(
+            new UsernameGenerator(new FakeUserRepository()),
+            new FakeEmailSender(),
+            new FakeApplicationConfiguration(),
+            identityProvider);
+
+        var data = new UsuarioIdentidad("jdoe", "jdoe@example.com", "John", "Doe");
+        var createResult = await identityProvider.CrearUsuarioAsync(data);
+        var keycloakId = createResult.Valor;
+
+        await facade.CompensateKeycloakAsync(keycloakId);
+
+        Assert.False(identityProvider.Usuarios.ContainsKey(keycloakId));
     }
 }
