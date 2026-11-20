@@ -10,6 +10,23 @@ namespace Libreria.Servicio.Usuarios.Infrastructure.Repositories;
 
 public sealed class UserRepository : IUserRepository
 {
+    public async Task ActivatePendingAsync(Guid keycloakId)
+    {
+        await using var connection = _connectionFactory.CreateConnection();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE dbo.Usuario
+            SET Estado = @ActiveStatus,
+                UsuarioModificacionId = @KeycloakId,
+                FechaModificacion = SYSDATETIME()
+            WHERE KeycloakId = @KeycloakId AND Estado = @PendingStatus;
+            """;
+        AddParameter(command, "@KeycloakId", keycloakId, DbType.Guid);
+        AddParameter(command, "@ActiveStatus", UserStatuses.Active, DbType.String, 20);
+        AddParameter(command, "@PendingStatus", UserStatuses.Pending, DbType.String, 20);
+        await command.ExecuteNonQueryAsync();
+    }
+
     private readonly SqlConnectionFactory _connectionFactory;
 
     public UserRepository(SqlConnectionFactory connectionFactory)

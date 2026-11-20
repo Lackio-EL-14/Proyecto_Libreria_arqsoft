@@ -5,6 +5,8 @@ namespace Libreria.Servicio.Usuarios.Application.Ports.Secondary;
 
 public interface IUserRepository
 {
+    Task ActivatePendingAsync(Guid keycloakId);
+
     Task<bool> IsSessionActiveAsync(int userId);
 
     /// <summary>Usuario no dado de baja (Activo o Pendiente) y con rol activo, buscado por <c>KeycloakId</c> (el <c>sub</c> del token).</summary>

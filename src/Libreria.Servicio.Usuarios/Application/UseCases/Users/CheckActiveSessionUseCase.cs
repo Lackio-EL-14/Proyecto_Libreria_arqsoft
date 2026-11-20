@@ -6,11 +6,13 @@ namespace Libreria.Servicio.Usuarios.Application.UseCases.Users;
 public sealed class CheckActiveSessionUseCase : ICheckActiveSessionUseCase
 {
     private readonly IUserRepository _userRepository;
+    private readonly IProveedorIdentidad _proveedorIdentidad;
 
     public CheckActiveSessionUseCase(
-        IUserRepository userRepository)
+        IUserRepository userRepository, IProveedorIdentidad proveedorIdentidad)
     {
         _userRepository = userRepository;
+        _proveedorIdentidad = proveedorIdentidad;
     }
 
     public Task<bool> ExecuteAsync(int userId)
@@ -23,13 +25,22 @@ public sealed class CheckActiveSessionUseCase : ICheckActiveSessionUseCase
         return _userRepository.IsSessionActiveAsync(userId);
     }
 
-    public Task<bool> ExecuteAsync(Guid publicId)
+    public async Task<bool> ExecuteAsync(Guid publicId)
     {
         if (publicId == Guid.Empty)
         {
-            return Task.FromResult(false);
+            return false;
         }
 
-        return _userRepository.IsSessionActiveAsync(publicId);
+        if (!await _userRepository.IsSessionActiveAsync(publicId))
+            return false;
+
+        // La consulta de sesión existente recibe el sub de Keycloak.
+        var pending = await _proveedorIdentidad.TieneCambioDeContrasenaPendienteAsync(publicId);
+        if (!pending.EsExito || pending.Valor)
+            return false;
+
+        await _userRepository.ActivatePendingAsync(publicId);
+        return await _userRepository.IsSessionActiveAsync(publicId);
     }
 }

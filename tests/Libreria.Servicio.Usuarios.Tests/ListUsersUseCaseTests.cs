@@ -1,3 +1,4 @@
+using Libreria.Servicio.Usuarios.Infrastructure.Identidad;
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Application.UseCases.Users;
 using Libreria.Servicio.Usuarios.Tests.TestDoubles;
@@ -30,7 +31,7 @@ public sealed class ListUsersUseCaseTests
         };
 
         var useCase =
-            new ListUsersUseCase(repository, currentUser);
+            new ListUsersUseCase(repository, currentUser, new ProveedorIdentidadEnMemoria());
 
         var result =
             await useCase.ExecuteAsync();
@@ -60,7 +61,7 @@ public sealed class ListUsersUseCaseTests
         };
 
         var useCase =
-            new ListUsersUseCase(repository, currentUser);
+            new ListUsersUseCase(repository, currentUser, new ProveedorIdentidadEnMemoria());
 
         var result =
             await useCase.ExecuteAsync();
@@ -82,13 +83,11 @@ public sealed class ListUsersUseCaseTests
         };
 
         var useCase =
-            new ListUsersUseCase(repository, currentUser);
+            new ListUsersUseCase(repository, currentUser, new ProveedorIdentidadEnMemoria());
 
         await useCase.ExecuteAsync("  Activo  ");
 
-        Assert.Equal(
-            "Activo",
-            repository.LastListStatus);
+        Assert.Null(repository.LastListStatus);
     }
 
     [Fact]
@@ -105,9 +104,47 @@ public sealed class ListUsersUseCaseTests
         };
 
         var useCase =
-            new ListUsersUseCase(repository, currentUser);
+            new ListUsersUseCase(repository, currentUser, new ProveedorIdentidadEnMemoria());
 
         await Assert.ThrowsAsync<ArgumentException>(
             () => useCase.ExecuteAsync("Suspendido"));
+    }
+
+    [Theory]
+    [InlineData(true, "Pendiente", "Pendiente", 1)]
+    [InlineData(false, "Activo", "Activo", 1)]
+    [InlineData(false, "Activo", "Pendiente", 0)]
+    public async Task SincronizaAntesDeFiltrar(bool temporal, string expected, string filter, int count)
+    {
+        var identity = new ProveedorIdentidadEnMemoria();
+        var id = ProveedorIdentidadEnMemoria.IdVendedorSemilla;
+        await identity.FijarContrasenaAsync(id, "Prueba123!", temporal);
+        var user = new Libreria.Servicio.Usuarios.Domain.Entities.User
+        {
+            PublicId = Guid.NewGuid(), KeycloakId = id, Status = "Pendiente"
+        };
+        var repository = new FakeUserRepository { IsActiveAdministrator = true, UserByPublicId = user };
+        repository.UserList.Add(new UserListItemDto(user.PublicId, "Prueba", "prueba", "test@test.local", "Vendedor", "Pendiente"));
+        var useCase = new ListUsersUseCase(repository,
+            new FakeCurrentUser { UserId = ProveedorIdentidadEnMemoria.IdAdminSemilla }, identity);
+        var result = await useCase.ExecuteAsync(filter);
+        Assert.NotNull(result);
+        Assert.Equal(count, result.Count);
+        if (count > 0) Assert.Equal(expected, result[0].Status);
+        Assert.Equal(expected, user.Status);
+        Assert.Equal(temporal ? (Guid?)null : id, repository.ActivatedKeycloakId);
+    }
+
+    [Fact]
+    public async Task Inactivo_NoConsultaKeycloakNiLoReactiva()
+    {
+        var identity = new ProveedorIdentidadEnMemoria { FallarSiguienteLlamada = new Exception("No debe consultarse") };
+        var repository = new FakeUserRepository { IsActiveAdministrator = true };
+        repository.UserList.Add(new UserListItemDto(Guid.NewGuid(), "Baja", "baja", "baja@test.local", "Vendedor", "Inactivo"));
+        var useCase = new ListUsersUseCase(repository,
+            new FakeCurrentUser { UserId = ProveedorIdentidadEnMemoria.IdAdminSemilla }, identity);
+        var result = await useCase.ExecuteAsync("Inactivo");
+        Assert.Single(result!);
+        Assert.Null(repository.ActivatedKeycloakId);
     }
 }

@@ -6,6 +6,15 @@ namespace Libreria.Servicio.Usuarios.Tests.TestDoubles;
 
 public sealed class FakeUserRepository : IUserRepository
 {
+    public Guid? ActivatedKeycloakId { get; private set; }
+    public Task ActivatePendingAsync(Guid keycloakId)
+    {
+        ActivatedKeycloakId = keycloakId;
+        if (UserByPublicId?.KeycloakId == keycloakId && UserByPublicId.Status == "Pendiente")
+            UserByPublicId.Status = "Activo";
+        return Task.CompletedTask;
+    }
+
     public bool SessionActive { get; set; }
 
     public bool IsActiveAdministrator { get; set; }

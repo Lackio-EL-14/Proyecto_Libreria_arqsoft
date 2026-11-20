@@ -9,13 +9,15 @@ public sealed class ListUsersUseCase : IListUsersUseCase
 {
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUser _currentUser;
+    private readonly IProveedorIdentidad _proveedorIdentidad;
 
     public ListUsersUseCase(
         IUserRepository userRepository,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser, IProveedorIdentidad proveedorIdentidad)
     {
         _userRepository = userRepository;
         _currentUser = currentUser;
+        _proveedorIdentidad = proveedorIdentidad;
     }
 
     public async Task<IReadOnlyList<UserListItemDto>?> ExecuteAsync(
@@ -40,6 +42,30 @@ public sealed class ListUsersUseCase : IListUsersUseCase
                 nameof(status));
         }
 
-        return await _userRepository.GetListAsync(normalizedStatus);
+        // Sincronizar antes de filtrar: un Pendiente puede haber completado el cambio.
+        var users = await _userRepository.GetListAsync();
+        var result = new List<UserListItemDto>();
+        foreach (var item in users)
+        {
+            var updated = item;
+            if (item.Status != UserStatuses.Inactive)
+            {
+                var user = await _userRepository.GetByPublicIdAsync(item.PublicId);
+                if (user?.KeycloakId is Guid keycloakId)
+                {
+                    var pending = await _proveedorIdentidad.TieneCambioDeContrasenaPendienteAsync(keycloakId);
+                    if (!pending.EsExito)
+                        throw new InvalidOperationException("No se pudo consultar el estado del usuario en Keycloak.");
+
+                    if (!pending.Valor)
+                        await _userRepository.ActivatePendingAsync(keycloakId);
+
+                    updated = item with { Status = pending.Valor ? UserStatuses.Pending : UserStatuses.Active };
+                }
+            }
+            if (normalizedStatus is null || updated.Status == normalizedStatus)
+                result.Add(updated);
+        }
+        return result;
     }
 }
