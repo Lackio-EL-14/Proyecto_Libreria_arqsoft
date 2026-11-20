@@ -7,3 +7,6 @@ obj/
 .DS_Store
 .env
 CLAUDE.md
+GEMINI.md
+.ai-workspace/
+,agents/
