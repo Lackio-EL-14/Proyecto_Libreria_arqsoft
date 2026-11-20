@@ -41,11 +41,9 @@ conexiones.Configurar(cadenaClientes);
 builder.Services.AddSingleton(conexiones);
 builder.Services.AddScoped<IDbConnectionFactory, MySqlConnectionFactory>();
 
-// 3. Usuario que opera (puerto IUsuarioActual). Hasta US-127 solo existe el de desarrollo.
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddSingleton<IUsuarioActual, UsuarioActualDesarrollo>();
-}
+// US-127: el actor de auditoria sale del JWT validado en cada peticion.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUsuarioActual, UsuarioActualDesdeToken>();
 
 // 4. Factory Method: el servicio pide su repositorio a la fábrica, no al contenedor.
 builder.Services.AddScoped<ClienteRepositoryFactory, MySqlClienteRepositoryFactory>();

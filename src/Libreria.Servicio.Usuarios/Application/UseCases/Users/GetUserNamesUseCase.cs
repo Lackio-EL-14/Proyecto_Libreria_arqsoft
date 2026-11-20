@@ -33,7 +33,7 @@ public sealed class GetUserNamesUseCase : IGetUserNamesUseCase
     {
         ArgumentNullException.ThrowIfNull(publicIds);
 
-        return _userRepository.GetFullNamesByPublicIdsAsync(
+        return _userRepository.GetFullNamesByKeycloakIdsAsync(
             publicIds.Where(id => id != Guid.Empty).Distinct().ToArray());
     }
 }

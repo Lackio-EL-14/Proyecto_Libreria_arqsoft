@@ -32,10 +32,8 @@ singleton.Configurar(cadena);
 
 builder.Services.AddSingleton(singleton);
 builder.Services.AddScoped<IDbConnectionFactory, SqlConnectionFactory>();
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddSingleton<IUsuarioActual, UsuarioActualDesarrollo>();
-}
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUsuarioActual, UsuarioActualDesdeToken>();
 
 builder.Services.AddScoped<ProveedorRepositoryFactory, SqlProveedorRepositoryFactory>();
 builder.Services.AddScoped<ProveedorValidator>();
