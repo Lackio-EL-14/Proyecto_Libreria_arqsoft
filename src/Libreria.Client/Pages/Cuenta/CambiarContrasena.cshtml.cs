@@ -1,6 +1,10 @@
 using Libreria.Client.Clients.Common;
 using Libreria.Client.Adapters.Usuarios;
 using Libreria.Client.DTOs.Usuarios;
+using Libreria.Client.Seguridad;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -46,10 +50,13 @@ public class CambiarContrasenaModel : PageModel
                     Input.Confirmacion),
                 HttpContext.RequestAborted);
 
-            TempData["MensajeExito"] =
-                "Contraseña actualizada correctamente.";
-
-            return RedirectToPage();
+            return SignOut(
+                new AuthenticationProperties
+                {
+                    RedirectUri = MotivosSesion.UrlLogin(MotivosSesion.ContrasenaActualizada)
+                },
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                OpenIdConnectDefaults.AuthenticationScheme);
         }
         catch (ApiClientException exception)
         {

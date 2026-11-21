@@ -20,6 +20,7 @@ public sealed class ChangePasswordUseCaseTests
         var resultado = await useCase.ExecuteAsync(new ChangePasswordRequest(Actual, "Nueva#2026x", "Nueva#2026x"));
 
         Assert.True(resultado!.IsSuccess);
+        Assert.True((await identidad.VerificarContrasenaAsync("vendedor", Actual)).IsError);
         Assert.True((await identidad.VerificarContrasenaAsync("vendedor", "Nueva#2026x")).IsSuccess);
         Assert.False((await identidad.TieneCambioDeContrasenaPendienteAsync(Vendedor)).Valor);
     }

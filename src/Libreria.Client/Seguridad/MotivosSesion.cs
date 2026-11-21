@@ -9,6 +9,7 @@ public static class MotivosSesion
 {
     public const string Vencida = "vencida";
     public const string Cerrada = "cerrada";
+    public const string ContrasenaActualizada = "contrasena-actualizada";
     public const string Inactiva = "inactiva";
     public const string NoDisponible = "no-disponible";
     public const string Error = "error";
@@ -18,6 +19,7 @@ public static class MotivosSesion
 
     public static string? Mensaje(string? motivo) => motivo switch
     {
+        ContrasenaActualizada => "Contraseña actualizada correctamente. Inicie sesión de nuevo con su nueva contraseña.",
         Vencida => "Su sesión venció o dejó de ser válida. Inicie sesión de nuevo.",
         Cerrada => "Cerró su sesión correctamente.",
         Inactiva => "Su cuenta está inactiva. Si cree que es un error, comuníquese con el administrador.",
