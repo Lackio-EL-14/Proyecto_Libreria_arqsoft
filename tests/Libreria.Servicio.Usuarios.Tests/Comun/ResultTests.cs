@@ -1,4 +1,4 @@
-using Libreria.Servicio.Usuarios.Application.Comun;
+using Libreria.Servicio.Usuarios.Domain;
 
 namespace Libreria.Servicio.Usuarios.Tests.Comun;
 

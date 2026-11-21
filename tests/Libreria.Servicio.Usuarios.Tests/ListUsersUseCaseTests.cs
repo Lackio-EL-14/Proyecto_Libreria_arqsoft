@@ -29,8 +29,8 @@ public sealed class ListUsersUseCaseTests
         var result = await useCase.ExecuteAsync();
 
         Assert.NotNull(result);
-        Assert.Single(result);
-        var user = result[0];
+        Assert.Single(result.Valor);
+        var user = result.Valor[0];
         Assert.Equal("admin", user.Username);
         Assert.Equal("Administrador", user.Role);
         Assert.Equal("Activo", user.Status);
@@ -61,13 +61,16 @@ public sealed class ListUsersUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_EstadoInvalido_LanzaArgumentException()
+    public async Task ExecuteAsync_EstadoInvalido_DevuelveResultDeValidacion()
     {
         var repository = new FakeUserRepository { IsActiveAdministrator = true };
         var currentUser = new FakeCurrentUser { UserId = AdminPublicId };
         var useCase = new ListUsersUseCase(repository, currentUser);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync("Suspendido"));
+        var result = await useCase.ExecuteAsync("Suspendido");
+
+        Assert.True(result!.IsError);
+        Assert.Equal("Seleccione un estado de usuario válido.", Assert.Single(result.Errors()));
     }
 
     [Fact]
@@ -97,7 +100,7 @@ public sealed class ListUsersUseCaseTests
         var result = await useCase.ExecuteAsync();
 
         Assert.NotNull(result);
-        var user = Assert.Single(result);
+        var user = Assert.Single(result.Valor);
         Assert.Equal("Activo", user.Status);
     }
 
@@ -128,7 +131,7 @@ public sealed class ListUsersUseCaseTests
         var result = await useCase.ExecuteAsync();
 
         Assert.NotNull(result);
-        var user = Assert.Single(result);
+        var user = Assert.Single(result.Valor);
         Assert.Equal("Pendiente", user.Status);
     }
 
@@ -159,7 +162,7 @@ public sealed class ListUsersUseCaseTests
         var result = await useCase.ExecuteAsync("Activo");
 
         Assert.NotNull(result);
-        var user = Assert.Single(result);
+        var user = Assert.Single(result.Valor);
         Assert.Equal("Activo", user.Status);
     }
 
@@ -194,7 +197,7 @@ public sealed class ListUsersUseCaseTests
         var useCase = new ListUsersUseCase(repository, new FakeCurrentUser { UserId = adminNuevo, Username = "aflores" });
         var result = await useCase.ExecuteAsync();
 
-        Assert.Equal("Activo", Assert.Single(result!).Status);
+        Assert.Equal("Activo", Assert.Single(result!.Valor).Status);
         Assert.Contains(adminNuevo, repository.ActivatedKeycloakIds);
     }
 }

@@ -1,6 +1,7 @@
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Application.Ports.Primary;
 using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
+using Libreria.Servicio.Usuarios.Domain;
 using Libreria.Servicio.Usuarios.Domain.Constants;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Users;
@@ -21,7 +22,7 @@ public sealed class ListUsersUseCase : IListUsersUseCase
         _proveedorIdentidad = proveedorIdentidad;
     }
 
-    public async Task<IReadOnlyList<UserListItemDto>?> ExecuteAsync(string? status = null)
+    public async Task<Result<IReadOnlyList<UserListItemDto>>?> ExecuteAsync(string? status = null)
     {
         if (!await IsAuthorizedAdministratorAsync())
         {
@@ -29,9 +30,14 @@ public sealed class ListUsersUseCase : IListUsersUseCase
         }
 
         var normalizedStatus = NormalizeStatus(status);
-        EnsureValidStatus(normalizedStatus);
+        if (normalizedStatus is not null && !UserStatuses.IsValid(normalizedStatus))
+        {
+            return Result<IReadOnlyList<UserListItemDto>>.Fallo(
+                Result.Validacion("estado", "Seleccione un estado de usuario válido."));
+        }
 
-        return await RetrieveAndResolveUsersAsync(normalizedStatus);
+        return Result<IReadOnlyList<UserListItemDto>>.Success(
+            await RetrieveAndResolveUsersAsync(normalizedStatus));
     }
 
     private async Task<bool> IsAuthorizedAdministratorAsync()
@@ -55,14 +61,6 @@ public sealed class ListUsersUseCase : IListUsersUseCase
         }
 
         return status.Trim();
-    }
-
-    private static void EnsureValidStatus(string? status)
-    {
-        if (status is not null && !UserStatuses.IsValid(status))
-        {
-            throw new ArgumentException("Seleccione un estado de usuario válido.", nameof(status));
-        }
     }
 
     private async Task<IReadOnlyList<UserListItemDto>> RetrieveAndResolveUsersAsync(string? requestedStatus)

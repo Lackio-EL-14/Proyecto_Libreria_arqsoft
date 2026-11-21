@@ -96,6 +96,46 @@ public sealed class SeguridadJwtUsuariosTests : IClassFixture<SeguridadJwtUsuari
     }
 
     [Fact]
+    public async Task Vendedor_EnEndpointDeAdministrador_RecibeTituloEnEspanol()
+    {
+        using var respuesta = await EnviarAsync(HttpMethod.Get, "api/usuarios", TokensDePrueba.Vendedor());
+
+        Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
+        Assert.DoesNotContain("Forbidden", await respuesta.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task AltaConCamposVacios_400ConTituloEnEspanol()
+    {
+        using var respuesta = await EnviarAsync(HttpMethod.Post, "api/usuarios", TokensDePrueba.Admin(), new { });
+        var cuerpo = await respuesta.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+        Assert.Contains("Uno o más datos no son válidos.", cuerpo);
+        Assert.DoesNotContain("One or more", cuerpo);
+    }
+
+    [Fact]
+    public async Task EstadoInvalidoEnElListado_400ConElMensajeDelResult()
+    {
+        using var respuesta = await EnviarAsync(HttpMethod.Get, "api/usuarios?estado=Suspendido", TokensDePrueba.Admin());
+
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+        Assert.Contains("Seleccione un estado de usuario válido.", await respuesta.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task CambioDeContrasenaConConfirmacionDistinta_400ConElMensajeEnDetail()
+    {
+        using var respuesta = await EnviarAsync(HttpMethod.Put, "api/usuarios/contrasena", TokensDePrueba.Vendedor(),
+            new { currentPassword = "Actual#2026", newPassword = "Nueva#2026xy", confirmation = "Otra#2026xy" });
+        var cuerpo = await respuesta.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+        Assert.Equal("La confirmación no coincide con la nueva contraseña.", cuerpo.GetProperty("detail").GetString());
+    }
+
+    [Fact]
     public async Task Salud_NoExigeToken()
     {
         using var respuesta = await EnviarAsync(HttpMethod.Get, "salud", token: null);

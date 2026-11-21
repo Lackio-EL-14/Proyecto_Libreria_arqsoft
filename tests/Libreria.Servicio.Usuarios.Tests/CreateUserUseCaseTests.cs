@@ -1,4 +1,4 @@
-using Libreria.Servicio.Usuarios.Application.Comun;
+using Libreria.Servicio.Usuarios.Domain;
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Application.Facades;
 using Libreria.Servicio.Usuarios.Application.Services;

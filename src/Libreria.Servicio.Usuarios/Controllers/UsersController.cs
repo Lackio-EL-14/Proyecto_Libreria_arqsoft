@@ -49,28 +49,17 @@ public sealed class UsersController : ControllerBase
         typeof(ProblemDetails),
         StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<IReadOnlyList<UserListItemDto>>> GetUsersAsync(
+    public async Task<IActionResult> GetUsersAsync(
         [FromQuery] string? estado = null)
     {
-        try
-        {
-            var users =
-                await _listUsersUseCase.ExecuteAsync(estado);
+        var resultado = await _listUsersUseCase.ExecuteAsync(estado);
 
-           if (users is null)
-            {
-                return StatusCode(StatusCodes.Status403Forbidden);
-            }
-
-            return Ok(users);
-        }
-        catch (ArgumentException exception)
+        if (resultado is null)
         {
-            return Problem(
-                title: "Solicitud inválida.",
-                detail: exception.Message,
-                statusCode: StatusCodes.Status400BadRequest);
+            return StatusCode(StatusCodes.Status403Forbidden);
         }
+
+        return resultado.AActionResult(users => Ok(users));
     }
 
     [HttpGet("{id:int}/sesion-activa")]
@@ -229,18 +218,8 @@ public sealed class UsersController : ControllerBase
                 StatusCodes.Status403Forbidden);
         }
 
-        if (resultado.IsSuccess)
-        {
-            return NoContent();
-        }
-
-        // El Front muestra Detail; se conserva el contrato previo (400 con el mensaje).
-        return Problem(
-            title: "No fue posible cambiar la contraseña.",
-            detail: string.Join(" ", resultado.Errors()),
-            statusCode: resultado.Tipo == Domain.TipoError.NoEncontrado
-                ? StatusCodes.Status404NotFound
-                : StatusCodes.Status400BadRequest);
+        // 204, o 400/404 con los mensajes del Result (Detail lleva el texto que muestra el Front).
+        return resultado.AActionResult();
     }
 
     [HttpDelete("{publicId:guid}")]
