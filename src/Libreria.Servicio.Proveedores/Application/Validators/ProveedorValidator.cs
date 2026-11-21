@@ -40,7 +40,7 @@ public sealed class ProveedorValidator
     {
         var errores = new Dictionary<string, string>();
         RequeridoMaximo(errores, nameof(input.Nit), input.Nit, "El NIT", 30);
-        RequeridoMaximo(errores, nameof(input.RazonSocial), input.RazonSocial, "La razón social", 200);
+        RequeridoMaximo(errores, nameof(input.RazonSocial), input.RazonSocial, "La razón social", 200, femenino: true);
         OpcionalMaximo(errores, nameof(input.Telefono), input.Telefono, "El teléfono", 30);
         ValidarCorreo(errores, nameof(input.Correo), input.Correo, "El correo del proveedor");
         RequeridoMaximo(errores, nameof(input.NombreContacto), input.NombreContacto, "El nombre del contacto", 150);
@@ -56,9 +56,9 @@ public sealed class ProveedorValidator
         return errores;
     }
 
-    private static void RequeridoMaximo(IDictionary<string, string> errores, string campo, string? valor, string etiqueta, int maximo)
+    private static void RequeridoMaximo(IDictionary<string, string> errores, string campo, string? valor, string etiqueta, int maximo, bool femenino = false)
     {
-        if (string.IsNullOrWhiteSpace(valor)) errores[campo] = $"{etiqueta} es obligatorio.";
+        if (string.IsNullOrWhiteSpace(valor)) errores[campo] = $"{etiqueta} es {(femenino ? "obligatoria" : "obligatorio")}.";
         else if (valor.Length > maximo) errores[campo] = $"{etiqueta} no puede superar los {maximo} caracteres.";
     }
 
