@@ -14,7 +14,7 @@ services:
       - proveedores_data:/var/opt/mssql
       - ./db/proveedores:/scripts:ro
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\" || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -b -Q \"IF EXISTS (SELECT 1 FROM sys.databases WHERE database_id > 4 AND state_desc <> 'ONLINE') THROW 50000, 'Base en recuperación', 1; SELECT 1\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -31,7 +31,7 @@ services:
       - usuarios_data:/var/opt/mssql
       - ./db/usuarios:/scripts:ro
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\" || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -b -Q \"IF EXISTS (SELECT 1 FROM sys.databases WHERE database_id > 4 AND state_desc <> 'ONLINE') THROW 50000, 'Base en recuperación', 1; SELECT 1\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -75,7 +75,7 @@ services:
       - MYSQL_USER=${CLIENTES_DB_USUARIO:?Defina CLIENTES_DB_USUARIO en .env}
       - MYSQL_PASSWORD=${CLIENTES_DB_PASSWORD:?Defina CLIENTES_DB_PASSWORD en .env}
     ports:
-      - "3306:3306"
+      - "3308:3306"
     volumes:
       - clientes_data:/var/lib/mysql
       - ./db/clientes:/docker-entrypoint-initdb.d:ro

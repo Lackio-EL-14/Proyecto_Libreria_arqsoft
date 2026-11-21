@@ -54,7 +54,7 @@ $entorno = Read-DotEnv (Join-Path $PSScriptRoot '.env')
 $cadenas = @{
     'ConnectionStrings__ProveedoresDb' = Get-Valor $entorno 'ConnectionStrings__ProveedoresDb' "Server=localhost,1433;Database=LibreriaProveedores;User Id=sa;Password=$($entorno['PROVEEDORES_DB_SA_PASSWORD']);TrustServerCertificate=True;"
     'ConnectionStrings__UsuariosDb'    = Get-Valor $entorno 'ConnectionStrings__UsuariosDb' "Server=localhost,1434;Database=LibreriaUsuarios;User Id=sa;Password=$($entorno['USUARIOS_DB_SA_PASSWORD']);TrustServerCertificate=True;"
-    'ConnectionStrings__ClientesDb'    = Get-Valor $entorno 'ConnectionStrings__ClientesDb' "Server=localhost;Port=3306;Database=libreria_clientes;User ID=$($entorno['CLIENTES_DB_USUARIO']);Password=$($entorno['CLIENTES_DB_PASSWORD']);"
+    'ConnectionStrings__ClientesDb'    = Get-Valor $entorno 'ConnectionStrings__ClientesDb' "Server=localhost;Port=3308;Database=libreria_clientes;User ID=$($entorno['CLIENTES_DB_USUARIO']);Password=$($entorno['CLIENTES_DB_PASSWORD']);"
     'ConnectionStrings__ProductosDb'   = Get-Valor $entorno 'ConnectionStrings__ProductosDb' 'mongodb://localhost:27017/libreria_productos'
 }
 

@@ -117,7 +117,7 @@ Hechos verificados en el código **ya corregido** (rama `auditoria-microservicio
 | Navegador del usuario | — | — | — | Front (HTTP) y Keycloak (pantallas de login) |
 | **Front** `Libreria.Client` | ASP.NET Core 10 Razor Pages, OpenID Connect | 5000 | — | Keycloak (OIDC: autorización, token, cierre de sesión); Gateway (HTTP + `Authorization: Bearer`) |
 | **API Gateway** `Libreria.Gateway` | ASP.NET Core 10 + YARP 2.3.0, JwtBearer | 5080 | — | Los 4 MS (proxy inverso); Keycloak (JWKS para validar firmas) |
-| **MS Clientes** | ASP.NET Core 10, ADO.NET + MySqlConnector 3.0.0, JwtBearer | 5103 | `clientes-db`: MySQL 8.4, BD `libreria_clientes` (puerto 3306) | Gateway (entrada), Keycloak (JWKS), su BD |
+| **MS Clientes** | ASP.NET Core 10, ADO.NET + MySqlConnector 3.0.0, JwtBearer | 5103 | `clientes-db`: MySQL 8.4, BD `libreria_clientes` (host 3308 → contenedor 3306) | Gateway (entrada), Keycloak (JWKS), su BD |
 | **MS Proveedores** | ASP.NET Core 10, ADO.NET + Microsoft.Data.SqlClient 7.1.1 | 5101 | `proveedores-db`: SQL Server 2022, `LibreriaProveedores` (1433) | Gateway, Keycloak (JWKS), su BD |
 | **MS Productos** | ASP.NET Core 10, MongoDB.Driver 3.14.0 | 5104 | `productos-db`: MongoDB 8.0, `libreria_productos` (27017) | Gateway, Keycloak (JWKS), su BD |
 | **MS Usuarios** | ASP.NET Core 10, ADO.NET + SqlClient 7.1.1, SMTP | 5102 | `usuarios-db`: SQL Server 2022, `LibreriaUsuarios` (1434→1433) | Gateway; Keycloak (API de administración con el cliente `libreria-usuarios-admin`; verificación de contraseña con `libreria-usuarios-verificacion`); su BD; servidor SMTP |
