@@ -22,8 +22,8 @@ El cuerpo de alta/edición contiene `nit`, `razonSocial`, datos comerciales y el
 
 ## Productos
 
-- CRUD de `api/productos`
-- Catálogos de `api/categorias` y `api/marcas`
+- CRUD de `api/productos`; el listado es `GET api/productos?busqueda=&categoriaPublicId=&marcaPublicId=&estado=&orden=&descendente=` (`orden` = `nombre`, `categoria`, `marca`, `perecedero`, `estado`, `stock`, `precio` o `costo`; auditoría 20/11)
+- Catálogos de `api/categorias` y `api/marcas` (el Front solo los consulta: un solo CRUD por MS)
 - Consulta de `api/historico/{publicId}`
 
 Productos es el microservicio no relacional; categorías y marcas son dependencias de sus documentos.
