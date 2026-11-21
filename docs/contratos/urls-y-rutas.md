@@ -6,7 +6,7 @@
 | Gateway YARP | 5080 | — |
 | Proveedores | 5101 | SQL Server `LibreriaProveedores`, contenedor `proveedores-db`, host 1433 |
 | Usuarios | 5102 | SQL Server `LibreriaUsuarios`, contenedor `usuarios-db`, host 1434 |
-| Clientes | 5103 | MySQL `libreria_clientes`, contenedor `clientes-db`, host 3306 |
+| Clientes | 5103 | MySQL `libreria_clientes`, contenedor `clientes-db`, host 3308 → contenedor 3306 |
 | Productos | 5104 | MongoDB `libreria_productos`, contenedor `productos-db`, host 27017 |
 | Keycloak | 8080 | Realm `libreria`, contenedor `keycloak` (ver `keycloak.md`) |
 

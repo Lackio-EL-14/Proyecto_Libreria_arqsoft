@@ -1,4 +1,5 @@
 #!/bin/bash
+# Este script se ejecuta en Linux; .gitattributes conserva sus finales de línea LF.
 # =========================================================
 # US-124 · Configuración idempotente del realm «libreria».
 #
