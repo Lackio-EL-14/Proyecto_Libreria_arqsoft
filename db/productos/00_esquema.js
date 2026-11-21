@@ -30,6 +30,13 @@ base.marcas.createIndex({ nombre: 1 }, { unique: true, name: 'UQ_marcas_nombre' 
 base.productos.createIndex({ publicId: 1 }, { unique: true, name: 'UQ_productos_publicId' });
 base.productos.createIndex({ 'categoria.publicId': 1 }, { name: 'IX_productos_categoria' });
 base.productos.createIndex({ 'marca.publicId': 1 }, { name: 'IX_productos_marca' });
-base.productos.createIndex({ nombre: 1 }, { name: 'IX_productos_nombre' });
+// Auditoría 20/11: el nombre del producto es único (el validador ya lo exige; el índice
+// cierra la carrera entre dos altas simultáneas). Se reemplaza el índice no único anterior.
+if (base.productos.getIndexes().some(indice => indice.name === 'IX_productos_nombre')) {
+  base.productos.dropIndex('IX_productos_nombre');
+}
+base.productos.createIndex({ nombre: 1 }, { unique: true, name: 'UQ_productos_nombre' });
+// El listado filtra por estado en cada consulta.
+base.productos.createIndex({ estado: 1, nombre: 1 }, { name: 'IX_productos_estado_nombre' });
 
 print('libreria_productos: colecciones e índices listos.');
