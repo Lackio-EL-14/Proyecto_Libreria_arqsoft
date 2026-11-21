@@ -64,12 +64,19 @@ public sealed class UsuariosApiAdapter : ApiClientBase, IUsuariosApi
     }
 
     public async Task<IReadOnlyList<UserListItemDto>> ObtenerUsuariosAsync(
-    string? estado = null,
-    CancellationToken cancellationToken = default)
+        string? estado = null,
+        string? orden = null,
+        bool descendente = false,
+        CancellationToken cancellationToken = default)
     {
-        var query = string.IsNullOrWhiteSpace(estado)
+        var parametros = new List<string>();
+        if (!string.IsNullOrWhiteSpace(estado)) parametros.Add($"estado={Uri.EscapeDataString(estado.Trim())}");
+        if (!string.IsNullOrWhiteSpace(orden)) parametros.Add($"orden={Uri.EscapeDataString(orden.Trim())}");
+        if (descendente) parametros.Add("descendente=true");
+
+        var query = parametros.Count == 0
             ? "api/usuarios"
-            : $"api/usuarios?estado={Uri.EscapeDataString(estado.Trim())}";
+            : "api/usuarios?" + string.Join("&", parametros);
 
         return await GetAsync<List<UserListItemDto>>(
                 query,

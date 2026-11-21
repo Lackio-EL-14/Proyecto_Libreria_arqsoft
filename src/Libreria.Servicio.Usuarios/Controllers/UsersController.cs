@@ -50,9 +50,11 @@ public sealed class UsersController : ControllerBase
         StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetUsersAsync(
-        [FromQuery] string? estado = null)
+        [FromQuery] string? estado = null,
+        [FromQuery] string? orden = null,
+        [FromQuery] bool descendente = false)
     {
-        var resultado = await _listUsersUseCase.ExecuteAsync(estado);
+        var resultado = await _listUsersUseCase.ExecuteAsync(estado, orden, descendente);
 
         if (resultado is null)
         {

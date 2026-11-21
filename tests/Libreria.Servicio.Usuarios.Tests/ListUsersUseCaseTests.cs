@@ -200,4 +200,29 @@ public sealed class ListUsersUseCaseTests
         Assert.Equal("Activo", Assert.Single(result!.Valor).Status);
         Assert.Contains(adminNuevo, repository.ActivatedKeycloakIds);
     }
+
+    [Fact]
+    public async Task ExecuteAsync_OrdenaPorLaColumnaPedida()
+    {
+        var repository = new FakeUserRepository { IsActiveAdministrator = true };
+        repository.UserList.Add(new UserListItemDto(Guid.NewGuid(), "Ana Flores", "aflores", "a@libreria.local", "Vendedor", "Activo"));
+        repository.UserList.Add(new UserListItemDto(Guid.NewGuid(), "Zoe Rojas", "zrojas", "z@libreria.local", "Administrador", "Activo"));
+        var useCase = new ListUsersUseCase(repository, new FakeCurrentUser { UserId = AdminPublicId });
+
+        var porNombreDesc = await useCase.ExecuteAsync(orden: "nombre", descendente: true);
+        var porRol = await useCase.ExecuteAsync(orden: "rol");
+
+        Assert.Equal(["zrojas", "aflores"], porNombreDesc!.Valor.Select(u => u.Username));
+        Assert.Equal(["zrojas", "aflores"], porRol!.Valor.Select(u => u.Username));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ColumnaDeOrdenInvalida_DevuelveResultDeValidacion()
+    {
+        var useCase = new ListUsersUseCase(new FakeUserRepository { IsActiveAdministrator = true }, new FakeCurrentUser { UserId = AdminPublicId });
+
+        var result = await useCase.ExecuteAsync(orden: "contrasena");
+
+        Assert.Equal("Seleccione una columna válida para ordenar.", Assert.Single(result!.Errors()));
+    }
 }

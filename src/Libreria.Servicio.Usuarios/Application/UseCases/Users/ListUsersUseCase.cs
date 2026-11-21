@@ -22,7 +22,21 @@ public sealed class ListUsersUseCase : IListUsersUseCase
         _proveedorIdentidad = proveedorIdentidad;
     }
 
-    public async Task<Result<IReadOnlyList<UserListItemDto>>?> ExecuteAsync(string? status = null)
+    /// <summary>Columnas por las que se puede ordenar el listado (Select con ordenación).</summary>
+    public static readonly IReadOnlyDictionary<string, Func<UserListItemDto, string>> Columnas =
+        new Dictionary<string, Func<UserListItemDto, string>>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["nombre"] = user => user.FullName,
+            ["usuario"] = user => user.Username,
+            ["correo"] = user => user.Email,
+            ["rol"] = user => user.Role,
+            ["estado"] = user => user.Status
+        };
+
+    public async Task<Result<IReadOnlyList<UserListItemDto>>?> ExecuteAsync(
+        string? status = null,
+        string? orden = null,
+        bool descendente = false)
     {
         if (!await IsAuthorizedAdministratorAsync())
         {
@@ -36,8 +50,31 @@ public sealed class ListUsersUseCase : IListUsersUseCase
                 Result.Validacion("estado", "Seleccione un estado de usuario válido."));
         }
 
-        return Result<IReadOnlyList<UserListItemDto>>.Success(
-            await RetrieveAndResolveUsersAsync(normalizedStatus));
+        if (!string.IsNullOrWhiteSpace(orden) && !Columnas.ContainsKey(orden.Trim()))
+        {
+            return Result<IReadOnlyList<UserListItemDto>>.Fallo(
+                Result.Validacion("orden", "Seleccione una columna válida para ordenar."));
+        }
+
+        var users = await RetrieveAndResolveUsersAsync(normalizedStatus);
+        return Result<IReadOnlyList<UserListItemDto>>.Success(Ordenar(users, orden, descendente));
+    }
+
+    private static IReadOnlyList<UserListItemDto> Ordenar(
+        IReadOnlyList<UserListItemDto> users,
+        string? orden,
+        bool descendente)
+    {
+        if (string.IsNullOrWhiteSpace(orden))
+        {
+            return users;
+        }
+
+        var clave = Columnas[orden.Trim()];
+        var ordenados = descendente
+            ? users.OrderByDescending(clave, StringComparer.CurrentCultureIgnoreCase)
+            : users.OrderBy(clave, StringComparer.CurrentCultureIgnoreCase);
+        return ordenados.ThenBy(user => user.Username, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     private async Task<bool> IsAuthorizedAdministratorAsync()

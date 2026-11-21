@@ -110,7 +110,7 @@ public sealed class CambiarContrasenaModelTests
 
         public Task<bool> SesionActivaAsync(Guid keycloakId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyDictionary<Guid, string>> ObtenerNombresAsync(IEnumerable<Guid> usuarioIds, CancellationToken cancellationToken = default) => throw new NotSupportedException();
-        public Task<IReadOnlyList<UserListItemDto>> ObtenerUsuariosAsync(string? estado = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<UserListItemDto>> ObtenerUsuariosAsync(string? estado = null, string? orden = null, bool descendente = false, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<string>> ObtenerRolesAsync(CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<CreateUserResultDto?> CrearUsuarioAsync(CreateUserRequestDto request, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task DarDeBajaUsuarioAsync(Guid publicId, CancellationToken cancellationToken = default) => throw new NotSupportedException();

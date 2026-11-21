@@ -98,4 +98,14 @@ public sealed class UsuariosApiAdapterTests
 
         Assert.Equal("Usuarios", error.Servicio);
     }
+
+    [Fact]
+    public async Task El_listado_envia_estado_orden_y_direccion_al_microservicio()
+    {
+        var (adaptador, manejador) = Crear(HttpStatusCode.OK, "[]");
+
+        await adaptador.ObtenerUsuariosAsync("Pendiente", "correo", descendente: true);
+
+        Assert.Equal("?estado=Pendiente&orden=correo&descendente=true", manejador.UltimaPeticion!.RequestUri!.Query);
+    }
 }

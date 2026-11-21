@@ -21,8 +21,11 @@ public interface IUsuariosApi
         IEnumerable<Guid> usuarioIds,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Listado sin contraseñas; el MS filtra por estado y ordena (orden = nombre, usuario, correo, rol o estado).</summary>
     Task<IReadOnlyList<UserListItemDto>> ObtenerUsuariosAsync(
         string? estado = null,
+        string? orden = null,
+        bool descendente = false,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<string>> ObtenerRolesAsync(
