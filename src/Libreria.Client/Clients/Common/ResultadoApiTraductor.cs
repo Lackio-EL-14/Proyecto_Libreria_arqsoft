@@ -6,10 +6,16 @@ namespace Libreria.Client.Clients.Common;
 
 /// <summary>
 /// Traduce la respuesta HTTP de una escritura a <see cref="ResultadoApi"/>:
-/// 2xx → correcto, 404 → no existe, 409 → mensaje, 400 → errores por campo.
+/// 2xx → correcto, 404 → no existe, 409 → mensaje, 400 → errores por campo,
+/// 403 → sin permiso, 502/503/504 → servicio no disponible.
 /// </summary>
 internal static class ResultadoApiTraductor
 {
+    public const string MensajeSinPermiso = "No tiene permiso para realizar esta operación.";
+
+    public static string MensajeNoDisponible(string servicio) =>
+        $"El servicio de {servicio} no está disponible en este momento. Intente nuevamente en unos minutos.";
+
     public static async Task<ResultadoApi> ConvertirAsync(
         HttpResponseMessage respuesta, string servicio, CancellationToken ct)
     {
@@ -48,8 +54,20 @@ internal static class ResultadoApiTraductor
             }
         }
 
+        if (respuesta.StatusCode == HttpStatusCode.Forbidden)
+        {
+            return ResultadoApi.Invalido(MensajeSinPermiso);
+        }
+
+        if (respuesta.StatusCode is HttpStatusCode.BadGateway
+            or HttpStatusCode.ServiceUnavailable
+            or HttpStatusCode.GatewayTimeout)
+        {
+            return ResultadoApi.Invalido(MensajeNoDisponible(servicio));
+        }
+
         return ResultadoApi.Invalido(
-            $"El servicio de {servicio} no pudo completar la operación (HTTP {(int)respuesta.StatusCode}).");
+            $"El servicio de {servicio} no pudo completar la operación. Intente nuevamente.");
     }
 
     private static async Task<string?> ExtraerMensajeAsync(HttpResponseMessage respuesta, CancellationToken ct)

@@ -38,12 +38,23 @@ public sealed class ProductosApiAdapterTests
     }
 
     [Fact]
-    public async Task Un_error_en_una_lectura_sigue_lanzando_HttpRequestException()
+    public async Task Un_error_en_una_lectura_lanza_ApiClientException_en_espanol()
     {
         var cliente = new ProductosApiAdapter(
             ManejadorHttpFalso.CrearFabrica(new ManejadorHttpFalso(HttpStatusCode.InternalServerError)));
 
-        await Assert.ThrowsAsync<HttpRequestException>(() => cliente.ObtenerProductosAsync(null, null, null));
+        var error = await Assert.ThrowsAsync<ApiClientException>(() => cliente.ObtenerProductosAsync(null, null, null));
+        Assert.Equal("El servicio de Productos rechazó la solicitud.", error.Message);
+    }
+
+    [Fact]
+    public async Task Un_403_en_una_lectura_dice_que_no_tiene_permiso()
+    {
+        var cliente = new ProductosApiAdapter(
+            ManejadorHttpFalso.CrearFabrica(new ManejadorHttpFalso(HttpStatusCode.Forbidden)));
+
+        var error = await Assert.ThrowsAsync<ApiClientException>(() => cliente.ObtenerProductosAsync(null, null, null));
+        Assert.Equal("No tiene permiso para realizar esta operación.", error.Message);
     }
 
     [Theory]

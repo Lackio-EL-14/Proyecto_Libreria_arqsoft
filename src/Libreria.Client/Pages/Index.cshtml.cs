@@ -53,7 +53,7 @@ public class IndexModel : PageModel
             TotalCategorias = listado.Categorias.Count;
             TotalMarcas = listado.Marcas.Count;
         }
-        catch (Exception error) when (error is HttpRequestException or ServicioNoDisponibleException)
+        catch (Exception error) when (error is ApiClientException or ServicioNoDisponibleException)
         {
             // Si el servicio de Productos no responde, el tablero se muestra en cero.
             TotalProductos = 0;
