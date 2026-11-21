@@ -106,7 +106,7 @@ else
                         <td>@cliente.CiNit</td>
                         <td style="font-weight: 600;">@cliente.RazonSocial</td>
                         <td>@(cliente.Correo ?? "—")</td>
-                        <td>@cliente.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@FechaLocal.Mostrar(cliente.FechaCreacion)</td>
                         <td>
                             <span class="badge @(cliente.Estado ? "badge--accent" : "")">@(cliente.Estado ? "Activo" : "Inactivo")</span>
                         </td>
