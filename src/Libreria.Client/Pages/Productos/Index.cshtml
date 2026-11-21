@@ -20,6 +20,10 @@
         @mensaje
     </div>
 }
+@if (TempData["MensajeError"] is string error)
+{
+    <div class="mensaje mensaje--error" role="alert">@error</div>
+}
 
 <!-- Filtros en Grilla Horizontal -->
 <form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; background-color: var(--color-surface); padding: 1.25rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
@@ -251,17 +255,15 @@ else
                                 }
                                 else
                                 {
-                                    <form method="post"
-                                          asp-page-handler="Reactivar"
-                                          style="display: inline;">
-                                        <input type="hidden"
-                                               name="publicId"
-                                               value="@producto.PublicId" />
-                                        <button type="submit"
-                                                class="btn-table">
-                                            Reactivar
-                                        </button>
-                                    </form>
+                                    <button
+                                        type="button"
+                                        class="btn-table"
+                                        data-confirm-trigger
+                                        data-modal-target="producto-reactivar-modal"
+                                        data-entity-id="@producto.PublicId"
+                                        data-entity-name="@producto.Nombre">
+                                        Reactivar
+                                    </button>
                                 }
                             </div>
                         </td>
@@ -283,5 +285,19 @@ else
         CampoIdentificador = "publicId",
         TextoBotonConfirmar = "Confirmar baja",
         TextoBotonCancelar = "Cancelar",
-        MensajeAdvertencia = "El producto no aparecerá en el catálogo activo pero su historial de costos y registros previos se conservarán."
+        MensajeAdvertencia = "El producto no aparecerá en el catálogo activo, pero su historial de costos y registros previos se conservarán."
+    })
+
+@await Html.PartialAsync(
+    "_ConfirmModal",
+    new ConfirmModalModel
+    {
+        Id = "producto-reactivar-modal",
+        Titulo = "Confirmar reactivación de producto",
+        MensajePrincipal = "¿Desea reactivar el producto",
+        Handler = "Reactivar",
+        CampoIdentificador = "publicId",
+        TextoBotonConfirmar = "Reactivar",
+        TextoBotonCancelar = "Cancelar",
+        ClaseBotonConfirmar = "btn--primary"
     })

@@ -136,7 +136,8 @@ public class IndexModel : PageModel
         var resultado = await _productos.DarDeBajaProductoAsync(publicId);
         if (!resultado.Exitoso)
         {
-            return NotFound();
+            TempData["MensajeError"] = MensajeDeError(resultado, "No se pudo dar de baja el producto.");
+            return RedirectToPage("./Index");
         }
 
         TempData["MensajeExito"] = "Producto dado de baja correctamente.";
@@ -150,7 +151,8 @@ public class IndexModel : PageModel
 
         if (!resultado.Exitoso)
         {
-            return NotFound();
+            TempData["MensajeError"] = MensajeDeError(resultado, "No se pudo reactivar el producto.");
+            return RedirectToPage("./Index", new { Estado = false });
         }
 
         TempData["MensajeExito"] =
@@ -160,4 +162,10 @@ public class IndexModel : PageModel
             "./Index",
             new { Estado = false });
     }
+
+    /// <summary>Mensaje del Result del MS (409, 400, servicio caído…) en lugar de un 404 sin explicación.</summary>
+    public static string MensajeDeError(ResultadoApi resultado, string porDefecto) =>
+        resultado.NoEncontrado
+            ? "El producto no existe."
+            : resultado.Errores.Values.FirstOrDefault() ?? porDefecto;
 }
