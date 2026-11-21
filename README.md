@@ -29,10 +29,11 @@ docker compose up -d
 docker compose ps
 ```
 
-Los scripts dentro de `db/clientes`, `db/proveedores`, `db/productos` y `db/usuarios` se ejecutan automáticamente cuando el volumen de cada motor se crea por primera vez. Para aplicar manualmente los scripts idempotentes de Proveedores a una base ya existente:
+MySQL (`db/clientes`) y MongoDB (`db/productos`) ejecutan sus scripts cuando el volumen se crea por primera vez. SQL Server no lo hace por sí solo: las tareas de una sola vez `proveedores-db-init` y `usuarios-db-init` corren los scripts idempotentes de `db/proveedores` y `db/usuarios` en cuanto cada base está sana. En `docker compose ps -a` deben quedar «Exited (0)». Para volver a aplicarlos sobre una base existente:
 
 ```powershell
-docker exec proveedores-db bash -lc 'for f in /scripts/*.sql; do echo "Ejecutando $f..."; /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -b -i "$f" || exit 1; done'
+docker compose run --rm proveedores-db-init
+docker compose run --rm usuarios-db-init
 ```
 
 ## Keycloak (proveedor de identidad)
@@ -43,8 +44,8 @@ Keycloak corre en `http://localhost:8080`, realm `libreria`. Contrato completo: 
 
 ```powershell
 docker compose down -v
-docker compose up -d                 # BD + keycloak + keycloak-configurar
-docker compose ps -a                 # keycloak «healthy»; keycloak-configurar «Exited (0)»
+docker compose up -d                 # BD + *-db-init + keycloak + keycloak-configurar
+docker compose ps -a                 # BD y keycloak «healthy»; *-db-init y keycloak-configurar «Exited (0)»
 docker compose logs keycloak-configurar
 ```
 
