@@ -16,21 +16,12 @@ namespace Libreria.Gateway.Seguridad;
 /// audiencia <c>libreria-api</c> y vencimiento: si algo falla, <b>401</b>.</item>
 /// <item><b>Todo exige token</b> (política por defecto); solo se exceptúa lo marcado con
 /// <c>AllowAnonymous</c>, como <c>/salud</c>.</item>
-/// <item>Roles del claim plano <c>roles</c>: rol insuficiente → <b>403</b>.</item>
+/// <item>Los roles (claim plano <c>roles</c>) los aplica cada microservicio: rol insuficiente → <b>403</b> del MS.</item>
 /// </list>
 /// </remarks>
 public static class SeguridadJwtExtensions
 {
     public const string Seccion = "Keycloak";
-
-    /// <summary>Solo el rol Administrador.</summary>
-    public const string SoloAdministrador = "SoloAdministrador";
-
-    /// <summary>Administrador o Vendedor (gestión de clientes).</summary>
-    public const string GestionClientes = "GestionClientes";
-
-    public const string RolAdministrador = "Administrador";
-    public const string RolVendedor = "Vendedor";
 
     public static IServiceCollection AddSeguridadJwt(
         this IServiceCollection services,
@@ -75,9 +66,6 @@ public static class SeguridadJwtExtensions
             options.FallbackPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
                 .RequireAuthenticatedUser()
                 .Build();
-
-            options.AddPolicy(SoloAdministrador, politica => politica.RequireRole(RolAdministrador));
-            options.AddPolicy(GestionClientes, politica => politica.RequireRole(RolAdministrador, RolVendedor));
         });
 
         return services;

@@ -17,17 +17,6 @@ public sealed class UsuariosApiAdapter : ApiClientBase, IUsuariosApi
     }
 
     public async Task<bool> SesionActivaAsync(
-        int usuarioId,
-        CancellationToken cancellationToken = default)
-    {
-        var result = await GetAsync<bool>(
-            $"api/usuarios/{usuarioId}/sesion-activa",
-            cancellationToken);
-
-        return result;
-    }
-
-    public async Task<bool> SesionActivaAsync(
         Guid keycloakId,
         CancellationToken cancellationToken = default)
     {
@@ -39,32 +28,6 @@ public sealed class UsuariosApiAdapter : ApiClientBase, IUsuariosApi
         return await GetAsync<bool>(
             $"api/usuarios/{keycloakId:D}/sesion-activa",
             cancellationToken);
-    }
-
-    public async Task<IReadOnlyDictionary<int, string>> ObtenerNombresAsync(
-        IEnumerable<int> usuarioIds,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(usuarioIds);
-
-        var ids = usuarioIds
-            .Where(id => id > 0)
-            .Distinct()
-            .ToArray();
-
-        if (ids.Length == 0)
-        {
-            return new Dictionary<int, string>();
-        }
-
-        var query = string.Join(
-            "&",
-            ids.Select(id => $"ids={id}"));
-
-        return await GetAsync<Dictionary<int, string>>(
-                   $"api/usuarios/nombres?{query}",
-                   cancellationToken)
-               ?? new Dictionary<int, string>();
     }
 
     public async Task<IReadOnlyDictionary<Guid, string>> ObtenerNombresAsync(

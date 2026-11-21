@@ -48,9 +48,6 @@ internal sealed class RepositorioProveedoresEnMemoria : IProveedorRepository
     public Task<bool> ExisteValorAsync(string columna, string valor, Guid? excluirPublicId = null) =>
         Task.FromResult(Proveedores.Any(p => p.Nit == valor && p.PublicId != excluirPublicId));
 
-    public Task<IReadOnlyList<Proveedor>> ObtenerActivasAsync(string? busqueda = null) => throw new NotSupportedException();
-    public Task<Proveedor?> ObtenerPorPublicIdAsync(Guid publicId, bool estadoEsperado) => throw new NotSupportedException();
-    public Task<bool> TieneRelacionesAsync(Guid publicId) => throw new NotSupportedException();
 }
 
 internal sealed class FabricaEnMemoria(RepositorioProveedoresEnMemoria repositorio) : ProveedorRepositoryFactory
