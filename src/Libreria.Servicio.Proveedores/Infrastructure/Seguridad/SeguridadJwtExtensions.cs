@@ -65,6 +65,7 @@ public static class SeguridadJwtExtensions
                 };
                 options.Events = new JwtBearerEvents
                 {
+                    OnTokenValidated = ExigirSujeto,
                     OnChallenge = ResponderNoAutenticadoAsync,
                     OnForbidden = ResponderSinPermisoAsync
                 };
@@ -81,6 +82,21 @@ public static class SeguridadJwtExtensions
         });
 
         return services;
+    }
+
+    /// <summary>
+    /// La bitácora guarda el <c>sub</c> del token (US-127): un token sin un <c>sub</c> GUID no
+    /// identifica al usuario y se rechaza con 401, en lugar de fallar después al auditar.
+    /// </summary>
+    private static Task ExigirSujeto(TokenValidatedContext context)
+    {
+        var sub = context.Principal?.FindFirst("sub")?.Value;
+        if (!Guid.TryParse(sub, out var id) || id == Guid.Empty)
+        {
+            context.Fail("El token no identifica al usuario (sub).");
+        }
+
+        return Task.CompletedTask;
     }
 
     private static Task ResponderNoAutenticadoAsync(JwtBearerChallengeContext context)
