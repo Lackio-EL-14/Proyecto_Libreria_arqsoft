@@ -7,7 +7,7 @@
 - Usuarios: IUserRepository, GetUserNamesUseCase y UserRepository resuelven los GUID de auditoria por KeycloakId, devolviendo el diccionario indexado por ese mismo GUID. El doble FakeUserRepository se adapta al nuevo nombre del metodo.
 - Tres archivos UsuarioActualDesdeTokenTests.cs cubren identidad autenticada, usuario vendedor, sub invalido/vacio, identidad anonima, ausencia de contexto, cabeceras falsas y cambio de actor por peticion.
 - AuditoriaService y _AuditoriaInfo ya consumen el diccionario GUID/nombre; no requieren cambios.
-- Las clases UsuarioActualDesarrollo se conservan por compatibilidad con sus pruebas antiguas, pero no se registran en las aplicaciones.
+- Las clases UsuarioActualDesarrollo y sus pruebas se retiraron en la auditoría del 20/11 (no se registraban en ninguna aplicación).
 
 ## Validacion automatica
 
