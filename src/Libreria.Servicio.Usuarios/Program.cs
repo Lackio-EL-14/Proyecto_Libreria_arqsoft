@@ -12,11 +12,30 @@ using Libreria.Servicio.Usuarios.Infrastructure.Factories;
 using Libreria.Servicio.Usuarios.Infrastructure.Identidad;
 using Libreria.Servicio.Usuarios.Infrastructure.Seguridad;
 using Libreria.Servicio.Usuarios.Infrastructure.Transactions;
+using Libreria.Servicio.Usuarios.Presentation.Comun;
+using Microsoft.AspNetCore.Mvc;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+// Errores que no son de negocio → ProblemDetails: BD o Keycloak caídos 503, inesperado 500 (contrato 6.5).
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ManejadorExcepciones>();
+
+// Respuestas automáticas de ASP.NET Core en español (antes «One or more validation errors occurred.» y «Forbidden»).
+builder.Services.Configure<ApiBehaviorOptions>(opciones =>
+{
+    opciones.ClientErrorMapping[StatusCodes.Status403Forbidden].Title = "No tiene permiso para realizar esta acción.";
+    opciones.ClientErrorMapping[StatusCodes.Status404NotFound].Title = "No se encontró el recurso.";
+    opciones.InvalidModelStateResponseFactory = contexto =>
+        new BadRequestObjectResult(new ValidationProblemDetails(contexto.ModelState)
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Title = "Uno o más datos no son válidos."
+        });
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opciones => opciones.AgregarBearerDeKeycloak());
 
@@ -73,6 +92,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseExceptionHandler();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

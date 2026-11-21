@@ -18,15 +18,18 @@ public sealed class ChangePasswordUseCase : IChangePasswordUseCase
     private readonly IProveedorIdentidad _proveedorIdentidad;
     private readonly ICurrentUser _currentUser;
     private readonly PasswordPolicyValidator _passwordPolicy;
+    private readonly IUserRepository _userRepository;
 
     public ChangePasswordUseCase(
         IProveedorIdentidad proveedorIdentidad,
         ICurrentUser currentUser,
-        PasswordPolicyValidator passwordPolicy)
+        PasswordPolicyValidator passwordPolicy,
+        IUserRepository userRepository)
     {
         _proveedorIdentidad = proveedorIdentidad;
         _currentUser = currentUser;
         _passwordPolicy = passwordPolicy;
+        _userRepository = userRepository;
     }
 
     public async Task<Result?> ExecuteAsync(ChangePasswordRequest request)
@@ -55,10 +58,18 @@ public sealed class ChangePasswordUseCase : IChangePasswordUseCase
             return verificacion;
         }
 
-        return await _proveedorIdentidad.FijarContrasenaAsync(
+        var cambio = await _proveedorIdentidad.FijarContrasenaAsync(
             keycloakId,
             request.NewPassword,
             temporal: false);
+
+        if (cambio.IsSuccess)
+        {
+            // Bitácora (US-127/129): el propio usuario queda como autor de la modificación.
+            await _userRepository.RegisterPasswordChangeAsync(keycloakId);
+        }
+
+        return cambio;
     }
 
     private Result Validar(ChangePasswordRequest request, string nombreUsuario)

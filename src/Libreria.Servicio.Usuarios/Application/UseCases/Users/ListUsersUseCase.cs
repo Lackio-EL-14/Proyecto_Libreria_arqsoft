@@ -1,6 +1,7 @@
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Application.Ports.Primary;
 using Libreria.Servicio.Usuarios.Application.Ports.Secondary;
+using Libreria.Servicio.Usuarios.Domain;
 using Libreria.Servicio.Usuarios.Domain.Constants;
 
 namespace Libreria.Servicio.Usuarios.Application.UseCases.Users;
@@ -21,7 +22,21 @@ public sealed class ListUsersUseCase : IListUsersUseCase
         _proveedorIdentidad = proveedorIdentidad;
     }
 
-    public async Task<IReadOnlyList<UserListItemDto>?> ExecuteAsync(string? status = null)
+    /// <summary>Columnas por las que se puede ordenar el listado (Select con ordenación).</summary>
+    public static readonly IReadOnlyDictionary<string, Func<UserListItemDto, string>> Columnas =
+        new Dictionary<string, Func<UserListItemDto, string>>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["nombre"] = user => user.FullName,
+            ["usuario"] = user => user.Username,
+            ["correo"] = user => user.Email,
+            ["rol"] = user => user.Role,
+            ["estado"] = user => user.Status
+        };
+
+    public async Task<Result<IReadOnlyList<UserListItemDto>>?> ExecuteAsync(
+        string? status = null,
+        string? orden = null,
+        bool descendente = false)
     {
         if (!await IsAuthorizedAdministratorAsync())
         {
@@ -29,9 +44,37 @@ public sealed class ListUsersUseCase : IListUsersUseCase
         }
 
         var normalizedStatus = NormalizeStatus(status);
-        EnsureValidStatus(normalizedStatus);
+        if (normalizedStatus is not null && !UserStatuses.IsValid(normalizedStatus))
+        {
+            return Result<IReadOnlyList<UserListItemDto>>.Fallo(
+                Result.Validacion("estado", "Seleccione un estado de usuario válido."));
+        }
 
-        return await RetrieveAndResolveUsersAsync(normalizedStatus);
+        if (!string.IsNullOrWhiteSpace(orden) && !Columnas.ContainsKey(orden.Trim()))
+        {
+            return Result<IReadOnlyList<UserListItemDto>>.Fallo(
+                Result.Validacion("orden", "Seleccione una columna válida para ordenar."));
+        }
+
+        var users = await RetrieveAndResolveUsersAsync(normalizedStatus);
+        return Result<IReadOnlyList<UserListItemDto>>.Success(Ordenar(users, orden, descendente));
+    }
+
+    private static IReadOnlyList<UserListItemDto> Ordenar(
+        IReadOnlyList<UserListItemDto> users,
+        string? orden,
+        bool descendente)
+    {
+        if (string.IsNullOrWhiteSpace(orden))
+        {
+            return users;
+        }
+
+        var clave = Columnas[orden.Trim()];
+        var ordenados = descendente
+            ? users.OrderByDescending(clave, StringComparer.CurrentCultureIgnoreCase)
+            : users.OrderBy(clave, StringComparer.CurrentCultureIgnoreCase);
+        return ordenados.ThenBy(user => user.Username, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     private async Task<bool> IsAuthorizedAdministratorAsync()
@@ -41,6 +84,9 @@ public sealed class ListUsersUseCase : IListUsersUseCase
             return false;
         }
 
+        // Un token válido de Keycloak prueba que ya cambió su contraseña temporal
+        // (Keycloak no lo emite con UPDATE_PASSWORD pendiente): si seguía «Pendiente», se activa.
+        await _userRepository.ActivatePendingAsync(currentUserId);
         return await _userRepository.IsActiveAdministratorAsync(currentUserId);
     }
 
@@ -54,71 +100,30 @@ public sealed class ListUsersUseCase : IListUsersUseCase
         return status.Trim();
     }
 
-    private static void EnsureValidStatus(string? status)
+    private async Task<IReadOnlyList<UserListItemDto>> RetrieveAndResolveUsersAsync(string? requestedStatus)
     {
-        if (status is not null && !UserStatuses.IsValid(status))
-        {
-            throw new ArgumentException("Seleccione un estado de usuario válido.", nameof(status));
-        }
+        await SynchronizePendingUsersAsync();
+        return await _userRepository.GetListAsync(requestedStatus);
     }
 
-    private async Task<IReadOnlyList<UserListItemDto>> RetrieveAndResolveUsersAsync(string? requestedStatus)
+    /// <summary>
+    /// Los «Pendiente» que ya cambiaron su contraseña temporal en Keycloak pasan a «Activo» en la BD.
+    /// Keycloak se consulta por <c>KeycloakId</c> (el <c>sub</c>), no por el <c>PublicId</c> de la BD.
+    /// </summary>
+    private async Task SynchronizePendingUsersAsync()
     {
         if (_proveedorIdentidad is null)
         {
-            return await _userRepository.GetListAsync(requestedStatus);
+            return;
         }
 
-        var rawUsers = await _userRepository.GetListAsync();
-        return await ResolveStatusesAndFilterAsync(rawUsers, requestedStatus);
-    }
-
-    private async Task<IReadOnlyList<UserListItemDto>> ResolveStatusesAndFilterAsync(
-        IReadOnlyList<UserListItemDto> rawUsers,
-        string? requestedStatus)
-    {
-        var resolvedUsers = new List<UserListItemDto>(rawUsers.Count);
-
-        foreach (var user in rawUsers)
+        foreach (var keycloakId in await _userRepository.GetPendingKeycloakIdsAsync())
         {
-            var resolved = await ResolveSingleUserAsync(user);
-            resolvedUsers.Add(resolved);
+            var pendiente = await _proveedorIdentidad.TieneCambioDeContrasenaPendienteAsync(keycloakId);
+            if (pendiente.IsSuccess && !pendiente.Valor)
+            {
+                await _userRepository.ActivatePendingAsync(keycloakId);
+            }
         }
-
-        return FilterUsersByStatus(resolvedUsers, requestedStatus);
-    }
-
-    private async Task<UserListItemDto> ResolveSingleUserAsync(UserListItemDto user)
-    {
-        if (user.Status != UserStatuses.Pending)
-        {
-            return user;
-        }
-
-        return await CheckPasswordPendingAsync(user);
-    }
-
-    private async Task<UserListItemDto> CheckPasswordPendingAsync(UserListItemDto user)
-    {
-        var result = await _proveedorIdentidad!.TieneCambioDeContrasenaPendienteAsync(user.PublicId);
-
-        if (result.IsSuccess && !result.Valor)
-        {
-            return user with { Status = UserStatuses.Active };
-        }
-
-        return user;
-    }
-
-    private static IReadOnlyList<UserListItemDto> FilterUsersByStatus(
-        IReadOnlyList<UserListItemDto> users,
-        string? requestedStatus)
-    {
-        if (requestedStatus is null)
-        {
-            return users;
-        }
-
-        return users.Where(user => user.Status == requestedStatus).ToList();
     }
 }

@@ -26,7 +26,8 @@ public sealed class SeguridadJwtProveedoresTests : IClassFixture<SeguridadJwtPro
         { "firmado con otra clave", TokensDePrueba.FirmadoConOtraClave() },
         { "vencido", TokensDePrueba.Vencido() },
         { "audiencia equivocada", TokensDePrueba.AudienciaEquivocada() },
-        { "emisor equivocado", TokensDePrueba.EmisorEquivocado() }
+        { "emisor equivocado", TokensDePrueba.EmisorEquivocado() },
+        { "sin sub", TokensDePrueba.Crear(Guid.Empty, "anonimo", ["Administrador"]) }
     };
 
     [Theory]

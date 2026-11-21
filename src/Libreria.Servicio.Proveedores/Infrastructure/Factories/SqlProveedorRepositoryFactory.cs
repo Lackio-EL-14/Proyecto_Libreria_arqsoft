@@ -1,6 +1,7 @@
 using Libreria.Servicio.Proveedores.Application.Factories;
 using Libreria.Servicio.Proveedores.Application.Ports.Secondary;
 using Libreria.Servicio.Proveedores.Infrastructure.Repositories;
+using Libreria.Servicio.Proveedores.Infrastructure.Connection;
 
 namespace Libreria.Servicio.Proveedores.Infrastructure.Factories;
 

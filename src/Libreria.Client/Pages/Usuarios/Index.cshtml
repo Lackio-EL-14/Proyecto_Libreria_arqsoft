@@ -15,14 +15,16 @@
 
 @if (TempData["MensajeExito"] is string exito)
 {
-    <p role="status">@exito</p>
+    <div class="mensaje mensaje--exito" role="status">@exito</div>
 }
 @if (TempData["MensajeError"] is string error)
 {
-    <p class="text-danger" role="alert">@error</p>
+    <div class="mensaje mensaje--error" role="alert">@error</div>
 }
 
 <form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem;">
+    <input type="hidden" name="Orden" value="@Model.Orden" />
+    <input type="hidden" name="Descendente" value="@Model.Descendente.ToString().ToLowerInvariant()" />
     <div class="form-group" style="margin-bottom: 0;">
         <label asp-for="Estado">Estado</label>
         <select asp-for="Estado" class="form-control">
@@ -34,6 +36,7 @@
         </select>
     </div>
     <button type="submit" class="btn btn--secondary">Filtrar</button>
+    <a asp-page="./Index" asp-all-route-data="Model.RutaActual" class="btn btn--secondary" title="Volver a consultar el listado con los mismos filtros">Actualizar</a>
     <a asp-page="./Index" class="btn btn--secondary">Limpiar</a>
 </form>
 
@@ -51,11 +54,14 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Nombre completo</th>
-                        <th>Nombre de usuario</th>
-                        <th>Correo electrónico</th>
-                        <th>Rol</th>
-                        <th>Estado</th>
+                        @foreach (var (columna, titulo) in new[] { ("nombre", "Nombre completo"), ("usuario", "Nombre de usuario"), ("correo", "Correo electrónico"), ("rol", "Rol"), ("estado", "Estado") })
+                        {
+                            <th>
+                                <a asp-page="./Index" asp-all-route-data="Model.RutaOrden(columna)" class="tabla-orden" title="Ordenar por @titulo.ToLowerInvariant()">
+                                    @titulo <span aria-hidden="true">@Model.IndicadorOrden(columna)</span>
+                                </a>
+                            </th>
+                        }
                         <th>Acciones</th>
                     </tr>
                 </thead>

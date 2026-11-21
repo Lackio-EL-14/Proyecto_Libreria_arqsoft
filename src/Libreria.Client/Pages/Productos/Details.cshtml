@@ -19,6 +19,10 @@
         @mensaje
     </div>
 }
+@if (TempData["MensajeError"] is string error)
+{
+    <div class="mensaje mensaje--error" role="alert">@error</div>
+}
 
 <div class="form-card" style="max-width: 800px;">
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
@@ -128,8 +132,7 @@
                         {
                             <tr>
                                 <td>
-                                    @item.FechaVigencia.ToString(
-                                        "dd/MM/yyyy HH:mm")
+                                    @FechaLocal.Mostrar(item.FechaVigencia)
                                 </td>
 
                                 <td>

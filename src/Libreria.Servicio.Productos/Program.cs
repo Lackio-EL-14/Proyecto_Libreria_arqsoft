@@ -103,7 +103,14 @@ builder.Services.AddExceptionHandler<ManejadorExcepciones>();
 
 // 1. API REST + Swagger
 builder.Services.AddControllers(opciones =>
-    opciones.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
+{
+    opciones.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+    // Parámetros con formato inválido (por ejemplo, orden=inventado) → mensaje en español.
+    opciones.ModelBindingMessageProvider.SetAttemptedValueIsInvalidAccessor(
+        (valor, campo) => $"El valor «{valor}» no es válido para {campo}.");
+    opciones.ModelBindingMessageProvider.SetValueIsInvalidAccessor(
+        valor => $"El valor «{valor}» no es válido.");
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opciones => opciones.AgregarBearerDeKeycloak());

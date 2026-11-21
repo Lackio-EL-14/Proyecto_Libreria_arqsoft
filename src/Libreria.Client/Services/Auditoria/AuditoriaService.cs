@@ -14,39 +14,6 @@ public sealed class AuditoriaService : IAuditoriaService
     }
 
     public async Task<AuditoriaRegistroDto> ObtenerAsync(
-        int? usuarioCreacionId,
-        DateTime? fechaCreacion,
-        int? usuarioModificacionId,
-        DateTime? fechaModificacion,
-        int? usuarioAnulacionId = null,
-        DateTime? fechaAnulacion = null,
-        CancellationToken cancellationToken = default)
-    {
-        var ids = new[]
-            {
-                usuarioCreacionId,
-                usuarioModificacionId,
-                usuarioAnulacionId
-            }
-            .Where(id => id.HasValue)
-            .Select(id => id!.Value)
-            .Distinct()
-            .ToArray();
-
-        var nombres = await _usuariosClient.ObtenerNombresAsync(
-            ids,
-            cancellationToken);
-
-        return new AuditoriaRegistroDto(
-            ResolverNombre(usuarioCreacionId, nombres),
-            fechaCreacion,
-            ResolverNombre(usuarioModificacionId, nombres),
-            usuarioModificacionId.HasValue ? fechaModificacion : null,
-            ResolverNombre(usuarioAnulacionId, nombres),
-            usuarioAnulacionId.HasValue ? fechaAnulacion : null);
-    }
-
-    public async Task<AuditoriaRegistroDto> ObtenerAsync(
         Guid? usuarioCreacionId,
         DateTime? fechaCreacion,
         Guid? usuarioModificacionId,

@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using MySqlConnector;
+using Libreria.Servicio.Clientes.Infrastructure.Connection;
 
 namespace Libreria.Servicio.Clientes.Tests.Api;
 

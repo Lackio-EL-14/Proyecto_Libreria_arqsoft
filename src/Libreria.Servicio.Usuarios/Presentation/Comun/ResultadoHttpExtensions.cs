@@ -1,4 +1,4 @@
-using Libreria.Servicio.Usuarios.Application.Comun;
+using Libreria.Servicio.Usuarios.Domain;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -30,7 +30,9 @@ public static class ResultadoHttpExtensions
             TipoError.Validacion => new ValidationProblemDetails(AgruparErrores(resultado))
             {
                 Status = StatusCodes.Status400BadRequest,
-                Title = "Uno o más datos no son válidos."
+                Title = "Uno o más datos no son válidos.",
+                // El Front muestra Detail como mensaje general (por ejemplo, en el cambio de contraseña).
+                Detail = string.Join(" ", resultado.Errors())
             },
             TipoError.NoEncontrado => new ProblemDetails
             {

@@ -89,7 +89,9 @@ public sealed class FakeUserRepository : IUserRepository
     {
         LastListStatus = status;
 
-        IReadOnlyList<UserListItemDto> result = UserList;
+        IReadOnlyList<UserListItemDto> result = UserList
+            .Where(user => status is null || user.Status == status)
+            .ToList();
 
         return Task.FromResult(result);
     }
@@ -156,4 +158,44 @@ public sealed class FakeUserRepository : IUserRepository
         return Task.FromResult(DeactivateResult);
     }
 
+    /// <summary>KeycloakId (sub) → PublicId de la BD. En la realidad son distintos para los usuarios nuevos.</summary>
+    public Dictionary<Guid, Guid> PublicIdByKeycloakId { get; } = new();
+
+    public List<Guid> ActivatedKeycloakIds { get; } = [];
+
+    public List<Guid> PasswordChangesRegistered { get; } = [];
+
+    public Task<IReadOnlyList<Guid>> GetPendingKeycloakIdsAsync()
+    {
+        IReadOnlyList<Guid> pending = PublicIdByKeycloakId
+            .Where(pair => UserList.Any(user => user.PublicId == pair.Value && user.Status == "Pendiente"))
+            .Select(pair => pair.Key)
+            .ToList();
+
+        return Task.FromResult(pending);
+    }
+
+    public Task<bool> ActivatePendingAsync(Guid keycloakId)
+    {
+        if (!PublicIdByKeycloakId.TryGetValue(keycloakId, out var publicId))
+        {
+            return Task.FromResult(false);
+        }
+
+        var index = UserList.FindIndex(user => user.PublicId == publicId && user.Status == "Pendiente");
+        if (index < 0)
+        {
+            return Task.FromResult(false);
+        }
+
+        UserList[index] = UserList[index] with { Status = "Activo" };
+        ActivatedKeycloakIds.Add(keycloakId);
+        return Task.FromResult(true);
+    }
+
+    public Task<bool> RegisterPasswordChangeAsync(Guid keycloakId)
+    {
+        PasswordChangesRegistered.Add(keycloakId);
+        return Task.FromResult(true);
+    }
 }

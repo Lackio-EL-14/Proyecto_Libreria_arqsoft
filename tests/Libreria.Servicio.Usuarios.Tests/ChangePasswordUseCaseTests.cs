@@ -69,7 +69,31 @@ public sealed class ChangePasswordUseCaseTests
         Assert.True((await identidad.VerificarContrasenaAsync("vendedor", Actual)).IsSuccess);
     }
 
-    private static async Task<(ChangePasswordUseCase, ProveedorIdentidadEnMemoria)> CrearAsync(FakeCurrentUser? usuario = null)
+    [Fact]
+    public async Task CambioExitoso_RegistraLaBitacoraDelUsuario()
+    {
+        var repositorio = new FakeUserRepository();
+        var (useCase, _) = await CrearAsync(repositorio: repositorio);
+
+        await useCase.ExecuteAsync(new ChangePasswordRequest(Actual, "Nueva#2026x", "Nueva#2026x"));
+
+        Assert.Equal(Vendedor, Assert.Single(repositorio.PasswordChangesRegistered));
+    }
+
+    [Fact]
+    public async Task CambioRechazado_NoTocaLaBitacora()
+    {
+        var repositorio = new FakeUserRepository();
+        var (useCase, _) = await CrearAsync(repositorio: repositorio);
+
+        await useCase.ExecuteAsync(new ChangePasswordRequest("Incorrecta#1", "Nueva#2026x", "Nueva#2026x"));
+
+        Assert.Empty(repositorio.PasswordChangesRegistered);
+    }
+
+    private static async Task<(ChangePasswordUseCase, ProveedorIdentidadEnMemoria)> CrearAsync(
+        FakeCurrentUser? usuario = null,
+        FakeUserRepository? repositorio = null)
     {
         var identidad = new ProveedorIdentidadEnMemoria();
         await identidad.FijarContrasenaAsync(Vendedor, Actual, temporal: false);
@@ -77,7 +101,8 @@ public sealed class ChangePasswordUseCaseTests
         var useCase = new ChangePasswordUseCase(
             identidad,
             usuario ?? new FakeCurrentUser { UserId = Vendedor, Username = "vendedor" },
-            new PasswordPolicyValidator());
+            new PasswordPolicyValidator(),
+            repositorio ?? new FakeUserRepository());
 
         return (useCase, identidad);
     }

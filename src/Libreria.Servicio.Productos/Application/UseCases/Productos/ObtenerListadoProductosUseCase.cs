@@ -20,14 +20,18 @@ public sealed class ObtenerListadoProductosUseCase
         string? busqueda = null,
         Guid? categoriaPublicId = null,
         Guid? marcaPublicId = null,
-        bool? estado = null)
+        bool? estado = null,
+        OrdenProductos orden = OrdenProductos.Nombre,
+        bool descendente = false)
     {
         var productos =
             await _productos.ObtenerFiltradasAsync(
                 busqueda,
                 categoriaPublicId,
                 marcaPublicId,
-                estado);
+                estado,
+                orden,
+                descendente);
 
         var categorias =
             await _catalogos.ObtenerCategoriasActivasAsync();

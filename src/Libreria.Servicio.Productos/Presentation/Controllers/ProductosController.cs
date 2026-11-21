@@ -39,19 +39,23 @@ public sealed class ProductosController : ControllerBase
         _cambiarEstado = cambiarEstado;
     }
 
-    // Front Productos: listado + filtros.
+    // Front Productos: listado + filtros + ordenación (orden=nombre|categoria|marca|perecedero|estado|stock|precio|costo).
     [HttpGet]
     public async Task<IActionResult> Listar(
         [FromQuery] string? busqueda,
         [FromQuery] Guid? categoriaPublicId,
         [FromQuery] Guid? marcaPublicId,
-        [FromQuery] bool? estado)
+        [FromQuery] bool? estado,
+        [FromQuery] OrdenProductos orden = OrdenProductos.Nombre,
+        [FromQuery] bool descendente = false)
     {
         var resultado = await _listar.EjecutarAsync(
             busqueda,
             categoriaPublicId,
             marcaPublicId,
-            estado);
+            estado,
+            orden,
+            descendente);
 
         return Ok(resultado);
     }

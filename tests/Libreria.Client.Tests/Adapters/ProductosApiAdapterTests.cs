@@ -38,12 +38,23 @@ public sealed class ProductosApiAdapterTests
     }
 
     [Fact]
-    public async Task Un_error_en_una_lectura_sigue_lanzando_HttpRequestException()
+    public async Task Un_error_en_una_lectura_lanza_ApiClientException_en_espanol()
     {
         var cliente = new ProductosApiAdapter(
             ManejadorHttpFalso.CrearFabrica(new ManejadorHttpFalso(HttpStatusCode.InternalServerError)));
 
-        await Assert.ThrowsAsync<HttpRequestException>(() => cliente.ObtenerProductosAsync(null, null, null));
+        var error = await Assert.ThrowsAsync<ApiClientException>(() => cliente.ObtenerProductosAsync(null, null, null));
+        Assert.Equal("El servicio de Productos rechazó la solicitud.", error.Message);
+    }
+
+    [Fact]
+    public async Task Un_403_en_una_lectura_dice_que_no_tiene_permiso()
+    {
+        var cliente = new ProductosApiAdapter(
+            ManejadorHttpFalso.CrearFabrica(new ManejadorHttpFalso(HttpStatusCode.Forbidden)));
+
+        var error = await Assert.ThrowsAsync<ApiClientException>(() => cliente.ObtenerProductosAsync(null, null, null));
+        Assert.Equal("No tiene permiso para realizar esta operación.", error.Message);
     }
 
     [Theory]
@@ -75,12 +86,12 @@ public sealed class ProductosApiAdapterTests
         var manejador = new ManejadorHttpFalso(HttpStatusCode.NoContent);
         var cliente = new ProductosApiAdapter(ManejadorHttpFalso.CrearFabrica(manejador));
 
-        var resultado = await cliente.CambiarEstadoMarcaAsync(PublicId, false);
+        var resultado = await cliente.ReactivarProductoAsync(PublicId);
 
         Assert.True(resultado.Exitoso);
         Assert.Equal(HttpMethod.Patch, manejador.UltimaPeticion!.Method);
-        Assert.Equal($"/api/marcas/{PublicId}/estado", manejador.UltimaPeticion.RequestUri!.AbsolutePath);
-        Assert.Equal("?nuevoEstado=false", manejador.UltimaPeticion.RequestUri.Query);
+        Assert.Equal($"/api/productos/{PublicId}/estado", manejador.UltimaPeticion.RequestUri!.AbsolutePath);
+        Assert.Equal("?nuevoEstado=true", manejador.UltimaPeticion.RequestUri.Query);
     }
 
     [Fact]
@@ -89,7 +100,7 @@ public sealed class ProductosApiAdapterTests
         var cliente = new ProductosApiAdapter(ManejadorHttpFalso.CrearFabrica(
             new ManejadorHttpFalso(HttpStatusCode.BadRequest, """{"Input.Nombre":"El nombre es obligatorio."}""")));
 
-        var resultado = await cliente.CrearCategoriaAsync(new CategoriaInput());
+        var resultado = await cliente.RegistrarProductoAsync(new ProductoInput());
 
         Assert.False(resultado.Exitoso);
         Assert.Equal("El nombre es obligatorio.", resultado.Errores["Input.Nombre"]);
@@ -100,28 +111,28 @@ public sealed class ProductosApiAdapterTests
     {
         const string cuerpo = """
             {"title":"One or more validation errors occurred.","status":400,
-             "errors":{"Nombre":["El nombre es obligatorio."],"$.ubicacion":["Seleccione una ubicación."]}}
+             "errors":{"Nombre":["El nombre es obligatorio."],"$.categoriaPublicId":["Seleccione una categoría."]}}
             """;
         var cliente = new ProductosApiAdapter(ManejadorHttpFalso.CrearFabrica(
             new ManejadorHttpFalso(HttpStatusCode.BadRequest, cuerpo)));
 
-        var resultado = await cliente.CrearCategoriaAsync(new CategoriaInput());
+        var resultado = await cliente.RegistrarProductoAsync(new ProductoInput());
 
         Assert.False(resultado.Exitoso);
         Assert.Equal("El nombre es obligatorio.", resultado.Errores["Input.Nombre"]);
-        Assert.Equal("Seleccione una ubicación.", resultado.Errores["Input.Ubicacion"]);
+        Assert.Equal("Seleccione una categoría.", resultado.Errores["Input.CategoriaPublicId"]);
     }
 
     [Fact]
     public async Task Un_409_devuelve_el_mensaje_del_servicio()
     {
         var cliente = new ProductosApiAdapter(ManejadorHttpFalso.CrearFabrica(
-            new ManejadorHttpFalso(HttpStatusCode.Conflict, """{"mensaje":"Ya existe una marca con ese nombre."}""")));
+            new ManejadorHttpFalso(HttpStatusCode.Conflict, """{"mensaje":"Ya existe un producto con ese nombre."}""")));
 
-        var resultado = await cliente.CrearMarcaAsync(new MarcaInput());
+        var resultado = await cliente.RegistrarProductoAsync(new ProductoInput());
 
         Assert.False(resultado.Exitoso);
-        Assert.Equal("Ya existe una marca con ese nombre.", resultado.Errores[string.Empty]);
+        Assert.Equal("Ya existe un producto con ese nombre.", resultado.Errores[string.Empty]);
     }
 
     [Fact]
@@ -146,6 +157,17 @@ public sealed class ProductosApiAdapterTests
         Assert.Contains("servicio de Productos", resultado.Errores[string.Empty]);
     }
 
+
+    [Fact]
+    public async Task El_orden_del_listado_viaja_al_microservicio()
+    {
+        var manejador = new ManejadorHttpFalso(HttpStatusCode.OK, """{"productos":[],"categorias":[],"marcas":[]}""");
+        var cliente = new ProductosApiAdapter(ManejadorHttpFalso.CrearFabrica(manejador));
+
+        await cliente.ObtenerProductosAsync(null, null, null, true, "precio", descendente: true);
+
+        Assert.Equal("?estado=true&orden=precio&descendente=true", manejador.UltimaPeticion!.RequestUri!.Query);
+    }
 
     [Fact]
     public async Task Listado_productos_usa_publicIds_guid_en_los_filtros()

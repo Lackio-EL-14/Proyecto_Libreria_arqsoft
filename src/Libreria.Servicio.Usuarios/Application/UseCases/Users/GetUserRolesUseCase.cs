@@ -18,9 +18,14 @@ public sealed class GetUserRolesUseCase : IGetUserRolesUseCase
 
     public async Task<IReadOnlyList<string>?> ExecuteAsync()
     {
-        if (_currentUser.UserId is not Guid currentUserId ||
-            !await _userRepository
-                .IsActiveAdministratorAsync(currentUserId))
+        if (_currentUser.UserId is not Guid currentUserId)
+        {
+            return null;
+        }
+
+        // Token válido ⇒ ya cambió su contraseña temporal: si seguía «Pendiente», se activa.
+        await _userRepository.ActivatePendingAsync(currentUserId);
+        if (!await _userRepository.IsActiveAdministratorAsync(currentUserId))
         {
             return null;
         }

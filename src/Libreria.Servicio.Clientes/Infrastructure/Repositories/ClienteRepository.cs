@@ -4,6 +4,7 @@ using Libreria.Servicio.Clientes.Application.Models;
 using Libreria.Servicio.Clientes.Application.Ports.Secondary;
 using Libreria.Servicio.Clientes.Domain;
 using MySqlConnector;
+using Libreria.Servicio.Clientes.Infrastructure.Connection;
 
 namespace Libreria.Servicio.Clientes.Infrastructure.Repositories;
 
@@ -53,9 +54,6 @@ public class ClienteRepository : IClienteRepository
         return await LeerClientesAsync(command);
     }
 
-    public Task<IReadOnlyList<Cliente>> ObtenerActivasAsync(string? busqueda = null) =>
-        ListarAsync(new FiltroClientes { Busqueda = busqueda, Estado = true });
-
     public async Task<Cliente?> ObtenerPorPublicIdAsync(Guid publicId)
     {
         await using var connection = _connectionFactory.CreateConnection();
@@ -69,12 +67,6 @@ public class ClienteRepository : IClienteRepository
         AgregarParametroGuid(command, "@PublicId", publicId);
 
         return (await LeerClientesAsync(command)).SingleOrDefault();
-    }
-
-    public async Task<Cliente?> ObtenerPorPublicIdAsync(Guid publicId, bool estadoEsperado)
-    {
-        var cliente = await ObtenerPorPublicIdAsync(publicId);
-        return cliente?.Estado == estadoEsperado ? cliente : null;
     }
 
     public async Task CrearAsync(Cliente cliente)
@@ -164,9 +156,6 @@ public class ClienteRepository : IClienteRepository
 
         return Convert.ToInt64(await command.ExecuteScalarAsync()) > 0;
     }
-
-    /// <summary>El agregado Cliente no tiene relaciones dependientes en su propia base.</summary>
-    public Task<bool> TieneRelacionesAsync(Guid publicId) => Task.FromResult(false);
 
     private static async Task<T> EjecutarAsync<T>(Func<Task<T>> escritura)
     {

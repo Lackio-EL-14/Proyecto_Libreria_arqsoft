@@ -95,7 +95,7 @@ else
                         <td>@proveedor.Nit</td>
                         <td style="font-weight: 600">@proveedor.RazonSocial</td>
                         <td>@(proveedor.Correo ?? "—")</td>
-                        <td>@proveedor.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@FechaLocal.Mostrar(proveedor.FechaCreacion)</td>
                         <td>
                             @proveedor.NombreContacto<br />
                             <small>@(proveedor.TelefonoContacto ?? proveedor.CorreoContacto)</small>

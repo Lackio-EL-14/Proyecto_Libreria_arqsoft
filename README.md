@@ -29,10 +29,11 @@ docker compose up -d
 docker compose ps
 ```
 
-Los scripts dentro de `db/clientes`, `db/proveedores`, `db/productos` y `db/usuarios` se ejecutan automáticamente cuando el volumen de cada motor se crea por primera vez. Para aplicar manualmente los scripts idempotentes de Proveedores a una base ya existente:
+MySQL (`db/clientes`) y MongoDB (`db/productos`) ejecutan sus scripts cuando el volumen se crea por primera vez. SQL Server no lo hace por sí solo: las tareas de una sola vez `proveedores-db-init` y `usuarios-db-init` corren los scripts idempotentes de `db/proveedores` y `db/usuarios` en cuanto cada base está sana. En `docker compose ps -a` deben quedar «Exited (0)». Para volver a aplicarlos sobre una base existente:
 
 ```powershell
-docker exec proveedores-db bash -lc 'for f in /scripts/*.sql; do echo "Ejecutando $f..."; /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -b -i "$f" || exit 1; done'
+docker compose run --rm proveedores-db-init
+docker compose run --rm usuarios-db-init
 ```
 
 ## Keycloak (proveedor de identidad)
@@ -43,8 +44,8 @@ Keycloak corre en `http://localhost:8080`, realm `libreria`. Contrato completo: 
 
 ```powershell
 docker compose down -v
-docker compose up -d                 # BD + keycloak + keycloak-configurar
-docker compose ps -a                 # keycloak «healthy»; keycloak-configurar «Exited (0)»
+docker compose up -d                 # BD + *-db-init + keycloak + keycloak-configurar
+docker compose ps -a                 # BD y keycloak «healthy»; *-db-init y keycloak-configurar «Exited (0)»
 docker compose logs keycloak-configurar
 ```
 
@@ -79,21 +80,27 @@ dotnet user-secrets set "Keycloak:ClientSecret" "<KEYCLOAK_FRONT_CLIENT_SECRET>"
 
 Usuarios de desarrollo: `admin` y `vendedor`, con las contraseñas de `KEYCLOAK_*_SEMILLA_PASSWORD` de su `.env`.
 
-**Todas las API exigen token (US-126):** el gateway y los 4 MS validan el JWT de Keycloak (firma RS256, emisor, audiencia `libreria-api`, vencimiento) y aplican los roles. Sin token responden 401, y con un rol insuficiente, 403. Para probar en Swagger (`http://localhost:510x/swagger`), use el botón «Authorize» con un token de `libreria-pruebas` (`keycloak.md` §5). Evidencias: `docs/evidencias/US-126-seguridad-jwt.md`.
+**Todas las API exigen token (US-126):** el gateway y los 4 MS validan el JWT de Keycloak (firma RS256, emisor, audiencia `libreria-api`, vencimiento) y aplican los roles. Sin token responden 401, y con un rol insuficiente, 403. Para probar en Swagger (`http://localhost:510x/swagger`), use el botón «Authorize» con un token de `libreria-pruebas` (`keycloak.md` §5). Ese cliente está apagado por defecto: ponga `KEYCLOAK_HABILITAR_CLIENTE_PRUEBAS=true` en `.env`, ejecute `docker compose run --rm keycloak-configurar` y vuelva a apagarlo al terminar. Evidencias: `docs/evidencias/US-126-seguridad-jwt.md`.
 
 ## Variables para ejecutar .NET localmente
 
-Docker Compose usa `.env`, pero los procesos `dotnet run` necesitan las cadenas en su entorno o en User Secrets. Ejemplo para Proveedores:
+`./run-all.ps1` lee el mismo `.env` y entrega a cada proceso solo lo suyo, sin imprimirlo:
+
+| Proceso | Variables |
+|---|---|
+| Proveedores · Usuarios · Clientes · Productos | `ConnectionStrings__<Servicio>Db`: se toma del `.env` si existe; si no, se arma con `*_DB_SA_PASSWORD` / `CLIENTES_DB_*` y los puertos de `docker-compose.yml` |
+| Usuarios | `Keycloak__ClientSecret` = `KEYCLOAK_USUARIOS_ADMIN_CLIENT_SECRET`, `Keycloak__VerificacionClientSecret` = `KEYCLOAK_USUARIOS_VERIFICACION_CLIENT_SECRET`, y `BASE_URL`/`SMTP_*` si están definidos |
+| Front | `Keycloak__ClientSecret` = `KEYCLOAK_FRONT_CLIENT_SECRET` |
+
+Si se usa `dotnet run` a mano, esas mismas claves van en el entorno o en User Secrets. Ejemplo para Proveedores:
 
 ```powershell
 dotnet user-secrets set "ConnectionStrings:ProveedoresDb" "Server=localhost,1433;Database=LibreriaProveedores;User Id=sa;Password=TU_CLAVE;TrustServerCertificate=True;" --project src/Libreria.Servicio.Proveedores
 ```
 
-Las otras claves están documentadas en `.env.example`.
-
 ## Levantar la solución
 
-Con las cuatro bases sanas:
+Con las cuatro bases sanas y el `.env` completo:
 
 ```powershell
 ./run-all.ps1

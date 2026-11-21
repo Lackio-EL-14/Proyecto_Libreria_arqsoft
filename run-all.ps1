@@ -11,6 +11,9 @@
     4. Espera hasta Ctrl+C y, al salir, detiene todos los procesos.
 
     Las bases de datos se levantan aparte con `docker compose up -d` (ver README).
+    La configuración sale del mismo `.env` que usa Docker Compose: las cadenas
+    ConnectionStrings__* (si faltan, se arman con las contraseñas de las bases) y el
+    secreto de Keycloak que necesita cada proceso. Nada se imprime en pantalla.
 
 .PARAMETER SinCompilar
     No ejecuta `dotnet build` antes de arrancar (úsalo si acabas de compilar).
@@ -25,14 +28,60 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
+function Read-DotEnv([string] $ruta) {
+    $valores = @{}
+    if (-not (Test-Path $ruta)) {
+        throw "No existe $ruta. Copie .env.example como .env y complete los valores (ver README)."
+    }
+    foreach ($linea in Get-Content $ruta) {
+        $texto = $linea.Trim()
+        if ($texto -eq '' -or $texto.StartsWith('#') -or -not $texto.Contains('=')) { continue }
+        $indice = $texto.IndexOf('=')
+        $valores[$texto.Substring(0, $indice).Trim()] = $texto.Substring($indice + 1).Trim().Trim('"')
+    }
+    return $valores
+}
+
+function Get-Valor([hashtable] $entorno, [string] $clave, [string] $porDefecto) {
+    if ($entorno.ContainsKey($clave) -and $entorno[$clave] -and -not $entorno[$clave].Contains('<')) {
+        return $entorno[$clave]
+    }
+    return $porDefecto
+}
+
+$entorno = Read-DotEnv (Join-Path $PSScriptRoot '.env')
+
+$cadenas = @{
+    'ConnectionStrings__ProveedoresDb' = Get-Valor $entorno 'ConnectionStrings__ProveedoresDb' "Server=localhost,1433;Database=LibreriaProveedores;User Id=sa;Password=$($entorno['PROVEEDORES_DB_SA_PASSWORD']);TrustServerCertificate=True;"
+    'ConnectionStrings__UsuariosDb'    = Get-Valor $entorno 'ConnectionStrings__UsuariosDb' "Server=localhost,1434;Database=LibreriaUsuarios;User Id=sa;Password=$($entorno['USUARIOS_DB_SA_PASSWORD']);TrustServerCertificate=True;"
+    'ConnectionStrings__ClientesDb'    = Get-Valor $entorno 'ConnectionStrings__ClientesDb' "Server=localhost;Port=3306;Database=libreria_clientes;User ID=$($entorno['CLIENTES_DB_USUARIO']);Password=$($entorno['CLIENTES_DB_PASSWORD']);"
+    'ConnectionStrings__ProductosDb'   = Get-Valor $entorno 'ConnectionStrings__ProductosDb' 'mongodb://localhost:27017/libreria_productos'
+}
+
 $proyectos = @(
-    @{ Nombre = 'Proveedores'; Proyecto = 'src/Libreria.Servicio.Proveedores'; Url = 'http://localhost:5101/salud' }
-    @{ Nombre = 'Usuarios';  Proyecto = 'src/Libreria.Servicio.Usuarios';  Url = 'http://localhost:5102/salud' }
-    @{ Nombre = 'Clientes';  Proyecto = 'src/Libreria.Servicio.Clientes';  Url = 'http://localhost:5103/salud' }
-    @{ Nombre = 'Productos'; Proyecto = 'src/Libreria.Servicio.Productos'; Url = 'http://localhost:5104/salud' }
-    @{ Nombre = 'Gateway';   Proyecto = 'src/Libreria.Gateway';            Url = 'http://localhost:5080/salud' }
-    @{ Nombre = 'Front';     Proyecto = 'src/Libreria.Client';             Url = 'http://localhost:5000/' }
+    @{ Nombre = 'Proveedores'; Proyecto = 'src/Libreria.Servicio.Proveedores'; Url = 'http://localhost:5101/salud'
+       Variables = @{ 'ConnectionStrings__ProveedoresDb' = $cadenas['ConnectionStrings__ProveedoresDb'] } }
+    @{ Nombre = 'Usuarios';  Proyecto = 'src/Libreria.Servicio.Usuarios';  Url = 'http://localhost:5102/salud'
+       Variables = @{
+           'ConnectionStrings__UsuariosDb'      = $cadenas['ConnectionStrings__UsuariosDb']
+           'Keycloak__ClientSecret'             = $entorno['KEYCLOAK_USUARIOS_ADMIN_CLIENT_SECRET']
+           'Keycloak__VerificacionClientSecret' = $entorno['KEYCLOAK_USUARIOS_VERIFICACION_CLIENT_SECRET']
+       } }
+    @{ Nombre = 'Clientes';  Proyecto = 'src/Libreria.Servicio.Clientes';  Url = 'http://localhost:5103/salud'
+       Variables = @{ 'ConnectionStrings__ClientesDb' = $cadenas['ConnectionStrings__ClientesDb'] } }
+    @{ Nombre = 'Productos'; Proyecto = 'src/Libreria.Servicio.Productos'; Url = 'http://localhost:5104/salud'
+       Variables = @{ 'ConnectionStrings__ProductosDb' = $cadenas['ConnectionStrings__ProductosDb'] } }
+    @{ Nombre = 'Gateway';   Proyecto = 'src/Libreria.Gateway';            Url = 'http://localhost:5080/salud'
+       Variables = @{} }
+    @{ Nombre = 'Front';     Proyecto = 'src/Libreria.Client';             Url = 'http://localhost:5000/'
+       Variables = @{ 'Keycloak__ClientSecret' = $entorno['KEYCLOAK_FRONT_CLIENT_SECRET'] } }
 )
+
+# Variables opcionales que el MS Usuarios lee directamente (correo).
+foreach ($clave in 'BASE_URL', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM') {
+    $valor = Get-Valor $entorno $clave $null
+    if ($valor) { $proyectos[1].Variables[$clave] = $valor }
+}
 
 if (-not $SinCompilar) {
     Write-Host 'Compilando LibreriaSystem.slnx...' -ForegroundColor Cyan
@@ -54,6 +103,11 @@ try {
     foreach ($p in $proyectos) {
         $argumentos = @('run', '--no-build', '--project', $p.Proyecto)
 
+        # Cada proceso hereda solo sus variables: se fijan antes de lanzarlo y se quitan después.
+        foreach ($variable in $p.Variables.GetEnumerator()) {
+            [Environment]::SetEnvironmentVariable($variable.Key, $variable.Value)
+        }
+
         if ($IsWindows) {
             $proceso = Start-Process dotnet -ArgumentList $argumentos -PassThru
         }
@@ -61,6 +115,10 @@ try {
             $log = Join-Path $carpetaLogs "$($p.Nombre).log"
             $proceso = Start-Process dotnet -ArgumentList $argumentos -PassThru `
                 -RedirectStandardOutput $log -RedirectStandardError "$log.err"
+        }
+
+        foreach ($variable in $p.Variables.GetEnumerator()) {
+            [Environment]::SetEnvironmentVariable($variable.Key, $null)
         }
 
         $procesos += $proceso

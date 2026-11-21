@@ -44,14 +44,8 @@ public sealed class ClienteRepositoryFalso : IClienteRepository
         return Task.FromResult<IReadOnlyList<Cliente>>(consulta.OrderBy(c => c.RazonSocial).ToList());
     }
 
-    public Task<IReadOnlyList<Cliente>> ObtenerActivasAsync(string? busqueda = null) =>
-        ListarAsync(new FiltroClientes { Busqueda = busqueda, Estado = true });
-
     public Task<Cliente?> ObtenerPorPublicIdAsync(Guid publicId) =>
         Task.FromResult(Copia(_clientes.SingleOrDefault(c => c.PublicId == publicId)));
-
-    public Task<Cliente?> ObtenerPorPublicIdAsync(Guid publicId, bool estadoEsperado) =>
-        Task.FromResult(Copia(_clientes.SingleOrDefault(c => c.PublicId == publicId && c.Estado == estadoEsperado)));
 
     public Task CrearAsync(Cliente entidad)
     {
@@ -97,7 +91,6 @@ public sealed class ClienteRepositoryFalso : IClienteRepository
         Task.FromResult(_clientes.Any(c =>
             string.Equals(c.CiNit, valor, StringComparison.OrdinalIgnoreCase) && c.PublicId != excluirPublicId));
 
-    public Task<bool> TieneRelacionesAsync(Guid publicId) => Task.FromResult(false);
 
     private void LanzarSiDuplicado(string ciNit, Guid? excluir)
     {

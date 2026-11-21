@@ -9,29 +9,22 @@ namespace Libreria.Client.Adapters.Productos;
 /// (rutas <c>api/productos</c>, <c>api/categorias</c>, <c>api/marcas</c> y <c>api/historico</c>
 /// del gateway). Las páginas dependen solo de esta interfaz.
 /// Las lecturas lanzan <see cref="ServicioNoDisponibleException"/> si el MS no responde;
-/// las escrituras devuelven <see cref="ResultadoApi"/> y nunca lanzan.
+/// las escrituras devuelven <see cref="ResultadoApi"/> y nunca lanzan. Categorías y marcas
+/// solo se consultan: un solo CRUD por microservicio (consigna del 17/11).
 /// </summary>
 public interface IProductosApi
 {
     Task<IReadOnlyList<CategoriaDto>> ObtenerCategoriasAsync(string? busqueda, CancellationToken ct = default);
-    Task<CategoriaDto?> ObtenerCategoriaAsync(Guid publicId, bool activa, CancellationToken ct = default);
-    Task<IReadOnlyList<string>> ObtenerUbicacionesCategoriaAsync(CancellationToken ct = default);
-    Task<ResultadoApi> CrearCategoriaAsync(CategoriaInput input, CancellationToken ct = default);
-    Task<ResultadoApi> ActualizarCategoriaAsync(Guid publicId, CategoriaInput input, CancellationToken ct = default);
-    Task<ResultadoApi> CambiarEstadoCategoriaAsync(Guid publicId, bool activa, CancellationToken ct = default);
 
     Task<IReadOnlyList<MarcaDto>> ObtenerMarcasAsync(string? nombre, CancellationToken ct = default);
-    Task<MarcaDto?> ObtenerMarcaAsync(Guid publicId, bool activa, CancellationToken ct = default);
-    Task<IReadOnlyList<string>> ObtenerPaisesMarcaAsync(CancellationToken ct = default);
-    Task<ResultadoApi> CrearMarcaAsync(MarcaInput input, CancellationToken ct = default);
-    Task<ResultadoApi> ActualizarMarcaAsync(Guid publicId, MarcaInput input, CancellationToken ct = default);
-    Task<ResultadoApi> CambiarEstadoMarcaAsync(Guid publicId, bool activa, CancellationToken ct = default);
 
     Task<ProductoListadoDto> ObtenerProductosAsync(
         string? busqueda,
         Guid? categoriaPublicId,
         Guid? marcaPublicId,
         bool? estado = null,
+        string? orden = null,
+        bool descendente = false,
         CancellationToken ct = default);
     Task<ProductoFormularioDto> ObtenerFormularioProductoAsync(CancellationToken ct = default);
     Task<ProductoDetalleDto?> ObtenerProductoAsync(Guid publicId, CancellationToken ct = default);

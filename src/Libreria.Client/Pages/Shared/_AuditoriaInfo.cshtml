@@ -9,7 +9,7 @@
                 @(Model.CreadoPor ?? "Sin registro")
                 @if (Model.CreadoPor is not null && Model.FechaCreacion.HasValue)
                 {
-                    <small>@Model.FechaCreacion.Value.ToString("dd/MM/yyyy HH:mm")</small>
+                    <small>@FechaLocal.Mostrar(Model.FechaCreacion.Value)</small>
                 }
             </dd>
         </div>
@@ -19,22 +19,9 @@
                 @(Model.ModificadoPor ?? "Sin modificaciones registradas")
                 @if (Model.ModificadoPor is not null && Model.FechaModificacion.HasValue)
                 {
-                    <small>@Model.FechaModificacion.Value.ToString("dd/MM/yyyy HH:mm")</small>
+                    <small>@FechaLocal.Mostrar(Model.FechaModificacion.Value)</small>
                 }
             </dd>
         </div>
-        @if (Model.AnuladoPor is not null)
-        {
-            <div>
-                <dt>Anulado por</dt>
-                <dd>
-                    @Model.AnuladoPor
-                    @if (Model.FechaAnulacion.HasValue)
-                    {
-                        <small>@Model.FechaAnulacion.Value.ToString("dd/MM/yyyy HH:mm")</small>
-                    }
-                </dd>
-            </div>
-        }
     </dl>
 </section>

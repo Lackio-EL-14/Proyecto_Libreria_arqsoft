@@ -123,12 +123,12 @@ public sealed class UsuarioFacade
         string loginUrl)
     {
         return $"""
-            <h2>Bienvenido al Sistema Librería</h2>
+            <h2>Le damos la bienvenida al Sistema Librería</h2>
             <p>Hola {WebUtility.HtmlEncode(firstName)},</p>
-            <p>Tu usuario es <strong>{WebUtility.HtmlEncode(username)}</strong>.</p>
+            <p>Su usuario es <strong>{WebUtility.HtmlEncode(username)}</strong>.</p>
             <p>Contraseña temporal: {WebUtility.HtmlEncode(temporaryPassword)}</p>
             <p><a href="{WebUtility.HtmlEncode(loginUrl)}">Iniciar sesión</a></p>
-            <p>Al ingresar, cambia tu contraseña temporal.</p>
+            <p>Al ingresar, el sistema le pedirá cambiar esta contraseña temporal.</p>
             """;
     }
 

@@ -29,8 +29,8 @@ public sealed class ListUsersUseCaseTests
         var result = await useCase.ExecuteAsync();
 
         Assert.NotNull(result);
-        Assert.Single(result);
-        var user = result[0];
+        Assert.Single(result.Valor);
+        var user = result.Valor[0];
         Assert.Equal("admin", user.Username);
         Assert.Equal("Administrador", user.Role);
         Assert.Equal("Activo", user.Status);
@@ -61,29 +61,33 @@ public sealed class ListUsersUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_EstadoInvalido_LanzaArgumentException()
+    public async Task ExecuteAsync_EstadoInvalido_DevuelveResultDeValidacion()
     {
         var repository = new FakeUserRepository { IsActiveAdministrator = true };
         var currentUser = new FakeCurrentUser { UserId = AdminPublicId };
         var useCase = new ListUsersUseCase(repository, currentUser);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => useCase.ExecuteAsync("Suspendido"));
+        var result = await useCase.ExecuteAsync("Suspendido");
+
+        Assert.True(result!.IsError);
+        Assert.Equal("Seleccione un estado de usuario válido.", Assert.Single(result.Errors()));
     }
 
     [Fact]
     public async Task ExecuteAsync_UsuarioConCambioPendienteFalso_PasaAEstadoActivo()
     {
         var identityProvider = new ProveedorIdentidadEnMemoria();
-        var userPublicId = Guid.NewGuid();
         var createResult = await identityProvider.CrearUsuarioAsync(
             new UsuarioIdentidad("jperez", "jperez@libreria.local", "Juan", "Pérez"));
         var keycloakId = createResult.Valor;
         await identityProvider.FijarContrasenaAsync(keycloakId, "Definitiva123!", temporal: false);
 
         var repository = new FakeUserRepository { IsActiveAdministrator = true };
+        var publicId = Guid.NewGuid();
+        repository.PublicIdByKeycloakId[keycloakId] = publicId;
         repository.UserList.Add(
             new UserListItemDto(
-                keycloakId,
+                publicId,
                 "Juan Pérez",
                 "jperez",
                 "jperez@libreria.local",
@@ -96,7 +100,7 @@ public sealed class ListUsersUseCaseTests
         var result = await useCase.ExecuteAsync();
 
         Assert.NotNull(result);
-        var user = Assert.Single(result);
+        var user = Assert.Single(result.Valor);
         Assert.Equal("Activo", user.Status);
     }
 
@@ -110,9 +114,11 @@ public sealed class ListUsersUseCaseTests
         await identityProvider.FijarContrasenaAsync(keycloakId, "Temporal#2026x", temporal: true);
 
         var repository = new FakeUserRepository { IsActiveAdministrator = true };
+        var publicId = Guid.NewGuid();
+        repository.PublicIdByKeycloakId[keycloakId] = publicId;
         repository.UserList.Add(
             new UserListItemDto(
-                keycloakId,
+                publicId,
                 "María Rojas",
                 "mrojas",
                 "mrojas@libreria.local",
@@ -125,7 +131,7 @@ public sealed class ListUsersUseCaseTests
         var result = await useCase.ExecuteAsync();
 
         Assert.NotNull(result);
-        var user = Assert.Single(result);
+        var user = Assert.Single(result.Valor);
         Assert.Equal("Pendiente", user.Status);
     }
 
@@ -139,9 +145,11 @@ public sealed class ListUsersUseCaseTests
         await identityProvider.FijarContrasenaAsync(keycloakId, "Definitiva123!", temporal: false);
 
         var repository = new FakeUserRepository { IsActiveAdministrator = true };
+        var publicId = Guid.NewGuid();
+        repository.PublicIdByKeycloakId[keycloakId] = publicId;
         repository.UserList.Add(
             new UserListItemDto(
-                keycloakId,
+                publicId,
                 "Carlos Suárez",
                 "csuarez",
                 "csuarez@libreria.local",
@@ -154,7 +162,67 @@ public sealed class ListUsersUseCaseTests
         var result = await useCase.ExecuteAsync("Activo");
 
         Assert.NotNull(result);
-        var user = Assert.Single(result);
+        var user = Assert.Single(result.Valor);
         Assert.Equal("Activo", user.Status);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ActivacionDetectada_SeGuardaEnLaBaseDeDatos()
+    {
+        var identityProvider = new ProveedorIdentidadEnMemoria();
+        var keycloakId = (await identityProvider.CrearUsuarioAsync(
+            new UsuarioIdentidad("lmamani", "lmamani@libreria.local", "Luis", "Mamani"))).Valor;
+        await identityProvider.FijarContrasenaAsync(keycloakId, "Definitiva123!", temporal: false);
+
+        var repository = new FakeUserRepository { IsActiveAdministrator = true };
+        var publicId = Guid.NewGuid();
+        repository.PublicIdByKeycloakId[keycloakId] = publicId;
+        repository.UserList.Add(new UserListItemDto(publicId, "Luis Mamani", "lmamani", "lmamani@libreria.local", "Vendedor", "Pendiente"));
+
+        var useCase = new ListUsersUseCase(repository, new FakeCurrentUser { UserId = AdminPublicId, Username = "admin" }, identityProvider);
+        await useCase.ExecuteAsync();
+
+        Assert.Contains(keycloakId, repository.ActivatedKeycloakIds);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_AdministradorConTokenYEstadoPendiente_SeActivaAntesDeValidar()
+    {
+        var adminNuevo = Guid.NewGuid();
+        var repository = new FakeUserRepository { IsActiveAdministrator = true };
+        var publicId = Guid.NewGuid();
+        repository.PublicIdByKeycloakId[adminNuevo] = publicId;
+        repository.UserList.Add(new UserListItemDto(publicId, "Ana Flores", "aflores", "aflores@libreria.local", "Administrador", "Pendiente"));
+
+        var useCase = new ListUsersUseCase(repository, new FakeCurrentUser { UserId = adminNuevo, Username = "aflores" });
+        var result = await useCase.ExecuteAsync();
+
+        Assert.Equal("Activo", Assert.Single(result!.Valor).Status);
+        Assert.Contains(adminNuevo, repository.ActivatedKeycloakIds);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OrdenaPorLaColumnaPedida()
+    {
+        var repository = new FakeUserRepository { IsActiveAdministrator = true };
+        repository.UserList.Add(new UserListItemDto(Guid.NewGuid(), "Ana Flores", "aflores", "a@libreria.local", "Vendedor", "Activo"));
+        repository.UserList.Add(new UserListItemDto(Guid.NewGuid(), "Zoe Rojas", "zrojas", "z@libreria.local", "Administrador", "Activo"));
+        var useCase = new ListUsersUseCase(repository, new FakeCurrentUser { UserId = AdminPublicId });
+
+        var porNombreDesc = await useCase.ExecuteAsync(orden: "nombre", descendente: true);
+        var porRol = await useCase.ExecuteAsync(orden: "rol");
+
+        Assert.Equal(["zrojas", "aflores"], porNombreDesc!.Valor.Select(u => u.Username));
+        Assert.Equal(["zrojas", "aflores"], porRol!.Valor.Select(u => u.Username));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ColumnaDeOrdenInvalida_DevuelveResultDeValidacion()
+    {
+        var useCase = new ListUsersUseCase(new FakeUserRepository { IsActiveAdministrator = true }, new FakeCurrentUser { UserId = AdminPublicId });
+
+        var result = await useCase.ExecuteAsync(orden: "contrasena");
+
+        Assert.Equal("Seleccione una columna válida para ordenar.", Assert.Single(result!.Errors()));
     }
 }

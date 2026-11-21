@@ -77,6 +77,6 @@ return resultado.AActionResult();      // 204, o 400 con los mensajes
 | Clientes | ✅ | retirado | ✅ |
 | Proveedores | ✅ | retirado | ✅ |
 | Productos | ✅ | retirado | ✅ |
-| Usuarios | ✅ | **sigue**, con los mismos miembros (lo usa el código del Grupo 2) | pendiente |
+| Usuarios | ✅ | retirado (auditoría 20/11) | ✅ (`Presentation/Comun`, auditoría 20/11) |
 
-**Usuarios:** la migración se hace **de una vez**, no archivo por archivo, porque `Presentation/Comun/ResultadoHttpExtensions.cs` recibe un solo tipo de `Result`. Hay que reemplazar `using Libreria.Servicio.Usuarios.Application.Comun;` por `using Libreria.Servicio.Usuarios.Domain;` en todos los archivos que lo usan (hoy 5 en `src` y 5 en `tests`) y borrar `Application/Comun/Result.cs`. La API es compatible, así que no cambia nada más. Lo coordina Edson con el Grupo 2 cuando sus PR de Usuarios estén en `develop`. Mientras tanto, el código nuevo sigue usando `Application.Comun`: ese `Result` ya tiene los mismos miembros, incluidos `IsSuccess`, `IsError`, `Success`, `Error` y `Errors()`, así que se puede escribir en la forma nueva desde ya. No mezcles los dos `using` en un mismo archivo: `Result` quedaría ambiguo.
+**Usuarios:** desde la auditoría del 20/11 hay un solo `Result` (el de `Domain`). En Usuarios, los 400 de validación llevan además `detail` con los mensajes unidos, porque el Front los muestra como mensaje general (cambio de contraseña). Las respuestas automáticas de ASP.NET Core (modelo inválido, 403, 404) tienen el título en español.

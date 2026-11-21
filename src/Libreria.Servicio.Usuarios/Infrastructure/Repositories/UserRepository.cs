@@ -722,4 +722,62 @@ public sealed class UserRepository : IUserRepository
         return await command.ExecuteNonQueryAsync() == 1;
     }
 
+    public async Task<IReadOnlyList<Guid>> GetPendingKeycloakIdsAsync()
+    {
+        await using var connection = _connectionFactory.CreateConnection();
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = """
+            SELECT KeycloakId
+            FROM dbo.Usuario
+            WHERE Estado = @PendingStatus
+            AND KeycloakId IS NOT NULL;
+            """;
+
+        AddParameter(command, "@PendingStatus", UserStatuses.Pending, DbType.String, 20);
+
+        var ids = new List<Guid>();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            ids.Add(reader.GetGuid(0));
+        }
+
+        return ids;
+    }
+
+    public Task<bool> ActivatePendingAsync(Guid keycloakId) =>
+        UpdateOwnRecordAsync(keycloakId, onlyIfPending: true);
+
+    public Task<bool> RegisterPasswordChangeAsync(Guid keycloakId) =>
+        UpdateOwnRecordAsync(keycloakId, onlyIfPending: false);
+
+    /// <summary>
+    /// Bitácora de un cambio hecho por el propio usuario: autor = su <c>sub</c>; «Pendiente» pasa a «Activo».
+    /// Con <paramref name="onlyIfPending"/> solo toca a los usuarios que siguen pendientes.
+    /// </summary>
+    private async Task<bool> UpdateOwnRecordAsync(Guid keycloakId, bool onlyIfPending)
+    {
+        await using var connection = _connectionFactory.CreateConnection();
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = """
+            UPDATE dbo.Usuario
+            SET
+                Estado = CASE WHEN Estado = @PendingStatus THEN @ActiveStatus ELSE Estado END,
+                UsuarioModificacionId = @KeycloakId,
+                FechaModificacion = SYSDATETIME()
+            WHERE KeycloakId = @KeycloakId
+            AND Estado <> @InactiveStatus
+            AND (@OnlyIfPending = 0 OR Estado = @PendingStatus);
+            """;
+
+        AddParameter(command, "@PendingStatus", UserStatuses.Pending, DbType.String, 20);
+        AddParameter(command, "@ActiveStatus", UserStatuses.Active, DbType.String, 20);
+        AddParameter(command, "@InactiveStatus", UserStatuses.Inactive, DbType.String, 20);
+        AddParameter(command, "@KeycloakId", keycloakId, DbType.Guid);
+        AddParameter(command, "@OnlyIfPending", onlyIfPending, DbType.Boolean);
+
+        return await command.ExecuteNonQueryAsync() == 1;
+    }
 }

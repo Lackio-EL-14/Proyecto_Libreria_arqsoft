@@ -11,7 +11,7 @@ namespace Libreria.Client.Pages.Usuarios;
 [Authorize(Policy = PoliticasAcceso.SoloAdministrador)]
 public class IndexModel : PageModel
 {
-   private readonly IAuthorizationService _authorizationService;
+    private readonly IAuthorizationService _authorizationService;
     private readonly IUrlProtector _protector;
     private readonly IUsuariosApi _usuariosClient;
 
@@ -27,6 +27,31 @@ public class IndexModel : PageModel
 
     [BindProperty(SupportsGet = true)]
     public string? Estado { get; set; }
+
+    /// <summary>Columna de orden que aplica el MS Usuarios: nombre, usuario, correo, rol o estado.</summary>
+    [BindProperty(SupportsGet = true)]
+    public string Orden { get; set; } = "nombre";
+
+    [BindProperty(SupportsGet = true)]
+    public bool Descendente { get; set; }
+
+    /// <summary>Ruta para ordenar por <paramref name="columna"/>: si ya ordena por ella, invierte la dirección.</summary>
+    public Dictionary<string, string> RutaOrden(string columna) => new()
+    {
+        ["Estado"] = Estado ?? string.Empty,
+        ["Orden"] = columna,
+        ["Descendente"] = (string.Equals(Orden, columna, StringComparison.OrdinalIgnoreCase) && !Descendente).ToString().ToLowerInvariant()
+    };
+
+    public string IndicadorOrden(string columna) =>
+        !string.Equals(Orden, columna, StringComparison.OrdinalIgnoreCase) ? string.Empty : Descendente ? " ▼" : " ▲";
+
+    public Dictionary<string, string> RutaActual => new()
+    {
+        ["Estado"] = Estado ?? string.Empty,
+        ["Orden"] = Orden,
+        ["Descendente"] = Descendente.ToString().ToLowerInvariant()
+    };
 
     public IReadOnlyList<string> Estados => EstadosUsuario.Todos;
     public IReadOnlyList<UserListItemDto> Usuarios { get; private set; } = [];
@@ -75,7 +100,7 @@ public class IndexModel : PageModel
 
         return RedirectToPage(
             "./Index",
-            new { Estado });
+            new { Estado, Orden, Descendente });
     }
 
     public async Task<IActionResult> OnGetAsync()
@@ -94,11 +119,12 @@ public class IndexModel : PageModel
 
         try
         {
-            Usuarios = await _usuariosClient.ObtenerUsuariosAsync(Estado);
+            Usuarios = await _usuariosClient.ObtenerUsuariosAsync(
+                Estado, Orden, Descendente, HttpContext.RequestAborted);
         }
-        catch (ArgumentException error)
+        catch (ApiClientException error)
         {
-            ModelState.AddModelError(nameof(Estado), error.Message);
+            ModelState.AddModelError(string.Empty, error.Message);
         }
 
         return Page();

@@ -138,6 +138,47 @@ public sealed class ClientesApiAdapterTests
         var resultado = await cliente.CambiarEstadoClienteAsync(PublicId, false);
 
         Assert.False(resultado.Exitoso);
-        Assert.Contains("No se pudo conectar con el servicio de Clientes", resultado.Errores[string.Empty]);
+        Assert.Equal("El servicio de Clientes no está disponible en este momento. Intente nuevamente en unos minutos.", resultado.Errores[string.Empty]);
+    }
+
+    [Fact]
+    public async Task Un_403_en_una_escritura_dice_que_no_tiene_permiso()
+    {
+        var (cliente, _) = Crear(HttpStatusCode.Forbidden, """{"title":"Acceso denegado.","status":403}""");
+
+        var resultado = await cliente.CambiarEstadoClienteAsync(PublicId, false);
+
+        Assert.Equal("No tiene permiso para realizar esta operación.", resultado.Errores[string.Empty]);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.BadGateway)]
+    [InlineData(HttpStatusCode.ServiceUnavailable)]
+    [InlineData(HttpStatusCode.GatewayTimeout)]
+    public async Task Un_MS_caido_en_una_escritura_da_un_mensaje_amigable(HttpStatusCode estado)
+    {
+        var (cliente, _) = Crear(estado);
+
+        var resultado = await cliente.CambiarEstadoClienteAsync(PublicId, false);
+
+        Assert.Equal("El servicio de Clientes no está disponible en este momento. Intente nuevamente en unos minutos.", resultado.Errores[string.Empty]);
+        Assert.DoesNotContain("HTTP", resultado.Errores[string.Empty]);
+    }
+
+    [Fact]
+    public async Task Un_tiempo_agotado_en_una_escritura_no_lanza()
+    {
+        var cliente = new ClientesApiAdapter(ManejadorHttpFalso.CrearFabrica(new ManejadorConTiempoAgotado()));
+
+        var resultado = await cliente.CambiarEstadoClienteAsync(PublicId, false);
+
+        Assert.False(resultado.Exitoso);
+        Assert.Contains("no está disponible", resultado.Errores[string.Empty]);
+    }
+
+    private sealed class ManejadorConTiempoAgotado : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            throw new TaskCanceledException("Tiempo agotado.", new TimeoutException());
     }
 }

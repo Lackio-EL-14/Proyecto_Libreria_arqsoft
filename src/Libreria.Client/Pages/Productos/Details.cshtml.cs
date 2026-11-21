@@ -66,7 +66,8 @@ public class DetailsModel : PageModel
         var resultado = await _productos.DarDeBajaProductoAsync(publicId);
         if (!resultado.Exitoso)
         {
-            return NotFound();
+            TempData["MensajeError"] = IndexModel.MensajeDeError(resultado, "No se pudo dar de baja el producto.");
+            return RedirectToPage("./Details", new { id = publicId });
         }
 
         TempData["MensajeExito"] = "Producto dado de baja correctamente.";

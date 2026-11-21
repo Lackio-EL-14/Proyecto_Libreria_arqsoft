@@ -1,6 +1,5 @@
 @page
 @model Libreria.Client.Pages.Marcas.IndexModel
-@using Libreria.Client.Pages.Shared.Models
 
 @{
     ViewData["Title"] = "Marcas";
@@ -9,17 +8,10 @@
 <div class="page-header">
     <div>
         <h1>Marcas</h1>
-        <p>Consulta y gestión de marcas registradas en el sistema.</p>
+        <p>Consulta de las marcas del catálogo. Se asignan al registrar o editar un producto.</p>
     </div>
-    <a asp-page="./Create" class="btn btn--primary">+ Registrar nueva marca</a>
 </div>
 
-@if (TempData["MensajeExito"] != null)
-{
-    <div style="background-color: #E8F0EB; color: var(--color-accent); padding: 1rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #A3C2B1;">
-        @TempData["MensajeExito"]
-    </div>
-}
 
 <!-- Filtro horizontal compacto -->
 <form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; background-color: var(--color-surface); padding: 1.25rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
@@ -63,7 +55,6 @@ else
                     <th>Descripción</th>
                     <th>País de origen</th>
                     <th>Sitio web</th>
-                    <th style="text-align: right;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -83,21 +74,6 @@ else
                                 <span style="color: var(--color-secondary);">—</span>
                             }
                         </td>
-                        <td>
-                            <div class="table-actions">
-                                <a asp-page="./Edit" asp-route-id="@marca.PublicId" class="btn-table">Editar</a>
-                                <button
-                                    type="button"
-                                    class="btn-table btn-table--danger"
-                                    data-confirm-trigger
-                                    data-modal-target="marca-baja-modal"
-                                    data-entity-id="@marca.PublicId"
-                                    data-entity-name="@marca.Nombre"
-                                    data-has-warning="@Model.MarcasConProductosActivos.Contains(marca.PublicId).ToString().ToLowerInvariant()">
-                                    Dar de baja
-                                </button>
-                            </div>
-                        </td>
                     </tr>
                 }
             </tbody>
@@ -105,16 +81,3 @@ else
     </div>
 }
 
-@await Html.PartialAsync(
-    "_ConfirmModal",
-    new ConfirmModalModel
-    {
-        Id = "marca-baja-modal",
-        Titulo = "Confirmar baja de marca",
-        MensajePrincipal = "¿Desea dar de baja la marca",
-        Handler = "DarDeBaja",
-        CampoIdentificador = "publicId",
-        TextoBotonConfirmar = "Confirmar baja",
-        TextoBotonCancelar = "Cancelar",
-        MensajeAdvertencia = "La marca tiene productos activos asociados. Los productos conservarán su información, pero la marca dejará de estar disponible para nuevas asignaciones."
-    })

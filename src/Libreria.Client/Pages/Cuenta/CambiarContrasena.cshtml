@@ -6,10 +6,7 @@
 
 <div class="page-header"><h1>Cambiar contraseña</h1></div>
 
-@if (TempData["MensajeExito"] is string mensaje)
-{
-    <p role="status">@mensaje</p>
-}
+<p>Al guardar la nueva contraseña se cerrará su sesión y deberá ingresar de nuevo con ella.</p>
 
 <form method="post" id="cambiar-contrasena">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>

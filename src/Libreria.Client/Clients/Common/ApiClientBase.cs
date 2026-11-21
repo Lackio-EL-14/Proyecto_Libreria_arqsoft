@@ -19,14 +19,14 @@ public abstract class ApiClientBase : IApiClient
 
     // Operaciones tipadas que devuelven ResultadoApi (estilo que usan las páginas de
     // inventario y proveedores). Las escrituras nunca lanzan; las lecturas lanzan
-    // ServicioNoDisponibleException si el MS o el gateway no responden (502/503/504 o red)
-    // y HttpRequestException ante cualquier otro error.
+    // ServicioNoDisponibleException si el MS o el gateway no responden (502/503/504, red o
+    // tiempo agotado) y ApiClientException, con el mensaje en español, ante cualquier otro error.
 
     /// <summary>GET que exige 2xx.</summary>
     protected async Task<T?> LeerAsync<T>(string url, CancellationToken ct) where T : class
     {
         using var respuesta = await SendCoreAsync(new HttpRequestMessage(HttpMethod.Get, url), ct);
-        AsegurarLectura(respuesta);
+        await EnsureSuccessAsync(respuesta, ct);
         return await respuesta.Content.ReadFromJsonAsync<T>(cancellationToken: ct);
     }
 
@@ -39,18 +39,8 @@ public abstract class ApiClientBase : IApiClient
             return null;
         }
 
-        AsegurarLectura(respuesta);
+        await EnsureSuccessAsync(respuesta, ct);
         return await respuesta.Content.ReadFromJsonAsync<T>(cancellationToken: ct);
-    }
-
-    private void AsegurarLectura(HttpResponseMessage respuesta)
-    {
-        if (EsServicioNoDisponible(respuesta.StatusCode))
-        {
-            throw CrearServicioNoDisponible(respuesta.StatusCode);
-        }
-
-        respuesta.EnsureSuccessStatusCode();
     }
 
     protected Task<ResultadoApi> EnviarPostAsync<TCuerpo>(string url, TCuerpo cuerpo, CancellationToken ct) =>
@@ -73,10 +63,11 @@ public abstract class ApiClientBase : IApiClient
             using var respuesta = await peticion();
             return await ResultadoApiTraductor.ConvertirAsync(respuesta, _servicio, ct);
         }
-        catch (HttpRequestException)
+        catch (Exception error) when (error is HttpRequestException
+            || (error is OperationCanceledException && !ct.IsCancellationRequested))
         {
-            return ResultadoApi.Invalido(
-                $"No se pudo conectar con el servicio de {_servicio}. Verifique que esté en ejecución.");
+            // Sin conexión o tiempo agotado: el servicio no está disponible.
+            return ResultadoApi.Invalido(ResultadoApiTraductor.MensajeNoDisponible(_servicio));
         }
     }
 
@@ -159,7 +150,9 @@ public abstract class ApiClientBase : IApiClient
         {
         }
 
-        var message = problem?.Detail ?? problem?.Title ?? $"El servicio de {_servicio} rechazó la solicitud.";
+        var message = response.StatusCode == HttpStatusCode.Forbidden
+            ? ResultadoApiTraductor.MensajeSinPermiso
+            : problem?.Detail ?? problem?.Title ?? $"El servicio de {_servicio} rechazó la solicitud.";
         throw new ApiClientException(
             _servicio,
             response.StatusCode,

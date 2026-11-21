@@ -3,6 +3,7 @@ using Libreria.Servicio.Proveedores.Application.Models;
 using Libreria.Servicio.Proveedores.Application.Ports.Secondary;
 using Libreria.Servicio.Proveedores.Domain;
 using Microsoft.Data.SqlClient;
+using Libreria.Servicio.Proveedores.Infrastructure.Connection;
 
 namespace Libreria.Servicio.Proveedores.Infrastructure.Repositories;
 
@@ -38,9 +39,6 @@ public sealed class ProveedorRepository : IProveedorRepository
         return await LeerAsync(cmd);
     }
 
-    public Task<IReadOnlyList<Proveedor>> ObtenerActivasAsync(string? busqueda = null) =>
-        ListarAsync(new FiltroProveedores { Busqueda = busqueda, Estado = true });
-
     public async Task<Proveedor?> ObtenerPorPublicIdAsync(Guid publicId)
     {
         await using var cn = _conexiones.CreateConnection();
@@ -51,12 +49,6 @@ public sealed class ProveedorRepository : IProveedorRepository
             WHERE p.PublicId=@PublicId";
         Parametro(cmd, "@PublicId", publicId);
         return (await LeerAsync(cmd)).SingleOrDefault();
-    }
-
-    public async Task<Proveedor?> ObtenerPorPublicIdAsync(Guid publicId, bool estadoEsperado)
-    {
-        var proveedor = await ObtenerPorPublicIdAsync(publicId);
-        return proveedor?.Estado == estadoEsperado ? proveedor : null;
     }
 
     public async Task CrearAsync(Proveedor proveedor)
@@ -149,8 +141,6 @@ public sealed class ProveedorRepository : IProveedorRepository
         Parametro(cmd, "@Excluir", excluirPublicId.HasValue ? excluirPublicId.Value : DBNull.Value);
         return Convert.ToInt32(await cmd.ExecuteScalarAsync()) > 0;
     }
-
-    public Task<bool> TieneRelacionesAsync(Guid publicId) => Task.FromResult(false);
 
     private static async Task GuardarContactoAsync(DbConnection cn, DbTransaction tx, Proveedor proveedor)
     {

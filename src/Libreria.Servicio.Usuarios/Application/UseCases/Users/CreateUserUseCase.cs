@@ -1,5 +1,5 @@
 using System.Net.Mail;
-using Libreria.Servicio.Usuarios.Application.Comun;
+using Libreria.Servicio.Usuarios.Domain;
 using Libreria.Servicio.Usuarios.Application.DTOs.Users;
 using Libreria.Servicio.Usuarios.Application.Facades;
 using Libreria.Servicio.Usuarios.Application.Ports.Primary;
@@ -53,6 +53,8 @@ public sealed class CreateUserUseCase : ICreateUserUseCase
             return false;
         }
 
+        // Token válido ⇒ ya cambió su contraseña temporal: si seguía «Pendiente», se activa.
+        await _userRepository.ActivatePendingAsync(currentUserId);
         return await _userRepository.IsActiveAdministratorAsync(currentUserId);
     }
 
@@ -93,7 +95,8 @@ public sealed class CreateUserUseCase : ICreateUserUseCase
 
         if (!keycloakResult.IsSuccess)
         {
-            return Result<CreateUserResultDto>.Fallo(Result.Error(string.Join(" ", keycloakResult.Errors())));
+            // Se conserva el tipo de error de Keycloak (p. ej. 409 si el usuario o el correo ya existen).
+            return Result<CreateUserResultDto>.Fallo(keycloakResult);
         }
 
         return await PersistAndNotifyAsync(keycloakResult.Valor, firstName, lastName, maternalLastName, normalizedEmail, username, roleId, temporaryPassword);
@@ -168,7 +171,7 @@ public sealed class CreateUserUseCase : ICreateUserUseCase
 
         if (string.IsNullOrWhiteSpace(request.LastName))
         {
-            return Result.Validacion(nameof(request.LastName), "El apellido es obligatorio.");
+            return Result.Validacion(nameof(request.LastName), "El apellido paterno es obligatorio.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Email))

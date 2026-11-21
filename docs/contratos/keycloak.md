@@ -10,6 +10,7 @@ Archivos: `keycloak/realm-libreria.json` (realm versionado, **sin secretos**), `
 |---|---|
 | Imagen | `quay.io/keycloak/keycloak:26.8.1` (modo desarrollo, contenedor `keycloak`, puerto 8080) |
 | Realm | `libreria` · nombre visible **«Librería»** · idioma `es` (internacionalización activa, único idioma) |
+| Textos de las pantallas | `localizationTexts.es` del realm sobrescribe los textos de Keycloak que tuteaban o decían «Contraseña incorrecta: …» (auditoría 20/11): título del login y un mensaje por regla de la política, iguales a los del MS Usuarios |
 | Authority (`Keycloak:Authority`) | `http://localhost:8080/realms/libreria` |
 | Emisor (`iss`) | `http://localhost:8080/realms/libreria` (fijo con `KC_HOSTNAME`, aunque se llame desde otro contenedor) |
 | Discovery / JWKS | `{Authority}/.well-known/openid-configuration` · `{Authority}/protocol/openid-connect/certs` |
@@ -114,7 +115,7 @@ Opciones clave (no cambiarlas sin avisar):
 
 Piezas del Front (`Seguridad/` y `Clients/Common/`):
 
-- **`BearerTokenDelegatingHandler`:** agrega `Authorization: Bearer` a las llamadas de los 4 adaptadores. Si el token venció o un servicio responde **401**, lanza `SesionExpiradaException`; `SesionExpiradaFilter` cierra la sesión y lleva a `/Cuenta/Login?motivo=vencida`. *Transitorio hasta US-126/127:* solo hacia `/api/usuarios` envía también `X-Usuario-Id` (= `sub`) y `X-Usuario-Nombre` (= `preferred_username`); descarta cualquier `X-Usuario-*` que venga de antes.
+- **`BearerTokenDelegatingHandler`:** agrega `Authorization: Bearer` a las llamadas de los 4 adaptadores. Si el token venció o un servicio responde **401**, lanza `SesionExpiradaException`; `SesionExpiradaFilter` cierra la sesión y lleva a `/Cuenta/Login?motivo=vencida`. Desde US-126/127 no envía ninguna cabecera `X-Usuario-*`: cada MS toma al usuario del token.
 - **`ValidarEstadoUsuarioCookieEvents`:** en cada petición comprueba el vencimiento del token y, con una caché de `Sesion:ValidacionEstadoSegundos` (20 s), si el `sub` sigue sin baja en el MS Usuarios. Una baja corta la sesión con el mensaje «Su cuenta está inactiva…».
 - **`/Cuenta/Login`:** sin motivo, redirige a Keycloak. Con un motivo (`vencida`, `cerrada`, `inactiva`, `no-disponible`, `error`; textos en `MotivosSesion`), muestra el mensaje y el botón «Iniciar sesión» (con `prompt=login`). Así un rechazo nunca entra en bucle con la sesión SSO de Keycloak.
 - **`/Cuenta/Logout`:** solo por POST con antiforgery. Cierra la cookie **y** la sesión de Keycloak.
@@ -177,7 +178,7 @@ Respuestas, como `application/problem+json` en español, con `WWW-Authenticate: 
 | Productos (`productos`, `categorias`, `marcas`, `historico`) | todo | 403 |
 | Usuarios | todo | `PUT contrasena`, `GET {sub}/sesion-activa`, `GET nombres`, `GET nombres-publicos`; 403 en listar, crear, `roles` y baja |
 
-**Usuario actual:** en Usuarios sale del token validado (`UsuarioActualDesdeToken`: `sub` y `preferred_username`); las cabeceras `X-Usuario-*` ya no existen. Clientes, Proveedores y Productos siguen con `UsuarioActualDesarrollo` hasta US-127.
+**Usuario actual:** en los 4 MS sale del token validado (`UsuarioActualDesdeToken`: `sub` y `preferred_username`); las cabeceras `X-Usuario-*` ya no existen y `UsuarioActualDesarrollo` se retiró (auditoría 20/11).
 
 **Pruebas sin Keycloak:** cada proyecto de pruebas tiene `Seguridad/TokensDePrueba.cs`, que firma tokens RS256 con una clave local, y `UsarJwtDePrueba()`, que hace que el servicio confíe en esa clave en lugar del JWKS. El resto de la validación es la real. Evidencia en vivo: `docs/evidencias/US-126-seguridad-jwt.md` y `.http`.
 

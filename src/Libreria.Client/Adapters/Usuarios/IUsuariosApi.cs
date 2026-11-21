@@ -11,17 +11,9 @@ namespace Libreria.Client.Adapters.Usuarios;
 /// </summary>
 public interface IUsuariosApi
 {
-    Task<bool> SesionActivaAsync(
-        int usuarioId,
-        CancellationToken cancellationToken = default);
-
     /// <summary>Si el usuario (por su <c>sub</c> de Keycloak) sigue activo en el MS Usuarios (US-125).</summary>
     Task<bool> SesionActivaAsync(
         Guid keycloakId,
-        CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyDictionary<int, string>> ObtenerNombresAsync(
-        IEnumerable<int> usuarioIds,
         CancellationToken cancellationToken = default);
 
     /// <summary>Contrato 6.4: nombres por <c>PublicId</c> (GUID) para la auditoría.</summary>
@@ -29,8 +21,11 @@ public interface IUsuariosApi
         IEnumerable<Guid> usuarioIds,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Listado sin contraseñas; el MS filtra por estado y ordena (orden = nombre, usuario, correo, rol o estado).</summary>
     Task<IReadOnlyList<UserListItemDto>> ObtenerUsuariosAsync(
         string? estado = null,
+        string? orden = null,
+        bool descendente = false,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<string>> ObtenerRolesAsync(
