@@ -5,7 +5,7 @@ namespace Libreria.Servicio.Usuarios.Application.DTOs.Users;
 public sealed record CreateUserRequest(
     [Required(ErrorMessage = "El nombre es obligatorio.")]
     string FirstName,
-    [Required(ErrorMessage = "El apellido es obligatorio.")]
+    [Required(ErrorMessage = "El apellido paterno es obligatorio.")]
     string LastName,
     [Required(ErrorMessage = "El correo es obligatorio.")]
     string Email,

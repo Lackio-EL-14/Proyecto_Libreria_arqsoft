@@ -1,7 +1,7 @@
 @page
 @model Libreria.Client.Pages.ErrorModel
 @{
-    ViewData["Title"] = "Error del Sistema";
+    ViewData["Title"] = "Error del sistema";
 }
 
 <div class="page-header">
@@ -16,20 +16,20 @@
     <h3 style="color: #991B1B; margin-bottom: 1rem;">Algo no salió como esperábamos</h3>
     
     <p style="color: var(--color-secondary); margin-bottom: 1.5rem; line-height: 1.5;">
-        No pudimos procesar tu solicitud en este momento. Por favor, intenta realizar la acción nuevamente o regresa al panel principal.
+        No pudimos procesar su solicitud en este momento. Por favor, intente realizar la acción nuevamente o regrese al panel principal.
     </p>
 
     @if (Model.ShowRequestId)
     {
         <div style="background-color: #FEF2F2; color: #991B1B; padding: 0.85rem 1.5rem; border-radius: var(--radius-base); border: 1px solid #FCA5A5; display: inline-block; margin-bottom: 2rem;">
             <p style="margin: 0; font-size: 0.85rem;">
-                <strong>ID de Rastreo de Soporte:</strong> <br/>
+                <strong>Identificador de seguimiento para soporte:</strong> <br/>
                 <code>@Model.RequestId</code>
             </p>
         </div>
     }
 
     <div>
-        <a asp-page="/Index" class="btn btn--primary">Volver al Inicio</a>
+        <a asp-page="/Index" class="btn btn--primary">Volver al inicio</a>
     </div>
 </div>

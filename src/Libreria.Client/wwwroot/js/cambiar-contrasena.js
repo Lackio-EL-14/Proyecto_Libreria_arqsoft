@@ -31,7 +31,7 @@
 
         const coinciden = nueva.value.length > 0 && nueva.value === confirmacion.value;
         estadoConfirmacion.textContent = confirmacion.value.length === 0
-            ? 'Introduce la confirmación de la nueva contraseña.'
+            ? 'Ingrese la confirmación de la nueva contraseña.'
             : coinciden ? 'Las contraseñas coinciden.' : 'Las contraseñas no coinciden.';
         estadoConfirmacion.classList.toggle('text-danger', !coinciden);
 

@@ -168,7 +168,7 @@ public sealed class CreateUserUseCase : ICreateUserUseCase
 
         if (string.IsNullOrWhiteSpace(request.LastName))
         {
-            return Result.Validacion(nameof(request.LastName), "El apellido es obligatorio.");
+            return Result.Validacion(nameof(request.LastName), "El apellido paterno es obligatorio.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Email))
