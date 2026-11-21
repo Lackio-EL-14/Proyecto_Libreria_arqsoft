@@ -21,38 +21,8 @@ public sealed class ProductosApiAdapter : ApiClientBase, IProductosApi
     public async Task<IReadOnlyList<CategoriaDto>> ObtenerCategoriasAsync(string? busqueda, CancellationToken ct = default) =>
         await LeerAsync<List<CategoriaDto>>("api/categorias" + Armar(("busqueda", busqueda)), ct) ?? [];
 
-    public Task<CategoriaDto?> ObtenerCategoriaAsync(Guid publicId, bool activa, CancellationToken ct = default) =>
-        LeerOpcionalAsync<CategoriaDto>($"api/categorias/{publicId}?estadoEsperado={Booleano(activa)}", ct);
-
-    public async Task<IReadOnlyList<string>> ObtenerUbicacionesCategoriaAsync(CancellationToken ct = default) =>
-        await LeerAsync<List<string>>("api/categorias/ubicaciones", ct) ?? [];
-
-    public Task<ResultadoApi> CrearCategoriaAsync(CategoriaInput input, CancellationToken ct = default) =>
-        EnviarPostAsync("api/categorias", input, ct);
-
-    public Task<ResultadoApi> ActualizarCategoriaAsync(Guid publicId, CategoriaInput input, CancellationToken ct = default) =>
-        EnviarPutAsync($"api/categorias/{publicId}", input, ct);
-
-    public Task<ResultadoApi> CambiarEstadoCategoriaAsync(Guid publicId, bool activa, CancellationToken ct = default) =>
-        EnviarPatchAsync($"api/categorias/{publicId}/estado?nuevoEstado={Booleano(activa)}", ct);
-
     public async Task<IReadOnlyList<MarcaDto>> ObtenerMarcasAsync(string? nombre, CancellationToken ct = default) =>
         await LeerAsync<List<MarcaDto>>("api/marcas" + Armar(("nombre", nombre)), ct) ?? [];
-
-    public Task<MarcaDto?> ObtenerMarcaAsync(Guid publicId, bool activa, CancellationToken ct = default) =>
-        LeerOpcionalAsync<MarcaDto>($"api/marcas/{publicId}?estadoEsperado={Booleano(activa)}", ct);
-
-    public async Task<IReadOnlyList<string>> ObtenerPaisesMarcaAsync(CancellationToken ct = default) =>
-        await LeerAsync<List<string>>("api/marcas/paises", ct) ?? [];
-
-    public Task<ResultadoApi> CrearMarcaAsync(MarcaInput input, CancellationToken ct = default) =>
-        EnviarPostAsync("api/marcas", input, ct);
-
-    public Task<ResultadoApi> ActualizarMarcaAsync(Guid publicId, MarcaInput input, CancellationToken ct = default) =>
-        EnviarPutAsync($"api/marcas/{publicId}", input, ct);
-
-    public Task<ResultadoApi> CambiarEstadoMarcaAsync(Guid publicId, bool activa, CancellationToken ct = default) =>
-        EnviarPatchAsync($"api/marcas/{publicId}/estado?nuevoEstado={Booleano(activa)}", ct);
 
     public async Task<ProductoListadoDto> ObtenerProductosAsync(
         string? busqueda,
