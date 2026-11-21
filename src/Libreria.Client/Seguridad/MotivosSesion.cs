@@ -14,6 +14,9 @@ public static class MotivosSesion
     public const string Error = "error";
     public const string ContrasenaCambiada = "contrasena-cambiada";
 
+    /// <summary>Llega desde el enlace del correo de bienvenida (US-130/US-131).</summary>
+    public const string PrimerIngreso = "primer-ingreso";
+
     /// <summary>Clave de <c>HttpContext.Items</c> con el motivo del rechazo de la sesión en esta petición.</summary>
     public const string ClaveItem = "Libreria.MotivoSesion";
 
@@ -25,6 +28,7 @@ public static class MotivosSesion
         NoDisponible => "No se pudo validar su sesión porque el servicio de Usuarios no responde. Intente de nuevo en unos minutos.",
         Error => "No se pudo completar el inicio de sesión. Intente de nuevo.",
         ContrasenaCambiada => "Su contraseña se cambió correctamente. Inicie sesión con la nueva contraseña.",
+        PrimerIngreso => "Ingrese con el usuario y la contraseña temporal que recibió por correo. Antes de continuar, el sistema le pedirá cambiarla.",
         _ => null
     };
 

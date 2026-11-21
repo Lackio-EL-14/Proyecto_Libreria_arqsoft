@@ -39,11 +39,31 @@ BEGIN
         Telefono NVARCHAR(30) NULL,
         Correo NVARCHAR(254) NULL,
         EsPrincipal BIT NOT NULL CONSTRAINT DF_ContactoProveedor_Principal DEFAULT 0,
+        FechaCreacion DATETIME2 NOT NULL CONSTRAINT DF_ContactoProveedor_FechaCreacion DEFAULT SYSUTCDATETIME(),
+        UsuarioCreacionId UNIQUEIDENTIFIER NULL,
+        FechaModificacion DATETIME2 NULL,
+        UsuarioModificacionId UNIQUEIDENTIFIER NULL,
         CONSTRAINT FK_ContactoProveedor_Proveedor FOREIGN KEY(ProveedorId)
             REFERENCES dbo.Proveedor(ProveedorId),
         CONSTRAINT CK_ContactoProveedor_Medio CHECK(Telefono IS NOT NULL OR Correo IS NOT NULL)
     );
 END
+GO
+
+-- Bitácora: atributos de auditoría del contacto en bases creadas antes de agregarlos.
+IF COL_LENGTH('dbo.ContactoProveedor','FechaCreacion') IS NULL
+    ALTER TABLE dbo.ContactoProveedor ADD
+        FechaCreacion DATETIME2 NOT NULL CONSTRAINT DF_ContactoProveedor_FechaCreacion DEFAULT SYSUTCDATETIME(),
+        UsuarioCreacionId UNIQUEIDENTIFIER NULL,
+        FechaModificacion DATETIME2 NULL,
+        UsuarioModificacionId UNIQUEIDENTIFIER NULL;
+GO
+
+-- Los contactos que ya existían heredan la creación de su proveedor.
+UPDATE c SET c.FechaCreacion = p.FechaCreacion, c.UsuarioCreacionId = p.UsuarioCreacionId
+FROM dbo.ContactoProveedor c
+JOIN dbo.Proveedor p ON p.ProveedorId = c.ProveedorId
+WHERE c.UsuarioCreacionId IS NULL AND p.UsuarioCreacionId IS NOT NULL;
 GO
 
 IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='UQ_ContactoProveedor_Principal' AND object_id=OBJECT_ID('dbo.ContactoProveedor'))

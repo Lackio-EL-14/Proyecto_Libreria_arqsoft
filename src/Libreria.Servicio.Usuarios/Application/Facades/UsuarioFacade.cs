@@ -135,7 +135,9 @@ public sealed class UsuarioFacade
     private string BuildLoginUrl()
     {
         var baseUri = ValidateBaseUrl(_configuration.BaseUrl);
-        return $"{baseUri.GetLeftPart(UriPartial.Path).TrimEnd('/')}/Cuenta/Login";
+        // El Front reconoce este motivo: si en el navegador hay otra sesión abierta, pide cerrarla
+        // antes de ingresar con la cuenta nueva (US-131).
+        return $"{baseUri.GetLeftPart(UriPartial.Path).TrimEnd('/')}/Cuenta/Login?motivo=primer-ingreso";
     }
 
     private static Uri ValidateBaseUrl(string rawUrl)

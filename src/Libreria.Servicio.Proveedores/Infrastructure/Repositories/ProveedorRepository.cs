@@ -68,7 +68,7 @@ public sealed class ProveedorRepository : IProveedorRepository
             Parametro(cmd, "@PublicId", proveedor.PublicId);
             Parametro(cmd, "@Usuario", UsuarioId());
             proveedor.ProveedorId = Convert.ToInt32(await cmd.ExecuteScalarAsync());
-            await GuardarContactoAsync(cn, tx, proveedor);
+            await GuardarContactoAsync(cn, tx, proveedor, UsuarioId());
             await tx.CommitAsync();
         }
         catch (SqlException ex) when (EsNitDuplicado(ex))
@@ -102,7 +102,7 @@ public sealed class ProveedorRepository : IProveedorRepository
                 await tx.RollbackAsync();
                 return false;
             }
-            await GuardarContactoAsync(cn, tx, proveedor);
+            await GuardarContactoAsync(cn, tx, proveedor, UsuarioId());
             await tx.CommitAsync();
             return true;
         }
@@ -142,17 +142,19 @@ public sealed class ProveedorRepository : IProveedorRepository
         return Convert.ToInt32(await cmd.ExecuteScalarAsync()) > 0;
     }
 
-    private static async Task GuardarContactoAsync(DbConnection cn, DbTransaction tx, Proveedor proveedor)
+    private static async Task GuardarContactoAsync(DbConnection cn, DbTransaction tx, Proveedor proveedor, Guid usuarioId)
     {
         var contacto = proveedor.ContactoPrincipal ?? throw new InvalidOperationException("Falta el contacto principal.");
         await using var cmd = cn.CreateCommand();
         cmd.Transaction = tx;
         cmd.CommandText = @"IF EXISTS(SELECT 1 FROM dbo.ContactoProveedor WHERE ProveedorId=@ProveedorId AND EsPrincipal=1)
-            UPDATE dbo.ContactoProveedor SET Nombre=@Nombre,Cargo=@Cargo,Telefono=@Telefono,Correo=@Correo
+            UPDATE dbo.ContactoProveedor SET Nombre=@Nombre,Cargo=@Cargo,Telefono=@Telefono,Correo=@Correo,
+                FechaModificacion=SYSUTCDATETIME(),UsuarioModificacionId=@Usuario
             WHERE ProveedorId=@ProveedorId AND EsPrincipal=1;
-            ELSE INSERT dbo.ContactoProveedor(ProveedorId,Nombre,Cargo,Telefono,Correo,EsPrincipal)
-            VALUES(@ProveedorId,@Nombre,@Cargo,@Telefono,@Correo,1);";
+            ELSE INSERT dbo.ContactoProveedor(ProveedorId,Nombre,Cargo,Telefono,Correo,EsPrincipal,FechaCreacion,UsuarioCreacionId)
+            VALUES(@ProveedorId,@Nombre,@Cargo,@Telefono,@Correo,1,SYSUTCDATETIME(),@Usuario);";
         Parametro(cmd, "@ProveedorId", proveedor.ProveedorId);
+        Parametro(cmd, "@Usuario", usuarioId);
         Parametro(cmd, "@Nombre", contacto.Nombre);
         Parametro(cmd, "@Cargo", contacto.Cargo ?? (object)DBNull.Value);
         Parametro(cmd, "@Telefono", contacto.Telefono ?? (object)DBNull.Value);
