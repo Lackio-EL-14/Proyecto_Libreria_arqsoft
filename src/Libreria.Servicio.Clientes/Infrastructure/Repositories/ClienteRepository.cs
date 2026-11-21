@@ -4,6 +4,7 @@ using Libreria.Servicio.Clientes.Application.Models;
 using Libreria.Servicio.Clientes.Application.Ports.Secondary;
 using Libreria.Servicio.Clientes.Domain;
 using MySqlConnector;
+using Libreria.Servicio.Clientes.Infrastructure.Connection;
 
 namespace Libreria.Servicio.Clientes.Infrastructure.Repositories;
 

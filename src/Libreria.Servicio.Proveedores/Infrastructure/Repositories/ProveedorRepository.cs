@@ -3,6 +3,7 @@ using Libreria.Servicio.Proveedores.Application.Models;
 using Libreria.Servicio.Proveedores.Application.Ports.Secondary;
 using Libreria.Servicio.Proveedores.Domain;
 using Microsoft.Data.SqlClient;
+using Libreria.Servicio.Proveedores.Infrastructure.Connection;
 
 namespace Libreria.Servicio.Proveedores.Infrastructure.Repositories;
 
