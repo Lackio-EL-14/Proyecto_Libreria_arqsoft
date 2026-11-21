@@ -12,6 +12,7 @@ public static class MotivosSesion
     public const string Inactiva = "inactiva";
     public const string NoDisponible = "no-disponible";
     public const string Error = "error";
+    public const string ContrasenaCambiada = "contrasena-cambiada";
 
     /// <summary>Clave de <c>HttpContext.Items</c> con el motivo del rechazo de la sesión en esta petición.</summary>
     public const string ClaveItem = "Libreria.MotivoSesion";
@@ -23,6 +24,7 @@ public static class MotivosSesion
         Inactiva => "Su cuenta está inactiva. Si cree que es un error, comuníquese con el administrador.",
         NoDisponible => "No se pudo validar su sesión porque el servicio de Usuarios no responde. Intente de nuevo en unos minutos.",
         Error => "No se pudo completar el inicio de sesión. Intente de nuevo.",
+        ContrasenaCambiada => "Su contraseña se cambió correctamente. Inicie sesión con la nueva contraseña.",
         _ => null
     };
 

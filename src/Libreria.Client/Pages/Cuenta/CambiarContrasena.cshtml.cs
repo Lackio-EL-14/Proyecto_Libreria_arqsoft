@@ -1,6 +1,10 @@
 using Libreria.Client.Clients.Common;
 using Libreria.Client.Adapters.Usuarios;
 using Libreria.Client.DTOs.Usuarios;
+using Libreria.Client.Seguridad;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -30,7 +34,7 @@ public class CambiarContrasenaModel : PageModel
 
         if (!ModelState.IsValid)
         {
-            LimpiarContrasenas();
+            // Se conservan los mensajes de cada campo; las contraseñas nunca se devuelven al navegador.
             ModelState.AddModelError(
                 string.Empty,
                 "Revise los datos ingresados.");
@@ -46,10 +50,15 @@ public class CambiarContrasenaModel : PageModel
                     Input.Confirmacion),
                 HttpContext.RequestAborted);
 
-            TempData["MensajeExito"] =
-                "Contraseña actualizada correctamente.";
-
-            return RedirectToPage();
+            // US-129: el cambio rige desde el próximo inicio de sesión, así que se cierra la
+            // sesión en el Front y en Keycloak y se vuelve al login con el aviso.
+            return SignOut(
+                new AuthenticationProperties
+                {
+                    RedirectUri = MotivosSesion.UrlLogin(MotivosSesion.ContrasenaCambiada)
+                },
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                OpenIdConnectDefaults.AuthenticationScheme);
         }
         catch (ApiClientException exception)
         {
