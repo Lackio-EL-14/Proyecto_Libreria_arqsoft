@@ -23,18 +23,5 @@
                 }
             </dd>
         </div>
-        @if (Model.AnuladoPor is not null)
-        {
-            <div>
-                <dt>Anulado por</dt>
-                <dd>
-                    @Model.AnuladoPor
-                    @if (Model.FechaAnulacion.HasValue)
-                    {
-                        <small>@Model.FechaAnulacion.Value.ToString("dd/MM/yyyy HH:mm")</small>
-                    }
-                </dd>
-            </div>
-        }
     </dl>
 </section>
