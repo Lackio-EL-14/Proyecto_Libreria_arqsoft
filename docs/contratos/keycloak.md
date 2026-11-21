@@ -10,6 +10,7 @@ Archivos: `keycloak/realm-libreria.json` (realm versionado, **sin secretos**), `
 |---|---|
 | Imagen | `quay.io/keycloak/keycloak:26.8.1` (modo desarrollo, contenedor `keycloak`, puerto 8080) |
 | Realm | `libreria` · nombre visible **«Librería»** · idioma `es` (internacionalización activa, único idioma) |
+| Textos de las pantallas | `localizationTexts.es` del realm sobrescribe los textos de Keycloak que tuteaban o decían «Contraseña incorrecta: …» (auditoría 20/11): título del login y un mensaje por regla de la política, iguales a los del MS Usuarios |
 | Authority (`Keycloak:Authority`) | `http://localhost:8080/realms/libreria` |
 | Emisor (`iss`) | `http://localhost:8080/realms/libreria` (fijo con `KC_HOSTNAME`, aunque se llame desde otro contenedor) |
 | Discovery / JWKS | `{Authority}/.well-known/openid-configuration` · `{Authority}/protocol/openid-connect/certs` |

@@ -30,6 +30,23 @@
   "maxDeltaTimeSeconds": 43200,
   "quickLoginCheckMilliSeconds": 1000,
   "minimumQuickLoginWaitSeconds": 60,
+  "localizationTexts": {
+    "es": {
+      "loginTitle": "Iniciar sesión en {0}",
+      "loginAccountTitle": "Ingrese a su cuenta",
+      "usernameOrEmail": "Usuario o correo electrónico",
+      "missingPasswordMessage": "Por favor, indique su contraseña.",
+      "errorTitle": "Lo sentimos",
+      "invalidPasswordMinLengthMessage": "La contraseña debe tener al menos {0} caracteres.",
+      "invalidPasswordMinDigitsMessage": "La contraseña debe contener al menos un número.",
+      "invalidPasswordMinLowerCaseCharsMessage": "La contraseña debe contener al menos una letra minúscula.",
+      "invalidPasswordMinUpperCaseCharsMessage": "La contraseña debe contener al menos una letra mayúscula.",
+      "invalidPasswordMinSpecialCharsMessage": "La contraseña debe contener al menos un carácter especial.",
+      "invalidPasswordNotUsernameMessage": "La contraseña no puede ser igual al nombre de usuario.",
+      "invalidPasswordMessage": "La contraseña no es válida.",
+      "invalidPasswordGenericMessage": "La nueva contraseña no cumple la política de contraseñas."
+    }
+  },
   "passwordPolicy": "length(8) and digits(1) and upperCase(1) and lowerCase(1) and specialChars(1) and notUsername(undefined)",
   "roles": {
     "realm": [
