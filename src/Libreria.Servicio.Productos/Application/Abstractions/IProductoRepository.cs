@@ -1,3 +1,4 @@
+using Libreria.Servicio.Productos.Application.Models.Productos;
 using Libreria.Servicio.Productos.Domain.Entities;
 
 namespace Libreria.Servicio.Productos.Application.Abstractions;
@@ -16,5 +17,7 @@ public interface IProductoRepository : ICrudRepository<Producto>
         string? busqueda,
         Guid? categoriaPublicId,
         Guid? marcaPublicId,
-        bool? estado);
+        bool? estado,
+        OrdenProductos orden = OrdenProductos.Nombre,
+        bool descendente = false);
 }

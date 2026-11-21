@@ -23,6 +23,8 @@ public interface IProductosApi
         Guid? categoriaPublicId,
         Guid? marcaPublicId,
         bool? estado = null,
+        string? orden = null,
+        bool descendente = false,
         CancellationToken ct = default);
     Task<ProductoFormularioDto> ObtenerFormularioProductoAsync(CancellationToken ct = default);
     Task<ProductoDetalleDto?> ObtenerProductoAsync(Guid publicId, CancellationToken ct = default);

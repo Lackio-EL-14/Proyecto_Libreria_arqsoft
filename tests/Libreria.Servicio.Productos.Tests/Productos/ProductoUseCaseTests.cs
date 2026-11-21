@@ -1,4 +1,5 @@
 using Libreria.Servicio.Productos.Domain;
+using Libreria.Servicio.Productos.Application.Models.Productos;
 using Libreria.Servicio.Productos.Application.UseCases.Productos;
 using Libreria.Servicio.Productos.Domain.Entities;
 using Libreria.Servicio.Productos.Tests.Fakes;
@@ -129,6 +130,28 @@ public sealed class ProductoUseCaseTests
             producto.Nombre);
 
         Assert.False(producto.Estado);
+    }
+
+    [Fact]
+    public async Task Listado_lo_ordena_el_microservicio_por_la_columna_pedida()
+    {
+        var repository = new ProductoRepositoryFalso();
+        var barato = CrearProducto("Borrador");
+        barato.PrecioVenta = 2m;
+        var caro = CrearProducto("Agenda");
+        caro.PrecioVenta = 40m;
+        repository.Agregar(barato);
+        repository.Agregar(caro);
+
+        var useCase = new ObtenerListadoProductosUseCase(repository, new CatalogoProductoRepositoryFalso());
+
+        var porNombre = await useCase.EjecutarAsync();
+        var porPrecioDesc = await useCase.EjecutarAsync(orden: OrdenProductos.Precio, descendente: true);
+        var porPrecioAsc = await useCase.EjecutarAsync(orden: OrdenProductos.Precio);
+
+        Assert.Equal(["Agenda", "Borrador"], porNombre.Productos.Select(p => p.Nombre));
+        Assert.Equal(["Agenda", "Borrador"], porPrecioDesc.Productos.Select(p => p.Nombre));
+        Assert.Equal(["Borrador", "Agenda"], porPrecioAsc.Productos.Select(p => p.Nombre));
     }
 
     private static Producto CrearProducto(

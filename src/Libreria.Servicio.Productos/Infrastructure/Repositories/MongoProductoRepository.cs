@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Libreria.Servicio.Productos.Application.Abstractions;
+using Libreria.Servicio.Productos.Application.Models.Productos;
 using Libreria.Servicio.Productos.Domain.Entities;
 using Libreria.Servicio.Productos.Infrastructure.Mongo;
 using MongoDB.Bson;
@@ -45,6 +46,27 @@ public sealed class MongoProductoRepository : IProductoRepository
             .Find(filtro)
             .SortBy(producto => producto.Nombre)
             .ToListAsync();
+    }
+
+    /// <summary>Ordena en MongoDB por la columna pedida; a igual valor, por nombre.</summary>
+    private static SortDefinition<Producto> CrearOrden(OrdenProductos orden, bool descendente)
+    {
+        System.Linq.Expressions.Expression<Func<Producto, object>> campo = orden switch
+        {
+            OrdenProductos.Categoria => producto => producto.Categoria.Nombre,
+            OrdenProductos.Marca => producto => producto.Marca.Nombre,
+            OrdenProductos.Perecedero => producto => producto.EsPerecedero,
+            OrdenProductos.Estado => producto => producto.Estado,
+            OrdenProductos.Stock => producto => producto.Stock,
+            OrdenProductos.Precio => producto => producto.PrecioVenta,
+            OrdenProductos.Costo => producto => producto.CostoAdquisicionActual,
+            _ => producto => producto.Nombre
+        };
+
+        var porColumna = descendente
+            ? Builders<Producto>.Sort.Descending(campo)
+            : Builders<Producto>.Sort.Ascending(campo);
+        return porColumna.Ascending(producto => producto.Nombre);
     }
 
     public async Task<Producto?> ObtenerPorPublicIdAsync(
@@ -295,7 +317,9 @@ public sealed class MongoProductoRepository : IProductoRepository
         string? busqueda,
         Guid? categoriaPublicId,
         Guid? marcaPublicId,
-        bool? estado)
+        bool? estado,
+        OrdenProductos orden = OrdenProductos.Nombre,
+        bool descendente = false)
     {
         var filtro = Builders<Producto>.Filter.Empty;
 
@@ -338,7 +362,7 @@ public sealed class MongoProductoRepository : IProductoRepository
 
         return await _context.Productos
             .Find(filtro)
-            .SortBy(producto => producto.Nombre)
+            .Sort(CrearOrden(orden, descendente))
             .ToListAsync();
     }
 }

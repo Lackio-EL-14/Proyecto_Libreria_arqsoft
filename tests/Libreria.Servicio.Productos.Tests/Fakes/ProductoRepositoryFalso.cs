@@ -1,4 +1,5 @@
 using Libreria.Servicio.Productos.Application.Abstractions;
+using Libreria.Servicio.Productos.Application.Models.Productos;
 using Libreria.Servicio.Productos.Domain.Entities;
 
 namespace Libreria.Servicio.Productos.Tests.Fakes;
@@ -138,7 +139,9 @@ public sealed class ProductoRepositoryFalso : IProductoRepository
         string? busqueda,
         Guid? categoriaPublicId,
         Guid? marcaPublicId,
-        bool? estado)
+        bool? estado,
+        OrdenProductos orden = OrdenProductos.Nombre,
+        bool descendente = false)
     {
         IEnumerable<Producto> consulta = _productos;
 
@@ -176,9 +179,21 @@ public sealed class ProductoRepositoryFalso : IProductoRepository
                     == marcaPublicId.Value);
         }
 
+        Func<Producto, object> campo = orden switch
+        {
+            OrdenProductos.Categoria => producto => producto.Categoria.Nombre,
+            OrdenProductos.Marca => producto => producto.Marca.Nombre,
+            OrdenProductos.Perecedero => producto => producto.EsPerecedero,
+            OrdenProductos.Estado => producto => producto.Estado,
+            OrdenProductos.Stock => producto => producto.Stock,
+            OrdenProductos.Precio => producto => producto.PrecioVenta,
+            OrdenProductos.Costo => producto => producto.CostoAdquisicionActual,
+            _ => producto => producto.Nombre
+        };
+
         IReadOnlyList<Producto> resultado =
-            consulta
-                .OrderBy(producto => producto.Nombre)
+            (descendente ? consulta.OrderByDescending(campo) : consulta.OrderBy(campo))
+                .ThenBy(producto => producto.Nombre)
                 .ToList();
 
         return Task.FromResult(resultado);

@@ -29,13 +29,18 @@ public sealed class ProductosApiAdapter : ApiClientBase, IProductosApi
         Guid? categoriaPublicId,
         Guid? marcaPublicId,
         bool? estado = null,
+        string? orden = null,
+        bool descendente = false,
         CancellationToken ct = default)
     {
+        // El MS Productos ordena el listado (orden=nombre|categoria|marca|…, descendente=true|false).
         var url = "api/productos" + Armar(
             ("busqueda", busqueda),
             ("categoriaPublicId", categoriaPublicId?.ToString()),
             ("marcaPublicId", marcaPublicId?.ToString()),
-            ("estado", estado.HasValue ? Booleano(estado.Value) : null));
+            ("estado", estado.HasValue ? Booleano(estado.Value) : null),
+            ("orden", string.IsNullOrWhiteSpace(orden) ? null : orden),
+            ("descendente", descendente ? "true" : null));
 
         return await LeerAsync<ProductoListadoDto>(url, ct)
             ?? new ProductoListadoDto([], [], []);

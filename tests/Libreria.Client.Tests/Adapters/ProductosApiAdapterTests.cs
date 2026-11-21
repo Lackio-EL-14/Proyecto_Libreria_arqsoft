@@ -159,6 +159,17 @@ public sealed class ProductosApiAdapterTests
 
 
     [Fact]
+    public async Task El_orden_del_listado_viaja_al_microservicio()
+    {
+        var manejador = new ManejadorHttpFalso(HttpStatusCode.OK, """{"productos":[],"categorias":[],"marcas":[]}""");
+        var cliente = new ProductosApiAdapter(ManejadorHttpFalso.CrearFabrica(manejador));
+
+        await cliente.ObtenerProductosAsync(null, null, null, true, "precio", descendente: true);
+
+        Assert.Equal("?estado=true&orden=precio&descendente=true", manejador.UltimaPeticion!.RequestUri!.Query);
+    }
+
+    [Fact]
     public async Task Listado_productos_usa_publicIds_guid_en_los_filtros()
     {
         var categoriaPublicId =

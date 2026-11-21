@@ -39,13 +39,16 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
+        // El orden lo aplica el MS Productos (US-123), no la página.
         var listado = await _productos.ObtenerProductosAsync(
             Busqueda,
             CategoriaPublicId,
             MarcaPublicId,
-            Estado);
+            Estado,
+            Orden,
+            string.Equals(Direccion, "desc", StringComparison.OrdinalIgnoreCase));
 
-        Productos = Ordenar(listado.Productos);
+        Productos = listado.Productos;
         Categorias = listado.Categorias;
         Marcas = listado.Marcas;
     }
@@ -80,55 +83,6 @@ public class IndexModel : PageModel
             StringComparison.OrdinalIgnoreCase)
             ? " ▼"
             : " ▲";
-    }
-
-    private IReadOnlyList<ProductoListItemDto> Ordenar(
-        IReadOnlyList<ProductoListItemDto> productos)
-    {
-        var descendente = string.Equals(
-            Direccion,
-            "desc",
-            StringComparison.OrdinalIgnoreCase);
-
-        IEnumerable<ProductoListItemDto> ordenados =
-            Orden.ToLowerInvariant() switch
-            {
-                "categoria" => descendente
-                    ? productos.OrderByDescending(x => x.Categoria)
-                    : productos.OrderBy(x => x.Categoria),
-
-                "marca" => descendente
-                    ? productos.OrderByDescending(x => x.Marca)
-                    : productos.OrderBy(x => x.Marca),
-
-                "perecedero" => descendente
-                    ? productos.OrderByDescending(x => x.EsPerecedero)
-                    : productos.OrderBy(x => x.EsPerecedero),
-
-                "estado" => descendente
-                    ? productos.OrderByDescending(x => x.Estado)
-                    : productos.OrderBy(x => x.Estado),
-
-                "stock" => descendente
-                    ? productos.OrderByDescending(x => x.Stock)
-                    : productos.OrderBy(x => x.Stock),
-
-                "precio" => descendente
-                    ? productos.OrderByDescending(x => x.PrecioVenta)
-                    : productos.OrderBy(x => x.PrecioVenta),
-
-                "costo" => descendente
-                    ? productos.OrderByDescending(
-                        x => x.CostoAdquisicionActual)
-                    : productos.OrderBy(
-                        x => x.CostoAdquisicionActual),
-
-                _ => descendente
-                    ? productos.OrderByDescending(x => x.Nombre)
-                    : productos.OrderBy(x => x.Nombre)
-            };
-
-        return ordenados.ToList();
     }
 
     public async Task<IActionResult> OnPostDarDeBajaAsync(Guid publicId)
