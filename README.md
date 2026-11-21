@@ -84,17 +84,23 @@ Usuarios de desarrollo: `admin` y `vendedor`, con las contraseñas de `KEYCLOAK_
 
 ## Variables para ejecutar .NET localmente
 
-Docker Compose usa `.env`, pero los procesos `dotnet run` necesitan las cadenas en su entorno o en User Secrets. Ejemplo para Proveedores:
+`./run-all.ps1` lee el mismo `.env` y entrega a cada proceso solo lo suyo, sin imprimirlo:
+
+| Proceso | Variables |
+|---|---|
+| Proveedores · Usuarios · Clientes · Productos | `ConnectionStrings__<Servicio>Db`: se toma del `.env` si existe; si no, se arma con `*_DB_SA_PASSWORD` / `CLIENTES_DB_*` y los puertos de `docker-compose.yml` |
+| Usuarios | `Keycloak__ClientSecret` = `KEYCLOAK_USUARIOS_ADMIN_CLIENT_SECRET`, `Keycloak__VerificacionClientSecret` = `KEYCLOAK_USUARIOS_VERIFICACION_CLIENT_SECRET`, y `BASE_URL`/`SMTP_*` si están definidos |
+| Front | `Keycloak__ClientSecret` = `KEYCLOAK_FRONT_CLIENT_SECRET` |
+
+Si se usa `dotnet run` a mano, esas mismas claves van en el entorno o en User Secrets. Ejemplo para Proveedores:
 
 ```powershell
 dotnet user-secrets set "ConnectionStrings:ProveedoresDb" "Server=localhost,1433;Database=LibreriaProveedores;User Id=sa;Password=TU_CLAVE;TrustServerCertificate=True;" --project src/Libreria.Servicio.Proveedores
 ```
 
-Las otras claves están documentadas en `.env.example`.
-
 ## Levantar la solución
 
-Con las cuatro bases sanas:
+Con las cuatro bases sanas y el `.env` completo:
 
 ```powershell
 ./run-all.ps1
