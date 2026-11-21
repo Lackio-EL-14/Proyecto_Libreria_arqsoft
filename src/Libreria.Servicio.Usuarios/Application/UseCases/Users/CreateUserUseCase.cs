@@ -53,6 +53,8 @@ public sealed class CreateUserUseCase : ICreateUserUseCase
             return false;
         }
 
+        // Token válido ⇒ ya cambió su contraseña temporal: si seguía «Pendiente», se activa.
+        await _userRepository.ActivatePendingAsync(currentUserId);
         return await _userRepository.IsActiveAdministratorAsync(currentUserId);
     }
 

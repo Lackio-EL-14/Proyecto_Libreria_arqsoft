@@ -40,4 +40,16 @@ public interface IUserRepository
     Task<bool> DeactivateAsync(
         int userId,
         Guid modifiedByUserId);
+
+    /// <summary><c>KeycloakId</c> de los usuarios que siguen «Pendiente» (no cambiaron su contraseña temporal).</summary>
+    Task<IReadOnlyList<Guid>> GetPendingKeycloakIdsAsync();
+
+    /// <summary>
+    /// Pendiente → Activo cuando el usuario ya cambió su contraseña temporal en Keycloak.
+    /// La bitácora registra al propio usuario como autor del cambio.
+    /// </summary>
+    Task<bool> ActivatePendingAsync(Guid keycloakId);
+
+    /// <summary>Bitácora del cambio de contraseña (US-129): autor y fecha; si estaba Pendiente, pasa a Activo.</summary>
+    Task<bool> RegisterPasswordChangeAsync(Guid keycloakId);
 }
