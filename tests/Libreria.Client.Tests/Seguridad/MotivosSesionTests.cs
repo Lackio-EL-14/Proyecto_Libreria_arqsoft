@@ -13,6 +13,7 @@ public sealed class MotivosSesionTests
     [InlineData(MotivosSesion.NoDisponible)]
     [InlineData(MotivosSesion.Error)]
     [InlineData(MotivosSesion.ContrasenaCambiada)]
+    [InlineData(MotivosSesion.PrimerIngreso)]
     public void CadaMotivo_TieneMensajeEnEspanol_YUnaUrlLocal(string motivo)
     {
         var mensaje = MotivosSesion.Mensaje(motivo);

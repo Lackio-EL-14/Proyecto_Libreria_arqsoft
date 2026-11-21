@@ -19,8 +19,19 @@
         </div>
     }
 
-    <form method="post">
-        <input type="hidden" asp-for="ReturnUrl" />
-        <button type="submit" class="btn btn--primary auth-card__submit">Iniciar sesión</button>
-    </form>
+    @if (Model.SesionAbierta is not null)
+    {
+        <form method="post" asp-page-handler="CambiarCuenta">
+            <input type="hidden" asp-for="Motivo" />
+            <button type="submit" class="btn btn--primary auth-card__submit">Cerrar sesión y continuar</button>
+        </form>
+        <a href="/" class="btn btn--secondary auth-card__submit">Volver al sistema</a>
+    }
+    else
+    {
+        <form method="post">
+            <input type="hidden" asp-for="ReturnUrl" />
+            <button type="submit" class="btn btn--primary auth-card__submit">Iniciar sesión</button>
+        </form>
+    }
 </section>

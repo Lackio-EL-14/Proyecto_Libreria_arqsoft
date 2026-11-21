@@ -83,6 +83,18 @@ foreach ($clave in 'BASE_URL', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS
     if ($valor) { $proyectos[1].Variables[$clave] = $valor }
 }
 
+# Con un SMTP completo en .env, el alta de usuarios envía el correo de verdad (US-130).
+# Si falta o tiene los valores de ejemplo, el correo se guarda en la carpeta local de appsettings.Development.json.
+$smtpCompleto = @('SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM' |
+    ForEach-Object { Get-Valor $entorno $_ $null } |
+    Where-Object { $_ -and $_ -notmatch 'ejemplo|tu_usuario_smtp|tu_password_smtp' })
+if ($smtpCompleto.Count -eq 5) {
+    $proyectos[1].Variables['EMAIL_DELIVERY_MODE'] = 'Smtp'
+    Write-Host 'Correo de Usuarios: modo SMTP (correo real).' -ForegroundColor Cyan
+} else {
+    Write-Host 'Correo de Usuarios: SMTP incompleto en .env; los correos se guardan en src/Libreria.Servicio.Usuarios/bin/Development/mail.' -ForegroundColor Yellow
+}
+
 if (-not $SinCompilar) {
     Write-Host 'Compilando LibreriaSystem.slnx...' -ForegroundColor Cyan
     dotnet build LibreriaSystem.slnx --nologo -v quiet
@@ -92,8 +104,12 @@ if (-not $SinCompilar) {
     }
 }
 
+# Windows PowerShell 5.1 no define $IsWindows ni -SkipHttpErrorCheck: el script funciona en 5.1 y en PowerShell 7.
+$esWindows = $IsWindows -or $PSVersionTable.PSEdition -eq 'Desktop'
+$esPowerShell7 = $PSVersionTable.PSVersion.Major -ge 7
+
 $carpetaLogs = Join-Path ([System.IO.Path]::GetTempPath()) 'libreria-run-all'
-if (-not $IsWindows) {
+if (-not $esWindows) {
     New-Item -ItemType Directory -Force -Path $carpetaLogs | Out-Null
 }
 
@@ -108,7 +124,7 @@ try {
             [Environment]::SetEnvironmentVariable($variable.Key, $variable.Value)
         }
 
-        if ($IsWindows) {
+        if ($esWindows) {
             $proceso = Start-Process dotnet -ArgumentList $argumentos -PassThru
         }
         else {
@@ -133,15 +149,22 @@ try {
         $limite = (Get-Date).AddSeconds(60)
 
         while ((Get-Date) -lt $limite) {
+            $codigo = $null
             try {
-                $respuesta = Invoke-WebRequest -Uri $p.Url -TimeoutSec 2 -SkipHttpErrorCheck
-                if ($respuesta.StatusCode -lt 500) {
-                    $estado = "OK ($($respuesta.StatusCode))"
-                    break
+                if ($esPowerShell7) {
+                    $codigo = [int](Invoke-WebRequest -Uri $p.Url -TimeoutSec 2 -SkipHttpErrorCheck).StatusCode
+                }
+                else {
+                    $codigo = [int](Invoke-WebRequest -Uri $p.Url -TimeoutSec 2 -UseBasicParsing).StatusCode
                 }
             }
             catch {
-                # Todavía no escucha: se reintenta.
+                # En 5.1 un 4xx llega como excepción con respuesta; sin respuesta, todavía no escucha y se reintenta.
+                if ($_.Exception.Response) { $codigo = [int]$_.Exception.Response.StatusCode }
+            }
+            if ($codigo -and $codigo -lt 500) {
+                $estado = "OK ($codigo)"
+                break
             }
             Start-Sleep -Milliseconds 500
         }
@@ -153,7 +176,7 @@ try {
 
     if ($resumen.Estado -contains 'FALLA') {
         Write-Host 'Algún proyecto no respondió.' -ForegroundColor Yellow
-        if (-not $IsWindows) { Write-Host "Revisa los logs en $carpetaLogs" -ForegroundColor Yellow }
+        if (-not $esWindows) { Write-Host "Revisa los logs en $carpetaLogs" -ForegroundColor Yellow }
     }
     else {
         Write-Host 'Los 6 proyectos están arriba. Front: http://localhost:5000' -ForegroundColor Green
@@ -168,7 +191,8 @@ finally {
     foreach ($proceso in $procesos) {
         if (-not $proceso.HasExited) {
             # `dotnet run` lanza la aplicación como proceso hijo: se detiene el árbol completo.
-            $proceso.Kill($true)
+            if ($esPowerShell7) { $proceso.Kill($true) }
+            else { taskkill /PID $proceso.Id /T /F | Out-Null }
         }
     }
 }

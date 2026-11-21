@@ -40,7 +40,7 @@ public sealed class UsuarioFacadeTests
         Assert.Contains("jperez", sender.HtmlBody);
         Assert.Contains("Juan &lt;Prueba&gt;", sender.HtmlBody);
         Assert.Contains("Abc&lt;123&gt;!", sender.HtmlBody);
-        Assert.Contains("https://libreria.example/Cuenta/Login", sender.HtmlBody);
+        Assert.Contains("https://libreria.example/Cuenta/Login?motivo=primer-ingreso", sender.HtmlBody);
         Assert.DoesNotContain("/Usuarios/Activar", sender.HtmlBody);
     }
 
