@@ -13,15 +13,13 @@
 </div>
 
 
-<!-- Filtro horizontal compacto -->
-<form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; background-color: var(--color-surface); padding: 1.25rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
-    
-    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 250px;">
-        <label for="nombre">Buscar por nombre:</label>
+<form method="get" class="filtro-barra">
+    <div class="form-group filtro-barra__campo">
+        <label for="nombre">Buscar por nombre</label>
         <input type="text" id="nombre" name="nombre" class="form-control" value="@Model.NombreBusqueda" maxlength="100" placeholder="Ej. Norma" />
     </div>
 
-    <div style="display: flex; gap: 0.5rem;">
+    <div class="filtro-barra__acciones">
         <button type="submit" class="btn btn--secondary">Buscar</button>
         @if (!string.IsNullOrWhiteSpace(Model.NombreBusqueda))
         {
@@ -32,21 +30,21 @@
 
 @if (Model.Marcas.Count == 0)
 {
-    @if (string.IsNullOrWhiteSpace(Model.NombreBusqueda))
-    {
-        <div style="text-align: center; color: var(--color-secondary); padding: 2rem; background-color: var(--color-surface); border-radius: var(--radius-base); border: 1px solid var(--color-border);">
+    <div class="estado-vacio">
+        <partial name="_Icono" model="@("marcas")" />
+        @if (string.IsNullOrWhiteSpace(Model.NombreBusqueda))
+        {
             <p>No hay marcas registradas todavía.</p>
-        </div>
-    }
-    else
-    {
-        <div style="text-align: center; color: var(--color-secondary); padding: 2rem; background-color: var(--color-surface); border-radius: var(--radius-base); border: 1px solid var(--color-border);">
-            <p>No se encontraron marcas que coincidan con "<strong>@Model.NombreBusqueda</strong>".</p>
-        </div>
-    }
+        }
+        else
+        {
+            <p>No se encontraron marcas que coincidan con «<strong>@Model.NombreBusqueda</strong>». Revise lo escrito o pulse «Limpiar».</p>
+        }
+    </div>
 }
 else
 {
+    <p class="tabla-resumen" role="status">Se muestran @Model.Marcas.Count @(Model.Marcas.Count == 1 ? "marca" : "marcas").</p>
     <div class="table-container">
         <table>
             <thead>
@@ -61,17 +59,17 @@ else
                 @foreach (var marca in Model.Marcas)
                 {
                     <tr>
-                        <td style="font-weight: 600;">@marca.Nombre</td>
+                        <td class="celda-principal">@marca.Nombre</td>
                         <td>@(marca.Descripcion ?? "—")</td>
                         <td>@(marca.PaisOrigen ?? "—")</td>
                         <td>
                             @if (marca.SitioWeb is not null)
                             {
-                                <a href="@marca.SitioWeb" target="_blank" rel="noopener noreferrer" style="color: var(--color-primary); font-weight: 500;">Visitar ↗</a>
+                                <a href="@marca.SitioWeb" target="_blank" rel="noopener noreferrer" class="enlace-externo">Abrir sitio web <span class="sr-only">(se abre en otra pestaña)</span></a>
                             }
                             else
                             {
-                                <span style="color: var(--color-secondary);">—</span>
+                                <span class="texto-secundario">—</span>
                             }
                         </td>
                     </tr>

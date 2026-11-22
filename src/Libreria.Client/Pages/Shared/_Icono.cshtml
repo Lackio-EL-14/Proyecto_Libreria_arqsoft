@@ -1,0 +1,25 @@
+@model string
+@* Íconos de línea del sistema: heredan el color del texto (currentColor), así respetan la paleta. *@
+@{
+    var trazos = Model switch
+    {
+        "inicio" => "<path d=\"M3 10.5 12 3l9 7.5\"/><path d=\"M5 9.5V21h14V9.5\"/><path d=\"M10 21v-6h4v6\"/>",
+        "clientes" => "<circle cx=\"9\" cy=\"8\" r=\"3.5\"/><path d=\"M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6\"/><path d=\"M16 4.6a3.5 3.5 0 0 1 0 6.8\"/><path d=\"M18 14.3c2 .8 3.5 2.8 3.5 5.7\"/>",
+        "proveedores" => "<path d=\"M2 6h11v10H2z\"/><path d=\"M13 9h4l4 4v3h-8\"/><circle cx=\"6\" cy=\"18\" r=\"2\"/><circle cx=\"17\" cy=\"18\" r=\"2\"/>",
+        "productos" => "<path d=\"M21 8 12 3 3 8v8l9 5 9-5z\"/><path d=\"m3 8 9 5 9-5\"/><path d=\"M12 13v8\"/>",
+        "categorias" => "<path d=\"M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z\"/><circle cx=\"7.5\" cy=\"7.5\" r=\"1.5\"/>",
+        "marcas" => "<circle cx=\"12\" cy=\"9\" r=\"6\"/><path d=\"M8.5 14 7 22l5-3 5 3-1.5-8\"/>",
+        "usuarios" => "<path d=\"M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z\"/><circle cx=\"12\" cy=\"10\" r=\"2.5\"/><path d=\"M8 16c.8-1.6 2.3-2.5 4-2.5s3.2.9 4 2.5\"/>",
+        "mas" => "<path d=\"M12 5v14M5 12h14\"/>",
+        "llave" => "<circle cx=\"8\" cy=\"15\" r=\"4\"/><path d=\"m11 12 9-9\"/><path d=\"m17 6 3 3\"/><path d=\"m15 8 2 2\"/>",
+        "salir" => "<path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"/><path d=\"m16 17 5-5-5-5\"/><path d=\"M21 12H9\"/>",
+        "alerta" => "<path d=\"M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/>",
+        "reloj" => "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/>",
+        "menu" => "<path d=\"M4 6h16M4 12h16M4 18h16\"/>",
+        "buscar" => "<circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"m20 20-3.5-3.5\"/>",
+        "candado" => "<rect x=\"4\" y=\"11\" width=\"16\" height=\"10\" rx=\"2\"/><path d=\"M8 11V7a4 4 0 0 1 8 0v4\"/>",
+        "desconectado" => "<path d=\"M5 12.5a10 10 0 0 1 14 0\"/><path d=\"M8.5 16a5 5 0 0 1 7 0\"/><path d=\"M12 19.5h.01\"/><path d=\"M3 3l18 18\"/>",
+        _ => string.Empty
+    };
+}
+<svg class="icono" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">@Html.Raw(trazos)</svg>

@@ -8,9 +8,9 @@
 <div class="page-header">
     <div>
         <h1>Usuarios</h1>
-        <p>Consulta de usuarios registrados en el sistema.</p>
+        <p>Cuentas con acceso al sistema y su rol.</p>
     </div>
-    <a asp-page="./Create" class="btn btn--primary">+ Registrar usuario</a>
+    <a asp-page="./Create" class="btn btn--primary"><partial name="_Icono" model="@("mas")" /> Registrar usuario</a>
 </div>
 
 @if (TempData["MensajeExito"] is string exito)
@@ -22,10 +22,10 @@
     <div class="mensaje mensaje--error" role="alert">@error</div>
 }
 
-<form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem;">
+<form method="get" class="filtro-barra">
     <input type="hidden" name="Orden" value="@Model.Orden" />
     <input type="hidden" name="Descendente" value="@Model.Descendente.ToString().ToLowerInvariant()" />
-    <div class="form-group" style="margin-bottom: 0;">
+    <div class="form-group filtro-barra__estado">
         <label asp-for="Estado">Estado</label>
         <select asp-for="Estado" class="form-control">
             <option value="">Todos</option>
@@ -35,21 +35,30 @@
             }
         </select>
     </div>
-    <button type="submit" class="btn btn--secondary">Filtrar</button>
-    <a asp-page="./Index" asp-all-route-data="Model.RutaActual" class="btn btn--secondary" title="Volver a consultar el listado con los mismos filtros">Actualizar</a>
-    <a asp-page="./Index" class="btn btn--secondary">Limpiar</a>
+    <div class="filtro-barra__acciones">
+        <button type="submit" class="btn btn--secondary">Buscar</button>
+        <a asp-page="./Index" asp-all-route-data="Model.RutaActual" class="btn btn--secondary" title="Volver a consultar el listado con los mismos filtros">Actualizar</a>
+        @if (!string.IsNullOrEmpty(Model.Estado))
+        {
+            <a asp-page="./Index" class="btn btn--secondary">Limpiar</a>
+        }
+    </div>
 </form>
 
-<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+<div asp-validation-summary="All" class="validation-summary-errors" role="alert"></div>
 
 @if (ViewData.ModelState.IsValid)
 {
     @if (Model.Usuarios.Count == 0)
     {
-        <p>No se encontraron usuarios para el estado seleccionado.</p>
+        <div class="estado-vacio">
+            <partial name="_Icono" model="@("usuarios")" />
+            <p>No se encontraron usuarios para el estado seleccionado.</p>
+        </div>
     }
     else
     {
+        <p class="tabla-resumen" role="status">Se muestran @Model.Usuarios.Count @(Model.Usuarios.Count == 1 ? "usuario" : "usuarios"). Las cuentas pendientes aún no cambiaron su contraseña temporal.</p>
         <div class="table-container">
             <table>
                 <thead>
@@ -62,19 +71,22 @@
                                 </a>
                             </th>
                         }
-                        <th>Acciones</th>
+                        <th class="col-acciones">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var usuario in Model.Usuarios)
                     {
                         <tr>
-                            <td>@usuario.FullName</td>
+                            <td class="celda-principal">@usuario.FullName</td>
                             <td>@usuario.Username</td>
                             <td>@usuario.Email</td>
                             <td>@usuario.Role</td>
-                            <td>@usuario.Status</td>
                             <td>
+                                <span class="badge @(usuario.Status == EstadosUsuario.Activo ? "badge--accent" : usuario.Status == EstadosUsuario.Pendiente ? "badge--warning" : "")">@usuario.Status</span>
+                            </td>
+                            <td>
+                                <div class="table-actions">
                                 @if (usuario.Status != EstadosUsuario.Inactivo)
                                 {
                                     <button type="button"
@@ -86,6 +98,7 @@
                                         Dar de baja
                                     </button>
                                 }
+                                </div>
                             </td>
                         </tr>
                     }

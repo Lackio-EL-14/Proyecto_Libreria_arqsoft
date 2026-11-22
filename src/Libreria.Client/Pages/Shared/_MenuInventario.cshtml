@@ -8,37 +8,27 @@
 @if (Model.EsAdministrador && (urlProductos is not null || urlCategorias is not null || urlMarcas is not null))
 {
     <div class="sidebar-section">
-        <button
-            type="button"
-            class="sidebar-section__toggle"
-            data-sidebar-section-toggle
-            aria-controls="sidebar-section-inventario"
-            aria-expanded="true">
-            <span class="sidebar-section__title">Inventario</span>
-            <span class="sidebar-section__chevron" aria-hidden="true">▾</span>
-        </button>
-        <div class="sidebar-section__items" id="sidebar-section-inventario">
-            @if (urlProductos is not null)
-            {
-                <a class="sidebar-link @Model.ActiveClass("/Productos")" href="@urlProductos" title="Consultar productos">
-                    <span class="sidebar-link__icon" aria-hidden="true">📦</span>
-                    <span class="sidebar-link__text">Productos</span>
-                </a>
-            }
-            @if (urlCategorias is not null)
-            {
-                <a class="sidebar-link @Model.ActiveClass("/Categorias")" href="@urlCategorias" title="Categorías">
-                    <span class="sidebar-link__icon" aria-hidden="true">🏷️</span>
-                    <span class="sidebar-link__text">Categorías</span>
-                </a>
-            }
-            @if (urlMarcas is not null)
-            {
-                <a class="sidebar-link @Model.ActiveClass("/Marcas")" href="@urlMarcas" title="Marcas">
-                    <span class="sidebar-link__icon" aria-hidden="true">🏢</span>
-                    <span class="sidebar-link__text">Marcas</span>
-                </a>
-            }
-        </div>
+        <span class="sidebar-section__title">Inventario</span>
+        @if (urlProductos is not null)
+        {
+            <a class="sidebar-link @Model.ActiveClass("/Productos")" href="@urlProductos" title="Productos">
+                <span class="sidebar-link__icon"><partial name="_Icono" model="@("productos")" /></span>
+                <span class="sidebar-link__text">Productos</span>
+            </a>
+        }
+        @if (urlCategorias is not null)
+        {
+            <a class="sidebar-link @Model.ActiveClass("/Categorias")" href="@urlCategorias" title="Categorías">
+                <span class="sidebar-link__icon"><partial name="_Icono" model="@("categorias")" /></span>
+                <span class="sidebar-link__text">Categorías</span>
+            </a>
+        }
+        @if (urlMarcas is not null)
+        {
+            <a class="sidebar-link @Model.ActiveClass("/Marcas")" href="@urlMarcas" title="Marcas">
+                <span class="sidebar-link__icon"><partial name="_Icono" model="@("marcas")" /></span>
+                <span class="sidebar-link__text">Marcas</span>
+            </a>
+        }
     </div>
 }

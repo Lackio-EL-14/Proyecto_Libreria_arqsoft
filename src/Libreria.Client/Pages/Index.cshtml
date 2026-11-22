@@ -1,38 +1,101 @@
 @page
 @model Libreria.Client.Pages.IndexModel
 @using Libreria.Client.Seguridad
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService AuthorizationService
 @{
-    ViewData["Title"] = "Panel Principal";
+    ViewData["Title"] = "Inicio";
+    var puedeGestionarClientes = (await AuthorizationService.AuthorizeAsync(User, PoliticasAcceso.GestionClientes)).Succeeded;
 }
 
-<!-- Hero Section Principal -->
-<header class="home-hero">
-    <img src="~/images/icono.svg" alt="Logotipo Librería" class="home-hero__logo" />
+<div class="page-header">
     <div>
-        <h1>Sistema de Gestión de Librería</h1>
-        <p>Acceso central a Clientes, Proveedores, Productos y Usuarios.</p>
+        <h1>Hola, @User.NombreVisible()</h1>
+        <p>Ingresó como @User.RolesVisibles(). Elija un módulo para comenzar.</p>
     </div>
-</header>
+</div>
 
-<section class="dashboard-panel">
-    <div class="dashboard-panel__header">
-        <h2>Bienvenido, @User.NombreVisible()</h2>
-        <p>El Front está preparado para consumir los módulos mediante sus APIs independientes.</p>
-    </div>
-    <div class="quick-actions-grid">
-        <div class="quick-action-item">
-            <span class="quick-action-item__icon">🚚</span>
-            <div>
-                <strong>Servicio de Proveedores</strong>
-                <p>Puerto configurado en http://localhost:5101</p>
+@if (Model.EsAdministrador)
+{
+    <section class="inicio-seccion" aria-labelledby="titulo-inventario">
+        <h2 class="seccion-titulo" id="titulo-inventario">Resumen del inventario</h2>
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <span class="kpi-card__icon kpi-card__icon--primary"><partial name="_Icono" model="@("productos")" /></span>
+                <span class="kpi-card__label">Productos registrados</span>
+                <span class="kpi-card__value">@Model.TotalProductos</span>
+                <a asp-page="/Productos/Index" class="kpi-card__link">Ver productos</a>
+            </div>
+            <div class="kpi-card @(Model.ProductosStockCritico > 0 ? "kpi-card--warning" : "")">
+                <span class="kpi-card__icon kpi-card__icon--warning"><partial name="_Icono" model="@("alerta")" /></span>
+                <span class="kpi-card__label">Con stock bajo (5 o menos)</span>
+                <span class="kpi-card__value @(Model.ProductosStockCritico > 0 ? "text-warning" : "")">@Model.ProductosStockCritico</span>
+                <a asp-page="/Productos/Index" asp-route-Orden="stock" asp-route-Direccion="asc" class="kpi-card__link">Revisar stock</a>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-card__icon kpi-card__icon--accent"><partial name="_Icono" model="@("reloj")" /></span>
+                <span class="kpi-card__label">Productos perecederos</span>
+                <span class="kpi-card__value">@Model.TotalPerecederos</span>
+                <a asp-page="/Productos/Index" asp-route-Orden="perecedero" asp-route-Direccion="desc" class="kpi-card__link">Ver perecederos</a>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-card__icon"><partial name="_Icono" model="@("categorias")" /></span>
+                <span class="kpi-card__label">Categorías activas</span>
+                <span class="kpi-card__value">@Model.TotalCategorias</span>
+                <span class="kpi-card__hint">Marcas activas: @Model.TotalMarcas</span>
+                <a asp-page="/Categorias/Index" class="kpi-card__link">Ver categorías</a>
             </div>
         </div>
-        <div class="quick-action-item">
-            <span class="quick-action-item__icon">👤</span>
-            <div>
-                <strong>Servicio de Usuarios</strong>
-                <p>Puerto configurado en http://localhost:5102</p>
-            </div>
-        </div>
+    </section>
+}
+
+<section class="inicio-seccion" aria-labelledby="titulo-modulos">
+    <h2 class="seccion-titulo" id="titulo-modulos">Accesos directos</h2>
+    <div class="modulos-grid">
+        @if (puedeGestionarClientes)
+        {
+            <a asp-page="/Clientes/Index" class="modulo-enlace">
+                <span class="modulo-enlace__icono"><partial name="_Icono" model="@("clientes")" /></span>
+                <div>
+                    <strong>Clientes</strong>
+                    <span>Registrar, buscar y actualizar clientes.</span>
+                </div>
+            </a>
+        }
+        @if (Model.EsAdministrador)
+        {
+            <a asp-page="/Proveedores/Index" class="modulo-enlace">
+                <span class="modulo-enlace__icono"><partial name="_Icono" model="@("proveedores")" /></span>
+                <div>
+                    <strong>Proveedores</strong>
+                    <span>Proveedores y su contacto principal.</span>
+                </div>
+            </a>
+            <a asp-page="/Productos/Index" class="modulo-enlace">
+                <span class="modulo-enlace__icono"><partial name="_Icono" model="@("productos")" /></span>
+                <div>
+                    <strong>Productos</strong>
+                    <span>Catálogo, stock y precios.</span>
+                </div>
+            </a>
+            <a asp-page="/Usuarios/Index" class="modulo-enlace">
+                <span class="modulo-enlace__icono"><partial name="_Icono" model="@("usuarios")" /></span>
+                <div>
+                    <strong>Usuarios</strong>
+                    <span>Cuentas y roles del sistema.</span>
+                </div>
+            </a>
+        }
+        else
+        {
+            @* El administrador ya tiene el botón en el encabezado; al vendedor se lo recordamos aquí. *@
+            <a asp-page="/Cuenta/CambiarContrasena" class="modulo-enlace">
+                <span class="modulo-enlace__icono"><partial name="_Icono" model="@("llave")" /></span>
+                <div>
+                    <strong>Cambiar contraseña</strong>
+                    <span>Actualice la contraseña de su cuenta.</span>
+                </div>
+            </a>
+        }
     </div>
 </section>

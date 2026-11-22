@@ -25,9 +25,9 @@
 <div class="page-header">
     <div>
         <h1>Proveedores</h1>
-        <p>Gestión del catálogo relacional de proveedores.</p>
+        <p>Consulta y gestión de los proveedores y su contacto principal.</p>
     </div>
-    <a asp-page="./Create" class="btn btn--primary">+ Registrar proveedor</a>
+    <a asp-page="./Create" class="btn btn--primary"><partial name="_Icono" model="@("mas")" /> Registrar proveedor</a>
 </div>
 
 @if (TempData["MensajeExito"] is string mensajeExito)
@@ -44,11 +44,11 @@
     <input type="hidden" name="descendente" value="@Model.Descendente.ToString().ToLowerInvariant()" />
 
     <div class="form-group filtro-barra__campo">
-        <label for="busqueda">Buscar proveedor o contacto:</label>
-        <input id="busqueda" name="busqueda" value="@Model.Busqueda" class="form-control" maxlength="200" />
+        <label for="busqueda">Buscar por NIT, razón social, correo o contacto</label>
+        <input id="busqueda" name="busqueda" value="@Model.Busqueda" class="form-control" maxlength="200" placeholder="Ej. 1020304050 o Andina" />
     </div>
     <div class="form-group filtro-barra__estado">
-        <label for="estado">Estado:</label>
+        <label for="estado">Estado</label>
         <select id="estado" name="estado" class="form-control">
             <option value="Activos" selected="@(Model.Estado == EstadoFiltroProveedores.Activos ? "selected" : null)">Activos</option>
             <option value="Inactivos" selected="@(Model.Estado == EstadoFiltroProveedores.Inactivos ? "selected" : null)">Inactivos</option>
@@ -56,7 +56,7 @@
         </select>
     </div>
     <div class="filtro-barra__acciones">
-        <button class="btn btn--secondary">Buscar</button>
+        <button type="submit" class="btn btn--secondary">Buscar</button>
         <a asp-page="./Index" asp-all-route-data="rutaActual" class="btn btn--secondary">Actualizar</a>
         @if (Model.HayFiltros)
         {
@@ -67,10 +67,22 @@
 
 @if (Model.Proveedores.Count == 0)
 {
-    <div class="estado-vacio"><p>No hay proveedores para mostrar.</p></div>
+    <div class="estado-vacio">
+        <partial name="_Icono" model="@("proveedores")" />
+        @if (Model.HayFiltros)
+        {
+            <p>No se encontraron proveedores con los filtros aplicados. Revise la búsqueda o pulse «Limpiar».</p>
+        }
+        else
+        {
+            <p>No hay proveedores registrados todavía.</p>
+            <a asp-page="./Create" class="btn btn--primary"><partial name="_Icono" model="@("mas")" /> Registrar proveedor</a>
+        }
+    </div>
 }
 else
 {
+    <p class="tabla-resumen" role="status">Se muestran @Model.Proveedores.Count @(Model.Proveedores.Count == 1 ? "proveedor" : "proveedores").</p>
     <div class="table-container">
         <table>
             <thead>
@@ -78,14 +90,14 @@ else
                     @foreach (var columna in columnas)
                     {
                         <th aria-sort="@Model.AriaSort(columna.Item1)">
-                            <a asp-page="./Index" asp-all-route-data="Model.RutaOrden(columna.Item1)" class="tabla-orden">
-                                @columna.Item2 <span>@Model.IndicadorOrden(columna.Item1)</span>
+                            <a asp-page="./Index" asp-all-route-data="Model.RutaOrden(columna.Item1)" class="tabla-orden" title="Ordenar por @columna.Item2.ToLowerInvariant()">
+                                @columna.Item2 <span aria-hidden="true">@Model.IndicadorOrden(columna.Item1)</span>
                             </a>
                         </th>
                     }
                     <th>Contacto</th>
                     <th>Estado</th>
-                    <th>Acciones</th>
+                    <th class="col-acciones">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -93,11 +105,11 @@ else
                 {
                     <tr>
                         <td>@proveedor.Nit</td>
-                        <td style="font-weight: 600">@proveedor.RazonSocial</td>
+                        <td class="celda-principal">@proveedor.RazonSocial</td>
                         <td>@(proveedor.Correo ?? "—")</td>
                         <td>@FechaLocal.Mostrar(proveedor.FechaCreacion)</td>
                         <td>
-                            @proveedor.NombreContacto<br />
+                            @proveedor.NombreContacto
                             <small>@(proveedor.TelefonoContacto ?? proveedor.CorreoContacto)</small>
                         </td>
                         <td>

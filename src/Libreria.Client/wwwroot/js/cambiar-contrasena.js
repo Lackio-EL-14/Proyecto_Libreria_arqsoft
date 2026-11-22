@@ -17,23 +17,28 @@
         ['especial', valor => /[\p{P}\p{S}]/u.test(valor)]
     ].map(([nombre, cumple]) => {
         const elemento = formulario.querySelector(`[data-regla="${nombre}"]`);
-        return { elemento, cumple, texto: elemento.textContent.replace('Pendiente: ', '') };
+        return { elemento, cumple, texto: elemento.textContent.trim() };
     });
 
     function validar() {
         let reglasCumplidas = true;
         for (const regla of reglas) {
             const cumple = regla.cumple(nueva.value);
-            regla.elemento.textContent = `${cumple ? 'Cumple' : 'Pendiente'}: ${regla.texto}`;
-            regla.elemento.classList.toggle('text-danger', !cumple);
+            // El círculo o la marca verde se ven por CSS; el lector de pantalla oye «Cumple» o «Pendiente».
+            const estado = document.createElement('span');
+            estado.className = 'sr-only';
+            estado.textContent = cumple ? 'Cumple: ' : 'Pendiente: ';
+            regla.elemento.replaceChildren(estado, regla.texto);
+            regla.elemento.classList.toggle('is-cumplida', cumple);
             reglasCumplidas = reglasCumplidas && cumple;
         }
 
         const coinciden = nueva.value.length > 0 && nueva.value === confirmacion.value;
         estadoConfirmacion.textContent = confirmacion.value.length === 0
-            ? 'Ingrese la confirmación de la nueva contraseña.'
+            ? 'Escriba de nuevo la nueva contraseña para confirmarla.'
             : coinciden ? 'Las contraseñas coinciden.' : 'Las contraseñas no coinciden.';
-        estadoConfirmacion.classList.toggle('text-danger', !coinciden);
+        estadoConfirmacion.classList.toggle('text-danger', confirmacion.value.length > 0 && !coinciden);
+        estadoConfirmacion.classList.toggle('is-cumplida', coinciden);
 
         boton.disabled = !(actual.value.length > 0 && reglasCumplidas && coinciden
             && formulario.checkValidity());

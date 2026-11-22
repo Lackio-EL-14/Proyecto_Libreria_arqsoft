@@ -4,8 +4,8 @@
 {
     <div class="sidebar-section">
         <span class="sidebar-section__title">Administración</span>
-        <a class="sidebar-link @Model.ActiveClass("/Usuarios")" asp-page="/Usuarios/Index" title="Consultar usuarios">
-            <span class="sidebar-link__icon" aria-hidden="true">👤</span>
+        <a class="sidebar-link @Model.ActiveClass("/Usuarios")" asp-page="/Usuarios/Index" title="Usuarios">
+            <span class="sidebar-link__icon"><partial name="_Icono" model="@("usuarios")" /></span>
             <span class="sidebar-link__text">Usuarios</span>
         </a>
     </div>

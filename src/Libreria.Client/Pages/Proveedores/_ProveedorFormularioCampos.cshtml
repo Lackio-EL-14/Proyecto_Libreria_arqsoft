@@ -1,46 +1,64 @@
 @model Libreria.Client.DTOs.Proveedores.ProveedorInput
 @{
-    var campos = new[]
+    // Los nombres "Input.*" coinciden con las claves de error que devuelve el MS Proveedores.
+    var datosProveedor = new[]
     {
         (Nombre: "Nit", Etiqueta: "NIT", Valor: Model.Nit, Tipo: "text", Maximo: 30, Requerido: true),
         (Nombre: "RazonSocial", Etiqueta: "Razón social", Valor: Model.RazonSocial, Tipo: "text", Maximo: 200, Requerido: true),
         (Nombre: "Telefono", Etiqueta: "Teléfono", Valor: Model.Telefono, Tipo: "text", Maximo: 30, Requerido: false),
-        (Nombre: "Correo", Etiqueta: "Correo", Valor: Model.Correo, Tipo: "email", Maximo: 254, Requerido: false),
-        (Nombre: "NombreContacto", Etiqueta: "Contacto principal", Valor: Model.NombreContacto, Tipo: "text", Maximo: 150, Requerido: true),
-        (Nombre: "CargoContacto", Etiqueta: "Cargo del contacto", Valor: Model.CargoContacto, Tipo: "text", Maximo: 100, Requerido: false),
-        (Nombre: "TelefonoContacto", Etiqueta: "Teléfono del contacto", Valor: Model.TelefonoContacto, Tipo: "text", Maximo: 30, Requerido: false),
-        (Nombre: "CorreoContacto", Etiqueta: "Correo del contacto", Valor: Model.CorreoContacto, Tipo: "email", Maximo: 254, Requerido: false)
+        (Nombre: "Correo", Etiqueta: "Correo electrónico", Valor: Model.Correo, Tipo: "email", Maximo: 254, Requerido: false)
+    };
+    var datosContacto = new[]
+    {
+        (Nombre: "NombreContacto", Etiqueta: "Nombre completo", Valor: Model.NombreContacto, Tipo: "text", Maximo: 150, Requerido: true),
+        (Nombre: "CargoContacto", Etiqueta: "Cargo", Valor: Model.CargoContacto, Tipo: "text", Maximo: 100, Requerido: false),
+        (Nombre: "TelefonoContacto", Etiqueta: "Teléfono", Valor: Model.TelefonoContacto, Tipo: "text", Maximo: 30, Requerido: false),
+        (Nombre: "CorreoContacto", Etiqueta: "Correo electrónico", Valor: Model.CorreoContacto, Tipo: "email", Maximo: 254, Requerido: false)
+    };
+    var secciones = new[]
+    {
+        (Titulo: "Datos del proveedor", Ayuda: (string?)null, Campos: datosProveedor),
+        (Titulo: "Contacto principal", Ayuda: (string?)"Indique al menos un teléfono o un correo del contacto.", Campos: datosContacto)
     };
 }
 
-@foreach (var campo in campos)
-{
-    var clave = "Input." + campo.Nombre;
-    <div class="form-group">
-        <label for="Input_@campo.Nombre">
-            @campo.Etiqueta
-            @if (campo.Requerido)
-            {
-                <span class="text-danger">*</span>
-            }
-        </label>
-        <input
-            id="Input_@campo.Nombre"
-            name="@clave"
-            value="@campo.Valor"
-            class="form-control"
-            type="@campo.Tipo"
-            maxlength="@campo.Maximo"
-            required="@(campo.Requerido ? "required" : null)"
-            aria-describedby="Input_@campo.Nombre-error" />
-        <span id="Input_@campo.Nombre-error" class="text-danger">@ErrorDe(clave)</span>
-    </div>
-}
+<p class="form-obligatorio">Los campos con <span class="text-danger">*</span> son obligatorios.</p>
 
-<p class="form-help">
-    El contacto principal debe tener al menos teléfono o correo. Sus datos se guardan
-    en una tabla dependiente normalizada.
-</p>
+@foreach (var seccion in secciones)
+{
+    <fieldset class="form-seccion">
+        <legend>@seccion.Titulo</legend>
+        @if (seccion.Ayuda is not null)
+        {
+            <p class="form-ayuda">@seccion.Ayuda</p>
+        }
+        <div class="form-grid">
+            @foreach (var campo in seccion.Campos)
+            {
+                var clave = "Input." + campo.Nombre;
+                <div class="form-group">
+                    <label for="Input_@campo.Nombre">
+                        @campo.Etiqueta
+                        @if (campo.Requerido)
+                        {
+                            <span class="text-danger">*</span>
+                        }
+                    </label>
+                    <input
+                        id="Input_@campo.Nombre"
+                        name="@clave"
+                        value="@campo.Valor"
+                        class="form-control"
+                        type="@campo.Tipo"
+                        maxlength="@campo.Maximo"
+                        required="@(campo.Requerido ? "required" : null)"
+                        aria-describedby="Input_@campo.Nombre-error" />
+                    <span id="Input_@campo.Nombre-error" class="text-danger">@ErrorDe(clave)</span>
+                </div>
+            }
+        </div>
+    </fieldset>
+}
 
 @functions {
     private string? ErrorDe(string campo) =>

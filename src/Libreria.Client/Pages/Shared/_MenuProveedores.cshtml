@@ -3,23 +3,10 @@
 @if (Model.EsAdministrador)
 {
     <div class="sidebar-section">
-        <button
-            type="button"
-            class="sidebar-section__toggle"
-            data-sidebar-section-toggle
-            aria-controls="sidebar-section-proveedores"
-            aria-expanded="true">
-            <span class="sidebar-section__title">Abastecimiento</span>
-            <span class="sidebar-section__chevron" aria-hidden="true">▾</span>
-        </button>
-        <div class="sidebar-section__items" id="sidebar-section-proveedores">
-            <a
-                class="sidebar-link @Model.ActiveClass("/Proveedores")"
-                asp-page="/Proveedores/Index"
-                title="Gestionar proveedores">
-                <span class="sidebar-link__icon" aria-hidden="true">🚚</span>
-                <span class="sidebar-link__text">Proveedores</span>
-            </a>
-        </div>
+        <span class="sidebar-section__title">Abastecimiento</span>
+        <a class="sidebar-link @Model.ActiveClass("/Proveedores")" asp-page="/Proveedores/Index" title="Proveedores">
+            <span class="sidebar-link__icon"><partial name="_Icono" model="@("proveedores")" /></span>
+            <span class="sidebar-link__text">Proveedores</span>
+        </a>
     </div>
 }

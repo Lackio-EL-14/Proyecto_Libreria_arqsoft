@@ -8,95 +8,95 @@
 
 <div class="page-header">
     <div>
-        <h1>Detalle del producto</h1>
-        <p>Información completa del artículo en inventario.</p>
+        <h1>@Model.Producto.Nombre</h1>
+        <p>Detalle del artículo en el inventario.</p>
+    </div>
+    <div class="page-header__acciones">
+        <a asp-page="Edit" asp-route-id="@Model.PublicId" class="btn btn--primary">Editar producto</a>
+        <a asp-page="Index" class="btn btn--secondary">Volver a productos</a>
     </div>
 </div>
 
 @if (TempData["MensajeExito"] is string mensaje)
 {
-    <div style="background-color: #E8F0EB; color: var(--color-accent); padding: 1rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #A3C2B1;">
-        @mensaje
-    </div>
+    <div class="mensaje mensaje--exito" role="status">@mensaje</div>
 }
 @if (TempData["MensajeError"] is string error)
 {
     <div class="mensaje mensaje--error" role="alert">@error</div>
 }
 
-<div class="form-card" style="max-width: 800px;">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-
+<div class="form-card form-card--ancha">
+    <dl class="ficha">
         <div>
-            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">Nombre</p>
-            <p style="font-weight: 600; font-size: 1.1rem;">@Model.Producto.Nombre</p>
+            <dt>Stock disponible</dt>
+            <dd>
+                @if (Model.Producto.Stock <= 5)
+                {
+                    <span class="badge badge--warning">@Model.Producto.Stock unidades (stock bajo)</span>
+                }
+                else
+                {
+                    <span class="ficha__destacado">@Model.Producto.Stock unidades</span>
+                }
+            </dd>
         </div>
 
         <div>
-            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">Descripción</p>
-            <p>@(string.IsNullOrWhiteSpace(Model.Producto.DescripcionEspecifica) ? "Sin descripción" : Model.Producto.DescripcionEspecifica)</p>
+            <dt>Precio de venta</dt>
+            <dd class="ficha__precio">Bs. @Model.Producto.PrecioVenta.ToString("0.00")</dd>
         </div>
 
         <div>
-            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">Categoría y Marca</p>
-            <p>@Model.Producto.Categoria | @Model.Producto.Marca</p>
+            <dt>Costo de adquisición</dt>
+            <dd>Bs. @Model.Producto.CostoAdquisicionActual.ToString("0.00")</dd>
         </div>
 
         <div>
-            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">Stock disponible</p>
-            <p><span class="badge @(Model.Producto.Stock <= 5 ? "badge--accent" : "")" style="font-size: 1rem;">@Model.Producto.Stock unidades</span></p>
+            <dt>Categoría</dt>
+            <dd>@Model.Producto.Categoria</dd>
         </div>
 
         <div>
-            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">Precio de venta</p>
-            <p style="font-weight: 600; color: var(--color-primary); font-size: 1.1rem;">Bs. @Model.Producto.PrecioVenta.ToString("0.00")</p>
+            <dt>Marca</dt>
+            <dd>@Model.Producto.Marca</dd>
         </div>
 
         <div>
-            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">Costo de adquisición</p>
-            <p>Bs. @Model.Producto.CostoAdquisicionActual.ToString("0.00")</p>
+            <dt>Vencimiento</dt>
+            <dd>
+                @if (!Model.Producto.EsPerecedero)
+                {
+                    <span>No es perecedero</span>
+                }
+                else if (Model.Producto.FechaVencimiento.HasValue)
+                {
+                    <span>Perecedero, vence el @Model.Producto.FechaVencimiento.Value.ToString("dd/MM/yyyy")</span>
+                }
+                else
+                {
+                    <span>Perecedero, sin fecha de vencimiento</span>
+                }
+            </dd>
         </div>
 
-        <div>
-            <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">
-                Perecedero
-            </p>
-            <p>@(Model.Producto.EsPerecedero ? "Sí" : "No")</p>
+        <div class="ficha__completo">
+            <dt>Descripción</dt>
+            <dd>@(string.IsNullOrWhiteSpace(Model.Producto.DescripcionEspecifica) ? "Sin descripción" : Model.Producto.DescripcionEspecifica)</dd>
         </div>
-
-        @if (Model.Producto.EsPerecedero)
-        {
-            <div>
-                <p style="color: var(--color-secondary); font-size: 0.85rem; margin-bottom: 0.2rem;">
-                    Fecha de vencimiento
-                </p>
-                <p>
-                    @(Model.Producto.FechaVencimiento.HasValue
-                        ? Model.Producto.FechaVencimiento.Value.ToString("dd/MM/yyyy")
-                        : "Sin fecha de vencimiento")
-                </p>
-            </div>
-        }
-
-    </div>
+    </dl>
 
     @if (Model.Auditoria is not null)
     {
         <partial name="_AuditoriaInfo" model="Model.Auditoria" />
     }
 
-
-    <div style="border-top: 1px solid var(--color-border); padding-top: 1.5rem; margin-top: 1.5rem;">
-        <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;">
+    <section class="bloque" aria-labelledby="titulo-historico">
+        <div class="bloque__cabecera">
             <div>
-                <h2 style="margin: 0; font-size: 1.15rem;">
-                    Histórico de costos
-                </h2>
-                <p style="color: var(--color-secondary); margin: 0.25rem 0 0;">
-                    Variaciones registradas del costo de adquisición.
-                </p>
+                <h2 id="titulo-historico">Histórico de costos</h2>
+                <p>Variaciones registradas del costo de adquisición.</p>
             </div>
-
             <a asp-page="/Historico/Index"
                asp-route-publicId="@Model.PublicId"
                class="btn btn--secondary">
@@ -107,8 +107,8 @@
         @if (Model.Historico is null ||
              Model.Historico.Historial.Count == 0)
         {
-            <div style="padding: 1.25rem; text-align: center; color: var(--color-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-base);">
-                No existen registros históricos de costo.
+            <div class="estado-vacio">
+                <p>Todavía no hay cambios de costo registrados para este producto.</p>
             </div>
         }
         else
@@ -118,9 +118,9 @@
                     <thead>
                         <tr>
                             <th>Fecha</th>
-                            <th>Costo anterior</th>
-                            <th>Costo nuevo</th>
-                            <th>Variación</th>
+                            <th class="num">Costo anterior</th>
+                            <th class="num">Costo nuevo</th>
+                            <th class="num">Variación</th>
                             <th>Vencimiento</th>
                             <th>Motivo</th>
                             <th>Registrado por</th>
@@ -131,46 +131,29 @@
                         @foreach (var item in Model.Historico.Historial)
                         {
                             <tr>
-                                <td>
-                                    @FechaLocal.Mostrar(item.FechaVigencia)
-                                </td>
-
-                                <td>
+                                <td>@FechaLocal.Mostrar(item.FechaVigencia)</td>
+                                <td class="num">
                                     @if (item.CostoAnterior.HasValue)
                                     {
-                                        <span>
-                                            Bs. @item.CostoAnterior.Value.ToString("0.00")
-                                        </span>
+                                        <span>Bs. @item.CostoAnterior.Value.ToString("0.00")</span>
                                     }
                                     else
                                     {
-                                        <span style="color: var(--color-secondary);">
-                                            —
-                                        </span>
+                                        <span class="texto-secundario">—</span>
                                     }
                                 </td>
-
-                                <td style="font-weight: 600;">
-                                    Bs. @item.CostoNuevo.ToString("0.00")
-                                </td>
-
-                                <td>
+                                <td class="num celda-principal">Bs. @item.CostoNuevo.ToString("0.00")</td>
+                                <td class="num">
                                     @if (item.VariacionAbsoluta.HasValue)
                                     {
-                                        var variacion =
-                                            item.VariacionAbsoluta.Value;
-
+                                        var variacion = item.VariacionAbsoluta.Value;
                                         if (variacion > 0)
                                         {
-                                            <span style="color: #991B1B; font-weight: 600;">
-                                                +@variacion.ToString("0.00")
-                                            </span>
+                                            <span class="variacion variacion--sube">+@variacion.ToString("0.00")</span>
                                         }
                                         else if (variacion < 0)
                                         {
-                                            <span style="color: var(--color-accent); font-weight: 600;">
-                                                @variacion.ToString("0.00")
-                                            </span>
+                                            <span class="variacion variacion--baja">@variacion.ToString("0.00")</span>
                                         }
                                         else
                                         {
@@ -179,48 +162,30 @@
                                     }
                                     else
                                     {
-                                        <span style="color: var(--color-secondary);">
-                                            —
-                                        </span>
+                                        <span class="texto-secundario">—</span>
                                     }
                                 </td>
-
                                 <td>
                                     @(item.FechaVencimiento.HasValue
                                         ? item.FechaVencimiento.Value.ToString("dd/MM/yyyy")
                                         : "—")
                                 </td>
-
-                                <td>
-                                    @(string.IsNullOrWhiteSpace(item.Motivo)
-                                        ? "—"
-                                        : item.Motivo)
-                                </td>
-
-                                <td>
-                                    @(string.IsNullOrWhiteSpace(item.RegistradoPor)
-                                        ? "—"
-                                        : item.RegistradoPor)
-                                </td>
+                                <td>@(string.IsNullOrWhiteSpace(item.Motivo) ? "—" : item.Motivo)</td>
+                                <td>@(string.IsNullOrWhiteSpace(item.RegistradoPor) ? "—" : item.RegistradoPor)</td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
         }
-    </div>
+    </section>
 
-    <div style="border-top: 1px solid var(--color-border); padding-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+    <div class="acciones-barra">
         <a asp-page="Edit" asp-route-id="@Model.PublicId" class="btn btn--primary">Editar producto</a>
-
-        <a asp-page="/Historico/Index" asp-route-publicId="@Model.PublicId" class="btn btn--secondary">Ver histórico</a>
-
-        <a asp-page="Index" class="btn btn--secondary">Volver al catálogo</a>
-
+        <a asp-page="Index" class="btn btn--secondary">Volver a productos</a>
         <button
             type="button"
-            class="btn"
-            style="background-color: #FEF2F2; color: #991B1B; border: 1px solid #FCA5A5; margin-left: auto;"
+            class="btn btn--peligro-suave acciones-barra__separado"
             data-confirm-trigger
             data-modal-target="producto-baja-modal"
             data-entity-id="@Model.PublicId"
@@ -241,5 +206,5 @@
         CampoIdentificador = "publicId",
         TextoBotonConfirmar = "Confirmar baja",
         TextoBotonCancelar = "Cancelar",
-        MensajeAdvertencia = "El producto no aparecerá en el catálogo activo pero su historial de costos y registros previos se conservarán."
+        MensajeAdvertencia = "El producto no aparecerá en el catálogo activo, pero su historial de costos y registros previos se conservarán."
     })

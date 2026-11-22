@@ -1,13 +1,13 @@
 @page
 @model Libreria.Client.Pages.Usuarios.CreateModel
 @{
-    ViewData["Title"] = "Crear usuario";
+    ViewData["Title"] = "Registrar usuario";
 }
 
 <div class="page-header">
     <div>
-        <h1>Crear usuario</h1>
-        <p>Ingrese los datos del nuevo usuario.</p>
+        <h1>Registrar usuario</h1>
+        <p>El nombre de usuario y una contraseña temporal se generan solos y se envían al correo indicado.</p>
     </div>
 </div>
 
@@ -24,14 +24,16 @@
          role="alert"></div>
 
     <form method="post">
-        <div class="form-group">
-            <label asp-for="Nombre">Nombre</label>
+        <p class="form-obligatorio">Los campos con <span class="text-danger">*</span> son obligatorios.</p>
+        <div class="form-grid">
+        <div class="form-group form-grid__completo">
+            <label asp-for="Nombre">Nombre <span class="text-danger">*</span></label>
             <input asp-for="Nombre" class="form-control" />
             <span asp-validation-for="Nombre" class="text-danger"></span>
         </div>
 
         <div class="form-group">
-            <label asp-for="Apellido">Apellido paterno</label>
+            <label asp-for="Apellido">Apellido paterno <span class="text-danger">*</span></label>
             <input asp-for="Apellido" class="form-control" />
             <span asp-validation-for="Apellido" class="text-danger"></span>
         </div>
@@ -43,7 +45,7 @@
         </div>
 
         <div class="form-group">
-            <label asp-for="Correo">Correo</label>
+            <label asp-for="Correo">Correo electrónico <span class="text-danger">*</span></label>
             <input asp-for="Correo"
                    type="email"
                    class="form-control" />
@@ -51,7 +53,7 @@
         </div>
 
         <div class="form-group">
-            <label asp-for="Rol">Rol</label>
+            <label asp-for="Rol">Rol <span class="text-danger">*</span></label>
             <select asp-for="Rol"
                     asp-items="Model.Roles"
                     class="form-control">
@@ -62,7 +64,7 @@
 
         @if (!string.IsNullOrWhiteSpace(Model.NombreUsuario))
         {
-            <div class="form-group">
+            <div class="form-group form-grid__completo">
                 <label for="nombre-usuario-generado">Nombre de usuario generado</label>
                 <input id="nombre-usuario-generado"
                        type="text"
@@ -72,13 +74,15 @@
             </div>
         }
 
+        </div>
+
         <div class="form-actions">
             <button type="submit"
                     asp-page-handler="Crear"
                     class="btn btn--primary">
-                Crear usuario
+                Registrar usuario
             </button>
-            <a asp-page="./Index" class="btn btn--secondary">Volver</a>
+            <a asp-page="./Index" class="btn btn--secondary">Cancelar</a>
         </div>
     </form>
 </div>
