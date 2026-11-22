@@ -20,16 +20,16 @@
 <body class="app-body">
     <header class="app-header">
         <div class="app-header__left">
-            <!-- Botón para alternar sidebar móvil / colapso desktop -->
+            <!-- En escritorio colapsa el menú lateral; en el celular lo abre como panel -->
             <button
                 type="button"
                 class="menu-toggle"
                 id="menuToggle"
-                aria-label="Alternar menú de navegación"
+                aria-label="Mostrar u ocultar el menú"
                 aria-controls="sidebar"
                 aria-expanded="false"
-                title="Alternar menú">
-                <span aria-hidden="true">☰</span>
+                title="Mostrar u ocultar el menú">
+                <partial name="_Icono" model="@("menu")" />
             </button>
 
             <div class="app-header__brand">
@@ -42,44 +42,38 @@
 
         @if (User.Identity?.IsAuthenticated == true)
         {
+            var nombreVisible = User.NombreVisible();
             <div class="app-header__user">
                 <div class="user-chip" title="Sesión activa">
-                    <span class="user-chip__name">@User.NombreVisible()</span>
+                    <span class="user-chip__name">@nombreVisible</span>
                     <span class="user-chip__role">@User.RolesVisibles()</span>
                 </div>
-                <a asp-page="/Cuenta/CambiarContrasena" class="btn btn--secondary">Cambiar contraseña</a>
+                <span class="user-avatar" aria-hidden="true">@(string.IsNullOrWhiteSpace(nombreVisible) ? "?" : nombreVisible.Trim()[..1].ToUpperInvariant())</span>
+                <a asp-page="/Cuenta/CambiarContrasena" class="btn-header" title="Cambiar contraseña">
+                    <partial name="_Icono" model="@("llave")" />
+                    <span class="btn-header__texto">Cambiar contraseña</span>
+                </a>
                 <form method="post" asp-page="/Cuenta/Logout" class="logout-form">
-                    <button type="submit" class="btn-logout" title="Cerrar sesión">Cerrar sesión</button>
+                    <button type="submit" class="btn-header" title="Cerrar sesión">
+                        <partial name="_Icono" model="@("salir")" />
+                        <span class="btn-header__texto">Cerrar sesión</span>
+                    </button>
                 </form>
             </div>
         }
     </header>
 
     <div class="app-layout">
-        <!-- Mini-Sidebar Colapsable -->
+        <!-- Menú lateral: se colapsa con el botón del encabezado -->
         <aside
             class="app-sidebar"
             id="sidebar"
             aria-label="Navegación principal">
 
-            <div class="sidebar-header">
-                <span class="sidebar-header__title">Navegación</span>
-                <button
-                    type="button"
-                    class="sidebar-collapse-btn"
-                    id="sidebarCollapseBtn"
-                    aria-label="Colapsar o expandir menú lateral"
-                    title="Alternar vista mini-sidebar">
-                    <span class="collapse-icon">◀</span>
-                </button>
-            </div>
-
             <nav class="sidebar-nav">
-                <!-- Sección Principal -->
                 <div class="sidebar-section">
-                    <span class="sidebar-section__title">General</span>
-                    <a class="sidebar-link @menuModel.ActiveClass("/Index")" asp-page="/Index" title="Inicio / Dashboard">
-                        <span class="sidebar-link__icon" aria-hidden="true">📊</span>
+                    <a class="sidebar-link @menuModel.ActiveClass("/Index")" asp-page="/Index" title="Inicio">
+                        <span class="sidebar-link__icon"><partial name="_Icono" model="@("inicio")" /></span>
                         <span class="sidebar-link__text">Inicio</span>
                     </a>
                 </div>
@@ -104,7 +98,7 @@
             </main>
 
             <footer class="app-footer">
-                <p>Proyecto Académico — Clean Code &amp; SOLID | Razor Pages · Microservicios .NET 10</p>
+                <p>Sistema de Gestión de Librería</p>
             </footer>
         </div>
     </div>

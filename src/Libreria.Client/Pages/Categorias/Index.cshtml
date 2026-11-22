@@ -13,15 +13,13 @@
 </div>
 
 
-<!-- Filtro horizontal compacto -->
-<form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; background-color: var(--color-surface); padding: 1.25rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
-    
-    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 250px;">
-        <label for="Busqueda">Buscar por código, nombre o ubicación:</label>
+<form method="get" class="filtro-barra">
+    <div class="form-group filtro-barra__campo">
+        <label for="Busqueda">Buscar por código, nombre o ubicación</label>
         <input type="text" name="Busqueda" asp-for="Busqueda" class="form-control" placeholder="Ej: LIBROS" />
     </div>
 
-    <div style="display: flex; gap: 0.5rem;">
+    <div class="filtro-barra__acciones">
         <button type="submit" class="btn btn--secondary">Buscar</button>
         @if (!string.IsNullOrEmpty(Model.Busqueda))
         {
@@ -32,12 +30,14 @@
 
 @if (!Model.Categorias.Any())
 {
-    <div style="text-align: center; color: var(--color-secondary); padding: 2rem; background-color: var(--color-surface); border-radius: var(--radius-base); border: 1px solid var(--color-border);">
+    <div class="estado-vacio">
+        <partial name="_Icono" model="@("categorias")" />
         <p>No hay categorías registradas todavía o ninguna coincide con la búsqueda.</p>
     </div>
 }
 else
 {
+    <p class="tabla-resumen" role="status">Se muestran @Model.Categorias.Count @(Model.Categorias.Count == 1 ? "categoría" : "categorías").</p>
     <div class="table-container">
         <table>
             <thead>
@@ -52,7 +52,7 @@ else
                 @foreach (var categoria in Model.Categorias)
                 {
                     <tr>
-                        <td style="font-weight: 600;">@categoria.Codigo</td>
+                        <td class="celda-principal">@categoria.Codigo</td>
                         <td>@categoria.Nombre</td>
                         <td>@(string.IsNullOrEmpty(categoria.Descripcion) ? "—" : categoria.Descripcion)</td>
                         <td>@categoria.Ubicacion</td>

@@ -4,39 +4,53 @@
 
 @{
     ViewData["Title"] = "Productos";
+
+    var hayFiltros = !string.IsNullOrWhiteSpace(Model.Busqueda)
+        || Model.CategoriaPublicId.HasValue
+        || Model.MarcaPublicId.HasValue
+        || Model.Estado.HasValue;
+
+    // Columna (clave de orden del servicio), título y clase de la celda.
+    var columnas = new (string Orden, string Titulo, string Clase)[]
+    {
+        ("nombre", "Nombre", ""),
+        ("categoria", "Categoría", ""),
+        ("marca", "Marca", ""),
+        ("perecedero", "Perecedero", ""),
+        ("estado", "Estado", ""),
+        ("stock", "Stock", "num"),
+        ("precio", "Precio de venta", "num"),
+        ("costo", "Costo de adquisición", "num")
+    };
 }
 
 <div class="page-header">
     <div>
         <h1>Productos</h1>
-        <p>Gestión del catálogo de productos e inventario.</p>
+        <p>Catálogo de productos, stock y precios.</p>
     </div>
-    <a asp-page="Create" class="btn btn--primary">+ Registrar producto</a>
+    <a asp-page="Create" class="btn btn--primary"><partial name="_Icono" model="@("mas")" /> Registrar producto</a>
 </div>
 
 @if (TempData["MensajeExito"] is string mensaje)
 {
-    <div style="background-color: #E8F0EB; color: var(--color-accent); padding: 1rem; border-radius: var(--radius-base); margin-bottom: 1.5rem; border: 1px solid #A3C2B1;">
-        @mensaje
-    </div>
+    <div class="mensaje mensaje--exito" role="status">@mensaje</div>
 }
 @if (TempData["MensajeError"] is string error)
 {
     <div class="mensaje mensaje--error" role="alert">@error</div>
 }
 
-<!-- Filtros en Grilla Horizontal -->
-<form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem; background-color: var(--color-surface); padding: 1.25rem; border-radius: var(--radius-base); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+<form method="get" class="filtro-barra">
     <input type="hidden" name="Orden" value="@Model.Orden" />
     <input type="hidden" name="Direccion" value="@Model.Direccion" />
 
-    
-    <div class="form-group" style="margin-bottom: 0; flex: 2; min-width: 200px;">
-        <label for="Busqueda">Buscar producto</label>
-        <input type="text" id="Busqueda" name="Busqueda" class="form-control" value="@Model.Busqueda" placeholder="Nombre o descripción" />
+    <div class="form-group filtro-barra__campo">
+        <label for="Busqueda">Buscar por nombre o descripción</label>
+        <input type="text" id="Busqueda" name="Busqueda" class="form-control" value="@Model.Busqueda" placeholder="Ej. Cuaderno" />
     </div>
 
-    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+    <div class="form-group filtro-barra__campo--select">
         <label for="CategoriaPublicId">Categoría</label>
         <select id="CategoriaPublicId" name="CategoriaPublicId" class="form-control">
             <option value="">Todas</option>
@@ -49,7 +63,7 @@
         </select>
     </div>
 
-    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+    <div class="form-group filtro-barra__campo--select">
         <label for="MarcaPublicId">Marca</label>
         <select id="MarcaPublicId" name="MarcaPublicId" class="form-control">
             <option value="">Todas</option>
@@ -62,7 +76,7 @@
         </select>
     </div>
 
-    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 140px;">
+    <div class="form-group filtro-barra__estado">
         <label for="Estado">Estado</label>
         <select id="Estado" name="Estado" class="form-control">
             <option value="" selected="@(!Model.Estado.HasValue)">Todos</option>
@@ -71,9 +85,8 @@
         </select>
     </div>
 
-    <div style="display: flex; gap: 0.5rem;">
-        <button type="submit" class="btn btn--secondary">Filtrar</button>
-
+    <div class="filtro-barra__acciones">
+        <button type="submit" class="btn btn--secondary">Buscar</button>
         <a asp-page="./Index"
            asp-route-Busqueda="@Model.Busqueda"
            asp-route-CategoriaPublicId="@Model.CategoriaPublicId"
@@ -81,10 +94,11 @@
            asp-route-Estado="@Model.Estado"
            asp-route-Orden="@Model.Orden"
            asp-route-Direccion="@Model.Direccion"
-           class="btn btn--secondary">
-            Refrescar
+           class="btn btn--secondary"
+           title="Volver a consultar el listado con los mismos filtros">
+            Actualizar
         </a>
-        @if (!string.IsNullOrWhiteSpace(Model.Busqueda) || Model.CategoriaPublicId.HasValue || Model.MarcaPublicId.HasValue || Model.Estado.HasValue)
+        @if (hayFiltros)
         {
             <a asp-page="./Index" class="btn btn--secondary">Limpiar</a>
         }
@@ -93,148 +107,83 @@
 
 @if (Model.Productos.Count == 0)
 {
-    <div style="text-align: center; color: var(--color-secondary); padding: 2rem; background-color: var(--color-surface); border-radius: var(--radius-base); border: 1px solid var(--color-border);">
-        @if (!string.IsNullOrWhiteSpace(Model.Busqueda) || Model.CategoriaPublicId.HasValue || Model.MarcaPublicId.HasValue || Model.Estado.HasValue)
+    <div class="estado-vacio">
+        <partial name="_Icono" model="@("productos")" />
+        @if (hayFiltros)
         {
-            <p>No se encontraron productos que coincidan con los filtros seleccionados.</p>
+            <p>No se encontraron productos con los filtros seleccionados. Revise la búsqueda o pulse «Limpiar».</p>
         }
         else
         {
             <p>No hay productos registrados todavía.</p>
+            <a asp-page="Create" class="btn btn--primary"><partial name="_Icono" model="@("mas")" /> Registrar producto</a>
         }
     </div>
 }
 else
 {
+    <p class="tabla-resumen" role="status">Se muestran @Model.Productos.Count @(Model.Productos.Count == 1 ? "producto" : "productos"). Pulse el nombre para ver el detalle; el stock de 5 unidades o menos se marca como bajo.</p>
     <div class="table-container">
-        <table>
+        <table class="tabla-compacta">
             <thead>
                 <tr>
-                    <th>
-                        <a asp-page="./Index"
-                           asp-route-Busqueda="@Model.Busqueda"
-                           asp-route-CategoriaPublicId="@Model.CategoriaPublicId"
-                           asp-route-MarcaPublicId="@Model.MarcaPublicId"
-                           asp-route-Estado="@Model.Estado"
-                           asp-route-Orden="nombre"
-                           asp-route-Direccion="@Model.SiguienteDireccion("nombre")"
-                           style="color: inherit; text-decoration: none;">
-                            Nombre <span>@(Model.IndicadorOrden("nombre"))</span>
-                        </a>
-                    </th>
-                    <th>
-                        <a asp-page="./Index"
-                           asp-route-Busqueda="@Model.Busqueda"
-                           asp-route-CategoriaPublicId="@Model.CategoriaPublicId"
-                           asp-route-MarcaPublicId="@Model.MarcaPublicId"
-                           asp-route-Estado="@Model.Estado"
-                           asp-route-Orden="categoria"
-                           asp-route-Direccion="@Model.SiguienteDireccion("categoria")"
-                           style="color: inherit; text-decoration: none;">
-                            Categoría <span>@(Model.IndicadorOrden("categoria"))</span>
-                        </a>
-                    </th>
-                    <th>
-                        <a asp-page="./Index"
-                           asp-route-Busqueda="@Model.Busqueda"
-                           asp-route-CategoriaPublicId="@Model.CategoriaPublicId"
-                           asp-route-MarcaPublicId="@Model.MarcaPublicId"
-                           asp-route-Estado="@Model.Estado"
-                           asp-route-Orden="marca"
-                           asp-route-Direccion="@Model.SiguienteDireccion("marca")"
-                           style="color: inherit; text-decoration: none;">
-                            Marca <span>@(Model.IndicadorOrden("marca"))</span>
-                        </a>
-                    </th>
-                    <th>
-                        <a asp-page="./Index"
-                           asp-route-Busqueda="@Model.Busqueda"
-                           asp-route-CategoriaPublicId="@Model.CategoriaPublicId"
-                           asp-route-MarcaPublicId="@Model.MarcaPublicId"
-                           asp-route-Estado="@Model.Estado"
-                           asp-route-Orden="perecedero"
-                           asp-route-Direccion="@Model.SiguienteDireccion("perecedero")"
-                           style="color: inherit; text-decoration: none;">
-                            Perecedero <span>@(Model.IndicadorOrden("perecedero"))</span>
-                        </a>
-                    </th>
-                    <th>
-                        <a asp-page="./Index"
-                           asp-route-Busqueda="@Model.Busqueda"
-                           asp-route-CategoriaPublicId="@Model.CategoriaPublicId"
-                           asp-route-MarcaPublicId="@Model.MarcaPublicId"
-                           asp-route-Estado="@Model.Estado"
-                           asp-route-Orden="estado"
-                           asp-route-Direccion="@Model.SiguienteDireccion("estado")"
-                           style="color: inherit; text-decoration: none;">
-                            Estado <span>@(Model.IndicadorOrden("estado"))</span>
-                        </a>
-                    </th>
-                    <th>
-                        <a asp-page="./Index"
-                           asp-route-Busqueda="@Model.Busqueda"
-                           asp-route-CategoriaPublicId="@Model.CategoriaPublicId"
-                           asp-route-MarcaPublicId="@Model.MarcaPublicId"
-                           asp-route-Estado="@Model.Estado"
-                           asp-route-Orden="stock"
-                           asp-route-Direccion="@Model.SiguienteDireccion("stock")"
-                           style="color: inherit; text-decoration: none;">
-                            Stock <span>@(Model.IndicadorOrden("stock"))</span>
-                        </a>
-                    </th>
-                    <th>
-                        <a asp-page="./Index"
-                           asp-route-Busqueda="@Model.Busqueda"
-                           asp-route-CategoriaPublicId="@Model.CategoriaPublicId"
-                           asp-route-MarcaPublicId="@Model.MarcaPublicId"
-                           asp-route-Estado="@Model.Estado"
-                           asp-route-Orden="precio"
-                           asp-route-Direccion="@Model.SiguienteDireccion("precio")"
-                           style="color: inherit; text-decoration: none;">
-                            Precio venta <span>@(Model.IndicadorOrden("precio"))</span>
-                        </a>
-                    </th>
-                    <th>
-                        <a asp-page="./Index"
-                           asp-route-Busqueda="@Model.Busqueda"
-                           asp-route-CategoriaPublicId="@Model.CategoriaPublicId"
-                           asp-route-MarcaPublicId="@Model.MarcaPublicId"
-                           asp-route-Estado="@Model.Estado"
-                           asp-route-Orden="costo"
-                           asp-route-Direccion="@Model.SiguienteDireccion("costo")"
-                           style="color: inherit; text-decoration: none;">
-                            Costo adquisición <span>@(Model.IndicadorOrden("costo"))</span>
-                        </a>
-                    </th>
-                    <th style="text-align: right;">Acciones</th>
+                    @foreach (var columna in columnas)
+                    {
+                        <th class="@columna.Clase">
+                            <a asp-page="./Index"
+                               asp-route-Busqueda="@Model.Busqueda"
+                               asp-route-CategoriaPublicId="@Model.CategoriaPublicId"
+                               asp-route-MarcaPublicId="@Model.MarcaPublicId"
+                               asp-route-Estado="@Model.Estado"
+                               asp-route-Orden="@columna.Orden"
+                               asp-route-Direccion="@Model.SiguienteDireccion(columna.Orden)"
+                               class="tabla-orden"
+                               title="Ordenar por @columna.Titulo.ToLowerInvariant()">
+                                @columna.Titulo <span aria-hidden="true">@Model.IndicadorOrden(columna.Orden)</span>
+                            </a>
+                        </th>
+                    }
+                    <th class="col-acciones">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var producto in Model.Productos)
                 {
                     <tr>
-                        <td style="font-weight: 600;">@producto.Nombre</td>
+                        <td class="celda-principal">
+                            @if (producto.Estado)
+                            {
+                                <a asp-page="Details" asp-route-id="@producto.PublicId" class="enlace-fila" title="Ver el detalle del producto">@producto.Nombre</a>
+                            }
+                            else
+                            {
+                                @producto.Nombre
+                            }
+                        </td>
                         <td>@producto.Categoria</td>
                         <td>@producto.Marca</td>
                         <td>@(producto.EsPerecedero ? "Sí" : "No")</td>
                         <td>
-                            <span class="badge">
+                            <span class="badge @(producto.Estado ? "badge--accent" : "")">
                                 @(producto.Estado ? "Activo" : "Inactivo")
                             </span>
                         </td>
-                        <td>
-                            <span class="badge @(producto.Stock <= 5 ? "badge--accent" : "")">@producto.Stock</span>
+                        <td class="num">
+                            @if (producto.Stock <= 5)
+                            {
+                                <span class="badge badge--warning" title="Stock bajo">@producto.Stock</span>
+                            }
+                            else
+                            {
+                                @producto.Stock
+                            }
                         </td>
-                        <td>Bs. @producto.PrecioVenta.ToString("0.00")</td>
-                        <td>Bs. @producto.CostoAdquisicionActual.ToString("0.00")</td>
+                        <td class="num">Bs. @producto.PrecioVenta.ToString("0.00")</td>
+                        <td class="num">Bs. @producto.CostoAdquisicionActual.ToString("0.00")</td>
                         <td>
                             <div class="table-actions">
                                 @if (producto.Estado)
                                 {
-                                    <a asp-page="Details"
-                                       asp-route-id="@producto.PublicId"
-                                       class="btn-table">Ver</a>
-
                                     <a asp-page="/Historico/Index"
                                        asp-route-publicId="@producto.PublicId"
                                        class="btn-table">Histórico</a>

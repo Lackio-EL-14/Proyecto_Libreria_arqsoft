@@ -4,40 +4,48 @@
     ViewData["Title"] = "Cambiar contraseña";
 }
 
-<div class="page-header"><h1>Cambiar contraseña</h1></div>
+<div class="page-header">
+    <div>
+        <h1>Cambiar contraseña</h1>
+        <p>Al guardar la nueva contraseña se cerrará su sesión y deberá ingresar de nuevo con ella.</p>
+    </div>
+</div>
 
-<p>Al guardar la nueva contraseña se cerrará su sesión y deberá ingresar de nuevo con ella.</p>
-
-<form method="post" id="cambiar-contrasena">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <div class="form-group">
-        <label asp-for="Input.ContrasenaActual">Contraseña actual</label>
-        <input asp-for="Input.ContrasenaActual" type="password" class="form-control"
-               autocomplete="current-password" maxlength="128" required />
-        <span asp-validation-for="Input.ContrasenaActual" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Input.NuevaContrasena">Nueva contraseña</label>
-        <input asp-for="Input.NuevaContrasena" type="password" class="form-control"
-               autocomplete="new-password" maxlength="128" required />
-        <span asp-validation-for="Input.NuevaContrasena" class="text-danger"></span>
-        <ul id="reglas-contrasena" aria-live="polite">
-            <li data-regla="longitud">Pendiente: Mínimo 8 caracteres.</li>
-            <li data-regla="mayuscula">Pendiente: Al menos una mayúscula.</li>
-            <li data-regla="minuscula">Pendiente: Al menos una minúscula.</li>
-            <li data-regla="numero">Pendiente: Al menos un número.</li>
-            <li data-regla="especial">Pendiente: Al menos un carácter especial.</li>
-        </ul>
-    </div>
-    <div class="form-group">
-        <label asp-for="Input.Confirmacion">Confirmación de nueva contraseña</label>
-        <input asp-for="Input.Confirmacion" type="password" class="form-control"
-               autocomplete="new-password" maxlength="128" required />
-        <span asp-validation-for="Input.Confirmacion" class="text-danger"></span>
-        <p id="estado-confirmacion" role="status"></p>
-    </div>
-    <button type="submit" class="btn btn--primary" disabled>Cambiar contraseña</button>
-</form>
+<div class="form-card">
+    <form method="post" id="cambiar-contrasena">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors" role="alert"></div>
+        <div class="form-group">
+            <label asp-for="Input.ContrasenaActual">Contraseña actual</label>
+            <input asp-for="Input.ContrasenaActual" type="password" class="form-control"
+                   autocomplete="current-password" maxlength="128" required />
+            <span asp-validation-for="Input.ContrasenaActual" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Input.NuevaContrasena">Nueva contraseña</label>
+            <input asp-for="Input.NuevaContrasena" type="password" class="form-control"
+                   autocomplete="new-password" maxlength="128" required aria-describedby="reglas-contrasena" />
+            <span asp-validation-for="Input.NuevaContrasena" class="text-danger"></span>
+            <ul id="reglas-contrasena" class="reglas-contrasena" aria-live="polite">
+                <li data-regla="longitud">Mínimo 8 caracteres.</li>
+                <li data-regla="mayuscula">Al menos una mayúscula.</li>
+                <li data-regla="minuscula">Al menos una minúscula.</li>
+                <li data-regla="numero">Al menos un número.</li>
+                <li data-regla="especial">Al menos un carácter especial.</li>
+            </ul>
+        </div>
+        <div class="form-group">
+            <label asp-for="Input.Confirmacion">Confirme la nueva contraseña</label>
+            <input asp-for="Input.Confirmacion" type="password" class="form-control"
+                   autocomplete="new-password" maxlength="128" required />
+            <span asp-validation-for="Input.Confirmacion" class="text-danger"></span>
+            <p id="estado-confirmacion" class="estado-confirmacion" role="status"></p>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn--primary" disabled>Cambiar contraseña</button>
+            <a asp-page="/Index" class="btn btn--secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
 
 @section Scripts {
     <script src="~/js/cambiar-contrasena.js" asp-append-version="true"></script>

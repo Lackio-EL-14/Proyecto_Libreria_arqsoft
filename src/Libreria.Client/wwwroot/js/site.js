@@ -1,61 +1,39 @@
 /**
- * Gestión del Menú de Navegación (Mini-Sidebar Desktop y Drawer Móvil)
- * US-29: Rediseño Escalable del Menú y Dashboard
+ * Menú de navegación (menú lateral colapsable en escritorio y panel en el celular)
+ * y mensajes de la página que el usuario puede cerrar.
  */
 document.addEventListener("DOMContentLoaded", function () {
     const body = document.body;
     const menuToggle = document.getElementById("menuToggle");
-    const sidebarCollapseBtn = document.getElementById("sidebarCollapseBtn");
     const sidebar = document.getElementById("sidebar");
     const sidebarOverlay = document.getElementById("sidebarOverlay");
-    const sectionToggles = document.querySelectorAll("[data-sidebar-section-toggle]");
 
-    // Cada rol recibe solo las secciones autorizadas por el servidor. Las que
-    // existen se pueden desplegar y recuerdan su estado entre navegaciones.
-    sectionToggles.forEach(function (toggle) {
-        const sectionId = toggle.getAttribute("aria-controls");
-        const sectionItems = sectionId ? document.getElementById(sectionId) : null;
-        if (!sectionItems) return;
-
-        const sectionStorageKey = `libreria_sidebar_section_${sectionId}`;
-        const savedState = localStorage.getItem(sectionStorageKey);
-        const containsActivePage = sectionItems.querySelector(".sidebar-link.is-active") !== null;
-        const startsExpanded = containsActivePage || savedState !== "false";
-
-        function setExpanded(expanded) {
-            toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
-            sectionItems.hidden = !expanded;
-        }
-
-        setExpanded(startsExpanded);
-
-        toggle.addEventListener("click", function () {
-            const expanded = toggle.getAttribute("aria-expanded") !== "true";
-            setExpanded(expanded);
-            localStorage.setItem(sectionStorageKey, expanded ? "true" : "false");
-        });
-    });
-
-    // 1. Restaurar preferencia de mini-sidebar colapsado en desktop
+    // 1. Restaurar la preferencia de menú colapsado en escritorio
     const STORAGE_KEY = "libreria_sidebar_collapsed";
-    const isCollapsedSaved = localStorage.getItem(STORAGE_KEY) === "true";
+    let isCollapsedSaved = false;
+    try {
+        isCollapsedSaved = localStorage.getItem(STORAGE_KEY) === "true";
+    } catch (error) {
+        isCollapsedSaved = false;
+    }
 
     if (isCollapsedSaved && window.innerWidth > 768) {
         body.classList.add("sidebar-collapsed");
     }
 
-    // 2. Alternar estado colapsado (Desktop)
+    // 2. Colapsar o expandir el menú (escritorio)
     function toggleSidebarCollapse() {
         body.classList.toggle("sidebar-collapsed");
         const isCollapsed = body.classList.contains("sidebar-collapsed");
-        localStorage.setItem(STORAGE_KEY, isCollapsed);
+        if (menuToggle) menuToggle.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
+        try {
+            localStorage.setItem(STORAGE_KEY, isCollapsed);
+        } catch (error) {
+            // Sin almacenamiento local, la preferencia solo dura en esta página.
+        }
     }
 
-    if (sidebarCollapseBtn) {
-        sidebarCollapseBtn.addEventListener("click", toggleSidebarCollapse);
-    }
-
-    // 3. Menú Drawer para Móviles (< 768px) y Toggle
+    // 3. Menú como panel en el celular (< 768px)
     function abrirMenuMovil() {
         if (!sidebar || !sidebarOverlay) return;
         sidebar.classList.add("is-open");
@@ -81,12 +59,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 abrirMenuMovil();
             }
         } else {
-            // En desktop, el botón superior también colapsa/expande
             toggleSidebarCollapse();
         }
     }
 
     if (menuToggle) {
+        menuToggle.setAttribute("aria-expanded",
+            window.innerWidth > 768 && !body.classList.contains("sidebar-collapsed") ? "true" : "false");
         menuToggle.addEventListener("click", toggleMenu);
     }
 
@@ -94,17 +73,30 @@ document.addEventListener("DOMContentLoaded", function () {
         sidebarOverlay.addEventListener("click", cerrarMenuMovil);
     }
 
-    // Cerrar drawer móvil con Escape
+    // Cerrar el panel del celular con Escape
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape" && sidebar && sidebar.classList.contains("is-open")) {
             cerrarMenuMovil();
         }
     });
 
-    // Ajustar si cambia el tamaño de ventana
+    // Ajustar si cambia el tamaño de la ventana
     window.addEventListener("resize", function () {
         if (window.innerWidth > 768 && sidebar && sidebar.classList.contains("is-open")) {
             cerrarMenuMovil();
         }
+    });
+
+    // 4. Los mensajes de éxito o error de la página se pueden cerrar
+    document.querySelectorAll(".mensaje").forEach(function (mensaje) {
+        const cerrar = document.createElement("button");
+        cerrar.type = "button";
+        cerrar.className = "mensaje__cerrar";
+        cerrar.setAttribute("aria-label", "Cerrar mensaje");
+        cerrar.textContent = "×";
+        cerrar.addEventListener("click", function () {
+            mensaje.remove();
+        });
+        mensaje.appendChild(cerrar);
     });
 });

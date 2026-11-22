@@ -2,22 +2,24 @@
 
 @* Campos comunes del alta y la edición. Los nombres "Input.*" coinciden con las claves
    de error que devuelve el MS Clientes (ResultadoApiTraductor). *@
+<p class="form-obligatorio">Los campos con <span class="text-danger">*</span> son obligatorios.</p>
+
 <div class="form-group">
-    <label for="Input_CiNit">CI/NIT: <span class="text-danger">*</span></label>
+    <label for="Input_CiNit">CI/NIT <span class="text-danger">*</span></label>
     <input id="Input_CiNit" name="Input.CiNit" value="@Model.CiNit" class="form-control" maxlength="30" required
            placeholder="Ej. 4567890" aria-describedby="Input_CiNit-error" />
     <span id="Input_CiNit-error" class="text-danger">@ErrorDe("Input.CiNit")</span>
 </div>
 
 <div class="form-group">
-    <label for="Input_RazonSocial">Razón social: <span class="text-danger">*</span></label>
+    <label for="Input_RazonSocial">Razón social <span class="text-danger">*</span></label>
     <input id="Input_RazonSocial" name="Input.RazonSocial" value="@Model.RazonSocial" class="form-control" maxlength="200" required
            placeholder="Ej. María Fernanda Quispe Choque" aria-describedby="Input_RazonSocial-error" />
     <span id="Input_RazonSocial-error" class="text-danger">@ErrorDe("Input.RazonSocial")</span>
 </div>
 
 <div class="form-group">
-    <label for="Input_Correo">Correo electrónico (opcional):</label>
+    <label for="Input_Correo">Correo electrónico (opcional)</label>
     <input id="Input_Correo" name="Input.Correo" value="@Model.Correo" class="form-control" type="email" maxlength="254"
            placeholder="nombre@correo.bo" aria-describedby="Input_Correo-error" />
     <span id="Input_Correo-error" class="text-danger">@ErrorDe("Input.Correo")</span>

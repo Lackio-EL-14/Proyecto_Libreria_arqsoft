@@ -28,7 +28,7 @@
         <h1>Clientes</h1>
         <p>Consulta y gestión de los clientes registrados en el sistema.</p>
     </div>
-    <a asp-page="./Create" class="btn btn--primary">+ Registrar nuevo cliente</a>
+    <a asp-page="./Create" class="btn btn--primary"><partial name="_Icono" model="@("mas")" /> Registrar cliente</a>
 </div>
 
 @if (TempData["MensajeExito"] is string exito)
@@ -45,12 +45,12 @@
     <input type="hidden" name="descendente" value="@Model.Descendente.ToString().ToLowerInvariant()" />
 
     <div class="form-group filtro-barra__campo">
-        <label for="busqueda">Buscar por CI/NIT, razón social o correo:</label>
+        <label for="busqueda">Buscar por CI/NIT, razón social o correo</label>
         <input type="text" id="busqueda" name="busqueda" class="form-control" value="@Model.Busqueda" maxlength="200" placeholder="Ej. 4567890 o Quispe" />
     </div>
 
     <div class="form-group filtro-barra__estado">
-        <label for="estado">Estado:</label>
+        <label for="estado">Estado</label>
         <select id="estado" name="estado" class="form-control">
             <option value="@EstadoFiltroClientes.Activos" selected="@(Model.Estado == EstadoFiltroClientes.Activos)">Activos</option>
             <option value="@EstadoFiltroClientes.Inactivos" selected="@(Model.Estado == EstadoFiltroClientes.Inactivos)">Inactivos</option>
@@ -71,18 +71,24 @@
 @if (Model.Clientes.Count == 0)
 {
     <div class="estado-vacio">
+        <partial name="_Icono" model="@("clientes")" />
         @if (string.IsNullOrWhiteSpace(Model.Busqueda))
         {
             <p>No hay clientes @(Model.Estado == EstadoFiltroClientes.Inactivos ? "inactivos" : "registrados") para mostrar.</p>
+            @if (Model.Estado != EstadoFiltroClientes.Inactivos)
+            {
+                <a asp-page="./Create" class="btn btn--primary"><partial name="_Icono" model="@("mas")" /> Registrar cliente</a>
+            }
         }
         else
         {
-            <p>No se encontraron clientes que coincidan con «<strong>@Model.Busqueda</strong>».</p>
+            <p>No se encontraron clientes que coincidan con «<strong>@Model.Busqueda</strong>». Revise lo escrito o pulse «Limpiar».</p>
         }
     </div>
 }
 else
 {
+    <p class="tabla-resumen" role="status">Se muestran @Model.Clientes.Count @(Model.Clientes.Count == 1 ? "cliente" : "clientes").</p>
     <div class="table-container">
         <table>
             <thead>
@@ -96,7 +102,7 @@ else
                         </th>
                     }
                     <th>Estado</th>
-                    <th style="text-align: right;">Acciones</th>
+                    <th class="col-acciones">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -104,7 +110,7 @@ else
                 {
                     <tr>
                         <td>@cliente.CiNit</td>
-                        <td style="font-weight: 600;">@cliente.RazonSocial</td>
+                        <td class="celda-principal">@cliente.RazonSocial</td>
                         <td>@(cliente.Correo ?? "—")</td>
                         <td>@FechaLocal.Mostrar(cliente.FechaCreacion)</td>
                         <td>
