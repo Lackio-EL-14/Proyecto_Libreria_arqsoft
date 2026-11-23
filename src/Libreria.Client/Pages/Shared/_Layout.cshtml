@@ -53,7 +53,7 @@
                     <partial name="_Icono" model="@("llave")" />
                     <span class="btn-header__texto">Cambiar contraseña</span>
                 </a>
-                <form method="post" asp-page="/Cuenta/Logout" class="logout-form">
+                <form method="post" asp-page="/Cuenta/Logout" class="logout-form" novalidate>
                     <button type="submit" class="btn-header" title="Cerrar sesión">
                         <partial name="_Icono" model="@("salir")" />
                         <span class="btn-header__texto">Cerrar sesión</span>

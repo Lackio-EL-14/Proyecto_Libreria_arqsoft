@@ -13,8 +13,7 @@
 </div>
 
 <div class="form-card form-card--ancha">
-    <form method="post" id="productoForm">
-        @Html.AntiForgeryToken()
+    <form method="post" id="productoForm" novalidate>
         <partial name="_ProductoFormularioCampos" model="Model" />
 
         <div class="form-actions">
@@ -49,5 +48,6 @@
 </dialog>
 
 @section Scripts {
+    <partial name="_ValidationScriptsPartial" />
     <script src="~/js/producto-formulario.js" asp-append-version="true"></script>
 }

@@ -1,10 +1,24 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Libreria.Client.DTOs.Clientes;
 
-// Cuerpo del alta y la edición de clientes.
+// Cuerpo del alta y la edición de clientes. Los mensajes son los mismos de ClienteValidator del
+// MS Clientes, que vuelve a validar todo (pruebas del 22/11, A4).
 public class ClienteInput
 {
+    [Display(Name = "CI/NIT")]
+    [Required(ErrorMessage = "El CI/NIT es obligatorio.")]
+    [StringLength(30, ErrorMessage = "El CI/NIT no puede superar los 30 caracteres.")]
     public string CiNit { get; set; } = string.Empty;
+
+    [Display(Name = "Razón social")]
+    [Required(ErrorMessage = "La razón social es obligatoria.")]
+    [StringLength(200, ErrorMessage = "La razón social no puede superar los 200 caracteres.")]
     public string RazonSocial { get; set; } = string.Empty;
+
+    [Display(Name = "Correo electrónico")]
+    [StringLength(254, ErrorMessage = "El correo no puede superar los 254 caracteres.")]
+    [EmailAddress(ErrorMessage = "Ingrese un correo electrónico válido.")]
     public string? Correo { get; set; }
 }
 

@@ -37,7 +37,7 @@ public static class TextosVisibles
     {
         var sinScripts = Regex.Replace(html, "<script[\\s\\S]*?</script>", " ", RegexOptions.IgnoreCase);
         var texto = Regex.Replace(sinScripts, "<[^>]+>", " ");
-        var atributos = Regex.Matches(sinScripts, "(?:data-val-[a-z-]+|title|placeholder|aria-label)=\"([^\"]*)\"")
+        var atributos = Regex.Matches(sinScripts, "(?:data-val-[a-z]+|title|placeholder|aria-label)=\"([^\"]*)\"")
             .Select(m => m.Groups[1].Value);
         return texto + " " + string.Join(" ", atributos);
     }

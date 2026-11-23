@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Libreria.Client.Validacion;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
@@ -9,7 +10,8 @@ namespace Libreria.Client.TagHelpers;
 /// Criterio único de etiquetas del Front (pruebas del 22/11): un <c>&lt;label asp-for="…"&gt;</c>
 /// vacío muestra el <c>[Display(Name)]</c> de la propiedad y, después,
 /// <c>*</c> si la propiedad tiene <c>[Required]</c> o «(opcional)» si no lo tiene.
-/// Las casillas de verificación no llevan marca.
+/// Las casillas de verificación y los campos con <see cref="RequeridoAlgunoDeAttribute"/>
+/// («al menos uno de los dos») no llevan marca: lo explica el texto de ayuda del formulario.
 /// Una etiqueta con texto propio (por ejemplo, un obligatorio condicional) no se toca.
 /// </summary>
 [HtmlTargetElement("label", Attributes = "asp-for")]
@@ -54,6 +56,20 @@ public sealed class EtiquetaCampoTagHelper : TagHelper
             ? predeterminada.Attributes.PropertyAttributes ?? []
             : [];
 
-        return atributos.OfType<RequiredAttribute>().Any() ? MarcaObligatorio : MarcaOpcional;
+        if (atributos.OfType<RequiredAttribute>().Any())
+        {
+            return MarcaObligatorio;
+        }
+
+        return atributos.OfType<RequeridoAlgunoDeAttribute>().Any() || EsLaOtraDeUnGrupo(metadata)
+            ? null
+            : MarcaOpcional;
     }
+
+    // El correo del contacto es «la otra» del [RequeridoAlgunoDe] que lleva el teléfono.
+    private static bool EsLaOtraDeUnGrupo(Microsoft.AspNetCore.Mvc.ModelBinding.ModelMetadata metadata) =>
+        metadata.ContainerType?.GetProperties()
+            .SelectMany(propiedad => propiedad.GetCustomAttributes(typeof(RequeridoAlgunoDeAttribute), true))
+            .OfType<RequeridoAlgunoDeAttribute>()
+            .Any(atributo => atributo.OtraPropiedad == metadata.PropertyName) == true;
 }
