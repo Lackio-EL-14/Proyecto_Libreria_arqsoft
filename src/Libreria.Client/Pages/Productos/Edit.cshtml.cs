@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Libreria.Client.Pages.Productos;
 
-public class EditModel : PageModel
+public class EditModel : PageModel, IProductoFormulario
 {
     private readonly IProductosApi _productos;
 
@@ -41,6 +41,14 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(Guid id)
     {
+        // Ver Create: los mensajes del formulario primero; después, el Result del MS.
+        if (!ModelState.IsValid)
+        {
+            PublicId = id;
+            await CargarOpcionesAsync(id);
+            return Page();
+        }
+
         var resultado = await _productos.ActualizarProductoAsync(id, Input);
         if (resultado.NoEncontrado)
         {

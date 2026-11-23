@@ -57,10 +57,10 @@ public sealed class ProductosApiAdapter : ApiClientBase, IProductosApi
         LeerOpcionalAsync<ProductoEdicionDto>($"api/productos/{publicId}/edicion", ct);
 
     public Task<ResultadoApi> RegistrarProductoAsync(ProductoInput input, CancellationToken ct = default) =>
-        EnviarPostAsync("api/productos", input, ct);
+        EnviarPostAsync("api/productos", ProductoCuerpoDto.Desde(input), ct);
 
     public Task<ResultadoApi> ActualizarProductoAsync(Guid publicId, ProductoInput input, CancellationToken ct = default) =>
-        EnviarPutAsync($"api/productos/{publicId}", input, ct);
+        EnviarPutAsync($"api/productos/{publicId}", ProductoCuerpoDto.Desde(input), ct);
 
     public Task<ResultadoApi> DarDeBajaProductoAsync(Guid publicId, CancellationToken ct = default) =>
         EnviarPatchAsync($"api/productos/{publicId}/baja", ct);

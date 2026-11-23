@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Libreria.Client.Pages.Productos;
 
-public class CreateModel : PageModel
+public class CreateModel : PageModel, IProductoFormulario
 {
     private readonly IProductosApi _productos;
 
@@ -28,6 +28,14 @@ public class CreateModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        // Campos vacíos o con formato inválido: se muestran los mensajes del formulario sin
+        // llamar al MS. Lo que pasa esta validación lo vuelve a validar el MS (Result).
+        if (!ModelState.IsValid)
+        {
+            await CargarFormularioAsync();
+            return Page();
+        }
+
         var resultado = await _productos.RegistrarProductoAsync(Input);
 
         if (!resultado.Exitoso)

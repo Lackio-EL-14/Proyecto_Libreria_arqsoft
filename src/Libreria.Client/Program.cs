@@ -1,4 +1,5 @@
 using Libreria.Client.Clients.Common;
+using Libreria.Client.Configuracion;
 using Libreria.Client.Adapters.DependencyInjection;
 using Libreria.Client.DTOs.Usuarios;
 using Libreria.Client.Seguridad;
@@ -23,6 +24,8 @@ builder.Services
     .AddMvcOptions(options =>
     {
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+        // Pruebas del 22/11 (C3): ningún mensaje de enlace o validación en inglés en todo el sitio.
+        options.UsarMensajesEnEspanol();
         options.Filters.Add<ServicioNoDisponibleFilter>();
         options.Filters.Add<SesionExpiradaFilter>();
     });
@@ -71,3 +74,6 @@ app.UseAuthorization();
 app.MapRazorPages();
 
 app.Run();
+
+// Visible para las pruebas del Front (WebApplicationFactory).
+public partial class Program;
