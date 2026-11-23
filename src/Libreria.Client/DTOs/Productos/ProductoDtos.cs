@@ -20,7 +20,6 @@ public class ProductoInput
     public bool EsPerecedero { get; set; }
 
     [Display(Name = "Fecha de vencimiento")]
-    [DataType(DataType.Date)]
     public DateTime? FechaVencimiento { get; set; }
 
     [Display(Name = "Stock (unidades)")]

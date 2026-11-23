@@ -41,4 +41,11 @@ public static class TextosVisibles
             .Select(m => m.Groups[1].Value);
         return texto + " " + string.Join(" ", atributos);
     }
+
+    /// <summary>Solo el texto entre etiquetas, sin scripts ni estilos (para buscar palabras pegadas).</summary>
+    public static string TextoSinCodigo(string html)
+    {
+        var sinCodigo = Regex.Replace(html, "<(script|style|svg)[\\s\\S]*?</\\1>", " ", RegexOptions.IgnoreCase);
+        return Regex.Replace(sinCodigo, "<[^>]+>", " ");
+    }
 }
