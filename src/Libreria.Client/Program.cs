@@ -68,6 +68,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+// D5: sin caché para todo lo que no es un archivo estático (páginas protegidas incluidas).
+app.UseMiddleware<SinCacheMiddleware>();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
