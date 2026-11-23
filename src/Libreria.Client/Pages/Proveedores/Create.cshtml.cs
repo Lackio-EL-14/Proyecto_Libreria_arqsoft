@@ -23,6 +23,12 @@ public sealed class CreateModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        // Primero los mensajes del formulario (los mismos del MS); lo que pasa, lo valida el MS (Result).
+        if (!ModelState.IsValid)
+        {
+            return Page();
+        }
+
         var resultado = await _proveedores.RegistrarProveedorAsync(Input);
         if (!resultado.Exitoso)
         {

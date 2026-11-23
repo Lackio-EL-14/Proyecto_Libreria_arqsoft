@@ -15,6 +15,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Sistema Librería</title>
     <link rel="stylesheet" href="~/css/site.css" />
+    <script>
+        // D5: si el navegador muestra esta página desde su caché de Atrás/Adelante (bfcache),
+        // se recarga para que el servidor decida; sin sesión, lleva al inicio de sesión.
+        window.addEventListener("pageshow", function (evento) {
+            if (evento.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
 </head>
 
 <body class="app-body">
@@ -53,7 +62,7 @@
                     <partial name="_Icono" model="@("llave")" />
                     <span class="btn-header__texto">Cambiar contraseña</span>
                 </a>
-                <form method="post" asp-page="/Cuenta/Logout" class="logout-form">
+                <form method="post" asp-page="/Cuenta/Logout" class="logout-form" novalidate>
                     <button type="submit" class="btn-header" title="Cerrar sesión">
                         <partial name="_Icono" model="@("salir")" />
                         <span class="btn-header__texto">Cerrar sesión</span>

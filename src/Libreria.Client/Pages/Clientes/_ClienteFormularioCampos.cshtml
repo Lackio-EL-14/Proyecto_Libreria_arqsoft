@@ -1,33 +1,25 @@
 @model Libreria.Client.DTOs.Clientes.ClienteInput
 
-@* Campos comunes del alta y la edición. Los nombres "Input.*" coinciden con las claves
-   de error que devuelve el MS Clientes (ResultadoApiTraductor). *@
+@* Campos comunes del alta y la edición. Se usa con <partial for="Input">: los nombres "Input.*"
+   coinciden con las claves de error que devuelve el MS Clientes (ResultadoApiTraductor).
+   Etiquetas y mensajes salen de ClienteInput ([Display], [Required]…); jQuery unobtrusive
+   los muestra antes de enviar y el MS vuelve a validar con su Result. *@
 <p class="form-obligatorio">Los campos con <span class="text-danger">*</span> son obligatorios.</p>
 
 <div class="form-group">
-    <label for="Input_CiNit">CI/NIT <span class="text-danger">*</span></label>
-    <input id="Input_CiNit" name="Input.CiNit" value="@Model.CiNit" class="form-control" maxlength="30" required
-           placeholder="Ej. 4567890" aria-describedby="Input_CiNit-error" />
-    <span id="Input_CiNit-error" class="text-danger">@ErrorDe("Input.CiNit")</span>
+    <label asp-for="CiNit"></label>
+    <input asp-for="CiNit" class="form-control" maxlength="30" placeholder="Ej. 4567890" />
+    <span asp-validation-for="CiNit" class="text-danger"></span>
 </div>
 
 <div class="form-group">
-    <label for="Input_RazonSocial">Razón social <span class="text-danger">*</span></label>
-    <input id="Input_RazonSocial" name="Input.RazonSocial" value="@Model.RazonSocial" class="form-control" maxlength="200" required
-           placeholder="Ej. María Fernanda Quispe Choque" aria-describedby="Input_RazonSocial-error" />
-    <span id="Input_RazonSocial-error" class="text-danger">@ErrorDe("Input.RazonSocial")</span>
+    <label asp-for="RazonSocial"></label>
+    <input asp-for="RazonSocial" class="form-control" maxlength="200" placeholder="Ej. María Fernanda Quispe Choque" />
+    <span asp-validation-for="RazonSocial" class="text-danger"></span>
 </div>
 
 <div class="form-group">
-    <label for="Input_Correo">Correo electrónico (opcional)</label>
-    <input id="Input_Correo" name="Input.Correo" value="@Model.Correo" class="form-control" type="email" maxlength="254"
-           placeholder="nombre@correo.bo" aria-describedby="Input_Correo-error" />
-    <span id="Input_Correo-error" class="text-danger">@ErrorDe("Input.Correo")</span>
+    <label asp-for="Correo"></label>
+    <input asp-for="Correo" class="form-control" type="email" maxlength="254" placeholder="nombre@correo.bo" />
+    <span asp-validation-for="Correo" class="text-danger"></span>
 </div>
-
-@functions {
-    private string? ErrorDe(string campo) =>
-        ViewData.ModelState.TryGetValue(campo, out var estado)
-            ? estado.Errors.FirstOrDefault()?.ErrorMessage
-            : null;
-}

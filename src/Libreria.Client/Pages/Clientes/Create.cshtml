@@ -13,10 +13,10 @@
 </div>
 
 <div class="form-card">
-    <form method="post">
+    <form method="post" novalidate>
         <div asp-validation-summary="ModelOnly" class="validation-summary-errors" role="alert"></div>
 
-        <partial name="_ClienteFormularioCampos" model="Model.Input" />
+        <partial name="_ClienteFormularioCampos" for="Input" />
 
         <div class="form-actions">
             <button type="submit" class="btn btn--primary">Guardar</button>
@@ -24,3 +24,7 @@
         </div>
     </form>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

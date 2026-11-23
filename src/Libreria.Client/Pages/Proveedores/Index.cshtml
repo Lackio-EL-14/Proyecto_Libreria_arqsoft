@@ -39,7 +39,7 @@
     <div class="mensaje mensaje--error" role="alert">@mensajeError</div>
 }
 
-<form method="get" class="filtro-barra">
+<form method="get" class="filtro-barra" novalidate>
     <input type="hidden" name="orden" value="@Model.Orden" />
     <input type="hidden" name="descendente" value="@Model.Descendente.ToString().ToLowerInvariant()" />
 

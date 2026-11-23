@@ -8,7 +8,6 @@
     const nueva = document.getElementById('Input_NuevaContrasena');
     const confirmacion = document.getElementById('Input_Confirmacion');
     const estadoConfirmacion = document.getElementById('estado-confirmacion');
-    const boton = formulario.querySelector('button[type="submit"]');
     const reglas = [
         ['longitud', valor => valor.length >= 8],
         ['mayuscula', valor => /\p{Lu}/u.test(valor)],
@@ -40,15 +39,13 @@
         estadoConfirmacion.classList.toggle('text-danger', confirmacion.value.length > 0 && !coinciden);
         estadoConfirmacion.classList.toggle('is-cumplida', coinciden);
 
-        boton.disabled = !(actual.value.length > 0 && reglasCumplidas && coinciden
-            && formulario.checkValidity());
-        return !boton.disabled;
+        return actual.value.length > 0 && reglasCumplidas && coinciden;
     }
 
+    // El botón queda siempre activo (pruebas del 22/11): al enviar, jQuery unobtrusive muestra
+    // el mensaje de cada campo y el servidor vuelve a validar la política.
     formulario.addEventListener('input', validar);
     formulario.addEventListener('change', validar);
-    formulario.addEventListener('submit', evento => {
-        if (!validar()) evento.preventDefault();
-    });
+    formulario.addEventListener('submit', validar);
     validar();
 })();

@@ -40,6 +40,12 @@ public sealed class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(Guid id)
     {
+        // Primero los mensajes del formulario (los mismos del MS); lo que pasa, lo valida el MS (Result).
+        if (!ModelState.IsValid)
+        {
+            return await MostrarConErroresAsync(id);
+        }
+
         var resultado = await _proveedores.ActualizarProveedorAsync(id, Input);
         if (resultado.NoEncontrado)
         {
@@ -49,13 +55,7 @@ public sealed class EditModel : PageModel
         if (!resultado.Exitoso)
         {
             ModelState.AgregarErrores(resultado.Errores);
-            var proveedor = await _proveedores.ObtenerProveedorAsync(id);
-            if (proveedor is not null)
-            {
-                await CargarAuditoriaAsync(proveedor);
-            }
-
-            return Page();
+            return await MostrarConErroresAsync(id);
         }
 
         TempData["MensajeExito"] = "Proveedor actualizado correctamente.";
@@ -73,6 +73,17 @@ public sealed class EditModel : PageModel
         TelefonoContacto = proveedor.TelefonoContacto,
         CorreoContacto = proveedor.CorreoContacto
     };
+
+    private async Task<IActionResult> MostrarConErroresAsync(Guid id)
+    {
+        var proveedor = await _proveedores.ObtenerProveedorAsync(id);
+        if (proveedor is not null)
+        {
+            await CargarAuditoriaAsync(proveedor);
+        }
+
+        return Page();
+    }
 
     private async Task CargarAuditoriaAsync(ProveedorDetalleDto proveedor)
     {

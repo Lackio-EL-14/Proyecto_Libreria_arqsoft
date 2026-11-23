@@ -117,6 +117,45 @@ dotnet run --project src/Libreria.Gateway
 dotnet run --project src/Libreria.Client
 ```
 
+## Restablecer los datos antes de la defensa
+
+Las pruebas manuales cambian los datos (altas, bajas, contraseñas). Para empezar la defensa con las 4 bases y Keycloak en su **estado semilla**:
+
+```powershell
+# 1. Detener los procesos .NET (Ctrl+C en ./run-all.ps1).
+# 2. Borrar los volúmenes de las 4 bases y de Keycloak, y crearlos de nuevo.
+docker compose down -v
+docker compose up -d
+# 3. Esperar (1 a 2 minutos) hasta ver las bases y keycloak «healthy», y
+#    proveedores-db-init, usuarios-db-init y keycloak-configurar «Exited (0)».
+docker compose ps -a
+docker compose logs keycloak-configurar     # termina con «Listo: realm libreria configurado.»
+# 4. Volver a levantar la solución.
+./run-all.ps1
+```
+
+`down -v` **borra todo lo registrado**, incluidos los usuarios creados en Keycloak durante las pruebas. Las contraseñas de `admin` y `vendedor` vuelven a ser las de `.env`, y los secretos de los clientes de Keycloak también, así que los User Secrets de los procesos .NET siguen sirviendo. Las consultas siguientes leen las contraseñas dentro de cada contenedor y no las muestran:
+
+```powershell
+# Clientes: Universidad Mayor y María Fernanda Quispe Choque activos (1); Juan Carlos Pérez Rojas inactivo (0)
+# desde la semilla, por eso FechaModificacion y UsuarioModificacionId quedan en NULL.
+docker exec clientes-db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --default-character-set=utf8mb4 -t libreria_clientes -e "SELECT RazonSocial, Estado, FechaModificacion, UsuarioModificacionId FROM Cliente ORDER BY PublicId;" 2>/dev/null'
+
+# Proveedores: los 3 de docs/contratos/datos-semilla.md, activos y con su contacto principal.
+docker exec proveedores-db sh -c '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -d LibreriaProveedores -W -Q "SET NOCOUNT ON; SELECT p.Nit, p.RazonSocial, p.Estado, c.Nombre AS Contacto FROM dbo.Proveedor p JOIN dbo.ContactoProveedor c ON c.ProveedorId = p.ProveedorId AND c.EsPrincipal = 1 ORDER BY p.PublicId;"'
+
+# Usuarios: admin y vendedor «Activo», con KeycloakId a0000000-…-0001 y …-0002.
+docker exec usuarios-db sh -c '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -d LibreriaUsuarios -W -Q "SET NOCOUNT ON; SELECT NombreUsuario, Estado, KeycloakId FROM dbo.Usuario ORDER BY NombreUsuario;"'
+
+# Productos: 5 productos activos, 3 categorías y 3 marcas.
+docker exec productos-db mongosh --quiet libreria_productos --eval 'printjson({productos: db.productos.countDocuments(), activos: db.productos.countDocuments({estado: true}), categorias: db.categorias.countDocuments(), marcas: db.marcas.countDocuments()})'
+
+# Keycloak: solo admin y vendedor, habilitados y sin acciones pendientes.
+docker exec keycloak sh -c '/opt/keycloak/bin/kcadm.sh config credentials --config /tmp/kcadm.config --server http://localhost:8080 --realm master --user "$KC_BOOTSTRAP_ADMIN_USERNAME" --password "$KC_BOOTSTRAP_ADMIN_PASSWORD" >/dev/null 2>&1 && /opt/keycloak/bin/kcadm.sh get users --config /tmp/kcadm.config -r libreria --fields username,enabled,id,requiredActions; rm -f /tmp/kcadm.config'
+```
+
+Por último, iniciar sesión en `http://localhost:5000` con `admin` y con `vendedor`. Si el navegador guardó la sesión anterior, cerrarla o usar una ventana de incógnito.
+
 ## Pruebas
 
 ```powershell

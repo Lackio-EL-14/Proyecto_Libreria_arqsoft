@@ -1,0 +1,8 @@
+@* Validación del lado del cliente (pruebas del 22/11, A4 y B2): jQuery unobtrusive lee los
+   data-val-* que generan los atributos del modelo ([Required], [Range]…), con sus mensajes en
+   español. Los formularios llevan novalidate para que el navegador no muestre los suyos.
+   El servidor vuelve a validar siempre (ModelState y el Result de cada MS). *@
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+<script src="~/js/validacion.js" asp-append-version="true"></script>

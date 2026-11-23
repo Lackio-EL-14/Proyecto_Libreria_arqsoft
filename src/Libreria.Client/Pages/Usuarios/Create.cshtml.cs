@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Libreria.Client.Clients.Common;
 using Libreria.Client.Adapters.Usuarios;
 using Libreria.Client.DTOs.Usuarios;
@@ -23,19 +24,30 @@ public class CreateModel : PageModel
         _logger = logger;
     }
 
+    // Mensajes iguales a los del MS Usuarios, que vuelve a validar todo (pruebas del 22/11).
     [BindProperty]
+    [Display(Name = "Nombre")]
+    [Required(ErrorMessage = "El nombre es obligatorio.")]
     public string Nombre { get; set; } = string.Empty;
 
     [BindProperty]
+    [Display(Name = "Apellido paterno")]
+    [Required(ErrorMessage = "El apellido paterno es obligatorio.")]
     public string Apellido { get; set; } = string.Empty;
 
     [BindProperty]
+    [Display(Name = "Apellido materno")]
     public string ApellidoMaterno { get; set; } = string.Empty;
 
     [BindProperty]
+    [Display(Name = "Correo electrónico")]
+    [Required(ErrorMessage = "El correo es obligatorio.")]
+    [EmailAddress(ErrorMessage = "Ingrese un correo electrónico válido.")]
     public string Correo { get; set; } = string.Empty;
 
     [BindProperty]
+    [Display(Name = "Rol")]
+    [Required(ErrorMessage = "Debe seleccionar un rol válido.")]
     public string Rol { get; set; } = string.Empty;
 
     public string NombreUsuario { get; private set; } = string.Empty;
@@ -53,7 +65,7 @@ public class CreateModel : PageModel
     {
         await CargarRolesAsync();
 
-        if (!Roles.Any(rol =>
+        if (!string.IsNullOrWhiteSpace(Rol) && !Roles.Any(rol =>
                 string.Equals(
                     rol.Value,
                     Rol,

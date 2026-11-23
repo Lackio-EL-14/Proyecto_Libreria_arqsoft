@@ -22,7 +22,7 @@
     <div class="mensaje mensaje--error" role="alert">@error</div>
 }
 
-<form method="get" class="filtro-barra">
+<form method="get" class="filtro-barra" novalidate>
     <input type="hidden" name="Orden" value="@Model.Orden" />
     <input type="hidden" name="Descendente" value="@Model.Descendente.ToString().ToLowerInvariant()" />
     <div class="form-group filtro-barra__estado">
