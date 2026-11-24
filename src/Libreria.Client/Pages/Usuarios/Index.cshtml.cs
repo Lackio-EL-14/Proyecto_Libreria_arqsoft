@@ -32,8 +32,10 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public string Orden { get; set; } = "nombre";
 
-    [BindProperty(SupportsGet = true)]
-    public bool Descendente { get; set; }
+    [BindProperty(SupportsGet = true, Name = "Descendente")]
+    public bool? DescendenteParametro { get; set; }
+
+    public bool Descendente => DescendenteParametro ?? false;
 
     /// <summary>Ruta para ordenar por <paramref name="columna"/>: si ya ordena por ella, invierte la dirección.</summary>
     public Dictionary<string, string> RutaOrden(string columna) => new()

@@ -45,8 +45,12 @@
     </div>
 </form>
 
-<div asp-validation-summary="All" class="validation-summary-errors" role="alert"></div>
-
+@if (ViewData.ModelState.ErrorCount > 0)
+{
+    <div asp-validation-summary="All"
+         class="validation-summary-errors"
+         role="alert"></div>
+}
 @if (ViewData.ModelState.IsValid)
 {
     @if (Model.Usuarios.Count == 0)
